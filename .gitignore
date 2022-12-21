@@ -1,1 +1,12 @@
+# No VS Crap
 .vs
+
+# This file is generated prior to compilation. Making it part of the repository would only lead to silly shit I do not want.
+Compiler/ScyndiGlobals.cpp
+
+
+# No compiler crap
+*.o
+*.obj
+*.exe
+
