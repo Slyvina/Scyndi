@@ -14,3 +14,8 @@ x64
 
 # This is an automatic copy made during the build process of the compiler. Once the .exe is created the compiler needs to this put in all the base stuff (or at least, that's the idea)
 Scyndi/ScyndiCore.lua
+
+
+# MKL files are NEVER needed on github
+MKL_*
+*.MKL.*
