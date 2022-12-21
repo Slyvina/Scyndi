@@ -1,0 +1,2 @@
+require "ScyndiCore"
+Scyndi.GlobalsForCPlusPlus()
