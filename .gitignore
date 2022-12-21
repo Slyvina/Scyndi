@@ -9,4 +9,4 @@ Compiler/ScyndiGlobals.cpp
 *.o
 *.obj
 *.exe
-
+x64
