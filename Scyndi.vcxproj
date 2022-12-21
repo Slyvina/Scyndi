@@ -82,6 +82,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>Scyndi</OutDir>
+    <IncludePath>E:\Projects\Applications\Slyvina\Libs\Units\Headers;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -152,11 +153,21 @@
     <None Include="Script\ScyndiCoreTest.lua" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvAsk.cpp" />
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvBank.cpp" />
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvDir.cpp" />
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvQCol.cpp" />
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvSTOI.cpp" />
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvStream.cpp" />
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvString.cpp" />
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvTime.cpp" />
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvVolumes.cpp" />
     <ClCompile Include="Compiler\ScyndiGlobals.cpp" />
     <ClCompile Include="Scyndi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Compiler\ScyndiGlobals.hpp" />
+    <ClInclude Include="ScyndiVersion.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

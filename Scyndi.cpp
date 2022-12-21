@@ -23,6 +23,17 @@
 // 
 // Version: 22.12.21
 // EndLic
+
+#include <SlyvQCol.hpp>
+#include "ScyndiVersion.hpp"
+
+using namespace Scyndi;
+using namespace Slyvina;
+using namespace Slyvina::Units;
+
 int main(int nargs, char** args) {
+	QCol->LGreen("Scyndi Compiler\n");
+	QCol->Doing("Version", QVersion.Version(true));
+	QCol->Doing("Coded by", "Jeroen P. Broks");
 	return 0;
 }
