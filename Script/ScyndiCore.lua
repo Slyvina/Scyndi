@@ -248,6 +248,25 @@ _Scyndi.ADDMBER("..GLOBALS..","Delegate","SPRINTF",true,true,true,string.format)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","PRINTF",true,true,true,function(fmt,...) io.write(fmt:format(...)) end)
 _Scyndi.ADDMBER("..GLOBALS..","Table","LUA",true,true,true,_G)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","CHR",true,true,true, string.char)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","EXPAND",true,true,true,function (t,p)
+		assert(type(t)=="table" or type(t)=="string","Table or string expected in Expand request (got "..type(t)..")\n"..debug.traceback())
+		p = tonumber(p) or 1                                 
+		if p<#t then 
+			if type(t)=="string" then
+				return t:sub(p,p),_Scyndi.GLOBALS.EXPAND(t,p+1)   
+			else
+				return t[p],Globals.EXPAND.Value(t,p+1) 
+			end
+		end
+		if p==#t then 
+			if type(t)=="string" then
+				return t:sub(p,p),_Scyndi.GLOBALS.EXPAND(t,p+1)   
+			else
+				return t[p] 
+			end      
+		end
+		return nil                                 
+	end)
 
 -- ***** C++ Generator for base globals so the compiler will know them ***** --
 function _Scyndi.GLOBALSFORCPLUSPLUS()
