@@ -48,7 +48,7 @@ function _Scyndi.WANTVALUE(dtype,value)
 		return _Scyndi.TOSTRING(value)
 	elseif dtype=="VAR" or dtype=="PLUA" then
 		return value
-	elseif dtype:strsub(0)=="@" then
+	elseif dtype:sub(1,1)=="@" then
 		error("ClassType checking not yet impelemted!")
 	elseif dtype=="TABLE" then
 		assert(value==nil or type(value)=="table","Table expected but got ("..type(value)..")")
@@ -61,6 +61,13 @@ function _Scyndi.WANTVALUE(dtype,value)
 	end
 end
 
+function _Scyndi.TOSTRING(v)
+	if type(v)=="table" and v[".classinstance"] then
+		if v[".hasmember"]("TOSTRING") then return v.TOSTRING(v) end
+	end
+	return tostring(v)
+end
+
 -- ***** Identifiers ***** --
 local Identifier = {}
 
@@ -68,8 +75,9 @@ local Identifier = {}
 local classregister = {}
 
 local function index_static_member(cl,key,allowprivate)
+	local cu=cl:upper()
 	key=key:upper()
-	assert(classregister[cu],"Class "..cl.." unknown")
+	assert(classregister[cu],"Class "..cl.." unknown (index)")
 	assert(classregister[cu].staticmembers[key],"Class "..cl.." has no static member named "..key)
 	local member=classregister[cu].staticmembers[key]
 	if (not allowprivate) then assert(not member.private,"Class "..cl.." does have a static member named "..key..", however it's private and cannot be called this way.") end
@@ -109,7 +117,7 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	local _static=_class.staticmembers
 	local _nonstatic=_class.nonstaticmembers
 	local cu = classname:upper()
-	assert(not(Identifier[cu] or classregister[cu]),"Class has dupe name")
+	assert(not(Identifier[cu] or classregister[cu]),"Class has dupe name")	
 	if (extends) then
 		extends:upper()
 		assert(classregister[extends],"Extending non existent class "..extends)
@@ -136,6 +144,7 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	local ret = setmetatable(_class.pub,meta)
 	local retpriv = setmetatable(_class.priv,metapriv)
 	classregister[cu]=_class
+	--print(string.format("Class %s has been registered",cu))
 	return ret,retpriv
 end
 
@@ -145,7 +154,7 @@ end
 function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 	local cu=ch:upper()
 	name=name:upper()	
-	assert(classregister[cu],"Class "..cu.." unknown")
+	assert(classregister[cu],"Class "..cu.." unknown (member addition)")
 	local _class=classregister[cu]
 	assert(not _class.sealed,"Class "..cu.." is already sealed. No new members allowed!")
 	if (_class.staticclass) then status=true end
@@ -200,7 +209,34 @@ function _Scyndi.DECLARELOCAL(tab,dtype,readonly,key,value)
 	}
 end
 
--- ***** Base Globals ***** -
+-- ***** Base Globals ***** --
 local _Glob,_GlobPriv = _Scyndi.STARTCLASS("..GLOBALS..",true,false,nil)
-_Scyndi.Globals = _Glob
+assert(_Glob,"SCYNDI CORE SCRIPT INTERNAL ERROR: Globals not properly initiated!\nPlease report to Jeroen P. Broks!")
+_Scyndi.GLOBALS = _Glob
+
 _Scyndi.ADDMBER("..GLOBALS..","Delegate","PRINT",true,true,true,print)
+
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SOUT",true,true,true,function(...) 
+	local ret = ""
+	for _,v in ipairs{...} do ret = ret .. _Glob.TOSTRING(v) end
+	return ret
+end)
+
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","TOSTRING",true,true,true,_Scyndi.TOSTRING)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","COUT",true,true,true,function(...) io.write(_Glob.SOUT(...)) end)
+_Scyndi.ADDMBER("..GLOBALS..","STRING","ENDL",true,true,true,"\n")
+
+-- ***** C++ Generator for base globals so the compiler will know them ***** --
+function _Scyndi.GLOBALSFORCPLUSPLUS()
+	print("// Please note that this code is generated (also the reason why you can't find it in the respository)\n")
+	print("// Generated "..os.date())
+	print("\n\n#include <map>\n#include <string>\n\n")
+	print("namespace Scyndi {")
+	print("\tstd::map<std::string,std::string> CoreGlobals {\n")
+	local d
+	for k,v in pairs(classregister["..GLOBALS.."].staticmembers) do
+		if d then print(",") end d = true
+		io.write(string.format("\t\t{\"%s\", \"Scyndi.Globals[\\\"%s\\\"]\"}",k,k))
+	end
+	print("\n\t};\n}\n")
+end
