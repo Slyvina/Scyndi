@@ -30,3 +30,4 @@ require "ScyndiCore"
 Scyndi.Globals.Print("Hello World!")
 Scyndi.Globals.Cout("Hallo Welt!",Scyndi.Globals.endl)
 Scyndi.Globals.Cout("Salut ","monde!","\n")
+Scyndi.Globals.PrintF("%s %s!\n","Hallo","Wereld")
