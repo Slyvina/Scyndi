@@ -31,3 +31,7 @@ Scyndi.Globals.Print("Hello World!")
 Scyndi.Globals.Cout("Hallo Welt!",Scyndi.Globals.endl)
 Scyndi.Globals.Cout("Salut ","monde!","\n")
 Scyndi.Globals.PrintF("%s %s!\n","Hallo","Wereld")
+
+a = { [0]="A", "B", "C", "D"}
+for i,v in Scyndi.Globals.ipairs(a) do print(i,v) end
+for i,v in Scyndi.Globals.pairs(a) do print(i,v) end

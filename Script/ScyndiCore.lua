@@ -249,24 +249,37 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","PRINTF",true,true,true,function(fmt,..
 _Scyndi.ADDMBER("..GLOBALS..","Table","LUA",true,true,true,_G)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","CHR",true,true,true, string.char)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","EXPAND",true,true,true,function (t,p)
-		assert(type(t)=="table" or type(t)=="string","Table or string expected in Expand request (got "..type(t)..")\n"..debug.traceback())
-		p = tonumber(p) or 1                                 
-		if p<#t then 
-			if type(t)=="string" then
-				return t:sub(p,p),_Scyndi.GLOBALS.EXPAND(t,p+1)   
-			else
-				return t[p],Globals.EXPAND.Value(t,p+1) 
-			end
+	assert(type(t)=="table" or type(t)=="string","Table or string expected in Expand request (got "..type(t)..")\n"..debug.traceback())
+	p = tonumber(p) or 1                                 
+	if p<#t then 
+		if type(t)=="string" then
+			return t:sub(p,p),_Scyndi.GLOBALS.EXPAND(t,p+1)   
+		else
+			return t[p],Globals.EXPAND.Value(t,p+1) 
 		end
-		if p==#t then 
-			if type(t)=="string" then
-				return t:sub(p,p),_Scyndi.GLOBALS.EXPAND(t,p+1)   
-			else
-				return t[p] 
-			end      
-		end
-		return nil                                 
-	end)
+	end
+	if p==#t then 
+		if type(t)=="string" then
+			return t:sub(p,p),_Scyndi.GLOBALS.EXPAND(t,p+1)   
+		else
+			return t[p] 
+		end      
+	end
+	return nil                                 
+end)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","IPAIRS",true,true,true,function(tab)
+	-- Please note, where Lua starts at index #1, Scyndi will use #0 as the first index, like nearly all other self-respecting programming language.
+	assert(type(tab)=="table","Table expected for ipairs, but got "..type(tab))
+	local i=0
+	local function ret()
+		v = tab[i]
+		if (v==nil) then return nil,nil end
+		i = i + 1
+		return i-1,v
+	end
+	return ret
+end)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","PAIRS",true,true,true,pairs)
 
 -- ***** C++ Generator for base globals so the compiler will know them ***** --
 function _Scyndi.GLOBALSFORCPLUSPLUS()
