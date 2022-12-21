@@ -36,25 +36,25 @@ end
 function _Scyndi.WANTVALUE(dtype,value)
 	dtype=dtype:upper()
 	if (dtype=="BYTE") then
-		if _Scyndi.SETTINGS.STRICTNUM then assert(type(value)=="number","Byte expected but got ("..type(value)..")")) end
+		if _Scyndi.SETTINGS.STRICTNUM then assert(type(value)=="number","Byte expected but got ("..type(value)..")") end
 		if type(value)=="string" then value=value:tonumber() or 0 end
-		if _Scyndi.SETTINGS.STRICTINT then assert(math.floor(value)~=value,"Byte expected value is not integer typed")) end
+		if _Scyndi.SETTINGS.STRICTINT then assert(math.floor(value)~=value,"Byte expected value is not integer typed") end
 		if _Scyndi.SETTINGS.STRICTBYTE then assert(value>=0 and value<=255,"Byte expected, but the value exceeded the range") end
 		return math.floor(value) % 256
 	elseif dtype=="BOOLEAN" or dtype=="BOOL" then
 		return value~=nil and value~=false and value~="" and value~=0
 	elseif dtype=="STRING" then
-		if _Scyndi.SETTINGS.STRICTSTRING then assert(type(value)=="string","String expected but got ("..type(value)..")")) end
+		if _Scyndi.SETTINGS.STRICTSTRING then assert(type(value)=="string","String expected but got ("..type(value)..")") end
 		return _Scyndi.TOSTRING(value)
 	elseif dtype=="VAR" or dtype=="PLUA" then
 		return value
 	elseif dtype:strsub(0)=="@" then
 		error("ClassType checking not yet impelemted!")
 	elseif dtype=="TABLE" then
-		assert(value==nil or type(value)=="table","Table expected but got ("..type(value)..")"))
+		assert(value==nil or type(value)=="table","Table expected but got ("..type(value)..")")
 		return value
 	elseif dtype=="FUNCTION" or dtype=="DELEGATE" then
-		assert(value==nil or type(value)=="function","Delegate expected but got ("..type(value)..")"))
+		assert(value==nil or type(value)=="function","Delegate expected but got ("..type(value)..")")
 		return value
 	else
 		error("Unknown type "..dtype)
@@ -67,6 +67,34 @@ local Identifier = {}
 -- ***** Class Functions ***** --
 local classregister = {}
 
+local function index_static_member(cl,key,allowprivate)
+	key=key:upper()
+	assert(classregister[cu],"Class "..cl.." unknown")
+	assert(classregister[cu].staticmembers[key],"Class "..cl.." has no static member named "..key)
+	local member=classregister[cu].staticmembers[key]
+	if (not allowprivate) then assert(not member.private,"Class "..cl.." does have a static member named "..key..", however it's private and cannot be called this way.") end
+	if member.kind=="PROPERTY" then
+		assert(member.propget,"Property "..key.." in class "..cl.." does not have a 'Get' function")
+		return member.propget(classregister[cu].priv)
+	else
+		return member.value
+	end
+end
+
+local function newindex_static_member(cl,key,value,allowprivate)
+	key=key:upper()
+	assert(classregister[cu],"Class "..cl.." unknown")
+	assert(classregister[cu].staticmembers[key],"Class "..cl.." has no static member named "..key)
+	local member=classregister[cu].staticmembers[key]
+	if (not allowprivate) then assert(not member.private,"Class "..cl.." does have a static member named "..key..", however it's private and cannot be called this way.") end
+	if member.kind=="PROPERTY" then
+		assert(member.propset,"Property "..key.." in class "..cl.." does not have a 'Set' function")
+		member.propset(classregister[cu].priv,value)
+	end
+	member.value = _Scyndi.WANTVALUE(member.dtype,value)
+end
+
+
 function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	local _class = { 
 		name=classname, 
@@ -74,8 +102,8 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 		sealed=false, 
 		sealable=sealable,
 		staticmembers={},
-		nonstaticmembers={}
-		pub={}
+		nonstaticmembers={},
+		pub={},
 		priv={}
 	}	
 	local _static=_class.staticmembers
@@ -83,6 +111,9 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	local cu = classname:upper()
 	assert(not(Identifier[cu] or classregister[cu]),"Class has dupe name")
 	if (extends) then
+		extends:upper()
+		assert(classregister[extends],"Extending non existent class "..extends)
+		_class.extends=extends
 		for k,v in pairs(classregister[extends].staticmembers) do _static[k]=v end
 		for k,v in pairs(classregister[extends].nonstaticmembers) do _snontatic[k]=v end
 	end
@@ -108,19 +139,8 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	return ret,retpriv
 end
 
-function index_static_member(cl,key,allowprivate)
-	key=key:upper()
-	assert(classregister[cu],"Class "..cl.." unknown")
-	assert(classregister[cu].staticmembers[key],"Class "..cl.." has no static member named "..key)
-	local member=classregister[cu].staticmembers[key]
-	if (not allowprivate) then assert(not member.private,"Class "..cl.." does have a static member named "..key..", however it's private and cannot be called this way.") end
-	if member.kind=="PROPERTY" then
-		assert(member.propget,"Property "..key.." in class "..cl.." does not have a 'Get' function")
-		return member.propget(classregister[cu].priv)
-	else
-		return member.value
-	end
-end
+
+
 
 function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 	ch=ch:upper()
@@ -141,3 +161,41 @@ function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 	if (static) then _class.staticmembers[name]=nm else _class.nonstaticmembers[name]=nm end
 end
 
+function _Scyndi.SEAL(ch)
+	ch=ch:upper()
+	assert(classregister[cu],"Class "..cl.." unknown")
+	assert(classregister[cu].sealable,"Class "..cl.." is NOT sealable")
+	classregister[cu].sealed=true
+end
+
+-- ***** Locals Definition Functions ***** --
+	
+local met = {}
+function met.__index(s,key)
+	key = key:upper()		
+	assert(s.truelocals[key],"G:Local "..key.." not found")
+	return s.truelocals[key].value
+end
+function met.__newindex(s,key,value)
+	key = key:upper()		
+	assert(s.truelocals[key],"S:Local "..key.." not found")
+	local tl=s.truelocals[key]
+	assert(not tl.readonly,"Local "..key.." is read-only")
+	tl.value = _Scyndi.WANTVALUE(tl.dtype,value)
+end
+
+function _Scyndi.CREATELOCALS()
+	local ret = { truelocals = {} }
+	ret = setmetatable(ret,met)
+	return ret
+end
+
+function _Scyndi.DECLARELOCAL(tab,dtype,readonly,key,value)
+	key=key:upper()
+	assert(not s.truelocals[key],"Dupe local: "..key)
+	s.truelocals[key] = {
+		value = _Scyndi.WANTVALUE(value or _Scyndi.BASEVALUE(dtype)),
+		dtype = dtype:upper(),
+		readonly = readonly,		
+	}
+end
