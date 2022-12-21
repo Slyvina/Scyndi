@@ -133,8 +133,8 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	function metapriv.__newindex(self,key,value)
 		return newindex_static_member(cu,key,value,true)
 	end
-	local ret = setmetatable(class.pub,meta)
-	local retpriv = setmetatable(class.priv,metapriv)
+	local ret = setmetatable(_class.pub,meta)
+	local retpriv = setmetatable(_class.priv,metapriv)
 	classregister[cu]=_class
 	return ret,retpriv
 end
@@ -199,3 +199,8 @@ function _Scyndi.DECLARELOCAL(tab,dtype,readonly,key,value)
 		readonly = readonly,		
 	}
 end
+
+-- ***** Base Globals ***** -
+local _Glob,_GlobPriv = _Scyndi.STARTCLASS("..GLOBALS..",true,false,nil)
+_Scyndi.Globals = _Glob
+_Scyndi.ADDMBER("..GLOBALS..","Delegate","PRINT",true,true,true,print)
