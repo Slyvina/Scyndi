@@ -10,3 +10,4 @@ Compiler/ScyndiGlobals.cpp
 *.obj
 *.exe
 x64
+*.pdb
