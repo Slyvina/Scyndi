@@ -145,9 +145,9 @@ end
 function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 	ch=ch:upper()
 	name=name:upper()	
-	assert(classregister[cu],"Class "..cl.." unknown")
+	assert(classregister[cu],"Class "..cu.." unknown")
 	local _class=classregister[cu]
-	assert(not _class.sealed,"Class "..cl.." is already sealed. No new members allowed!")
+	assert(not _class.sealed,"Class "..cu.." is already sealed. No new members allowed!")
 	if (_class.staticclass) then status=true end
 	assert(not _class.staticmembers[name],"Class "..ch.." already has a static member named "..name)
 	-- TODO: Override abstract
