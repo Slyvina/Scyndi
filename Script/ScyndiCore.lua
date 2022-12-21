@@ -246,7 +246,7 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","COUT",true,true,true,function(...) io.
 _Scyndi.ADDMBER("..GLOBALS..","STRING","ENDL",true,true,true,"\n")
 _Scyndi.ADDMBER("..GLOBALS..","Delegate","SPRINTF",true,true,true,string.format)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","PRINTF",true,true,true,function(fmt,...) io.write(fmt:format(...)) end)
-
+_Scyndi.ADDMBER("..GLOBALS..","Table","LUA",true,true,true,_G)
 
 -- ***** C++ Generator for base globals so the compiler will know them ***** --
 function _Scyndi.GLOBALSFORCPLUSPLUS()
