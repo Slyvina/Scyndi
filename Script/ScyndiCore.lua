@@ -143,7 +143,7 @@ end
 
 
 function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
-	ch=ch:upper()
+	local cu=ch:upper()
 	name=name:upper()	
 	assert(classregister[cu],"Class "..cu.." unknown")
 	local _class=classregister[cu]
