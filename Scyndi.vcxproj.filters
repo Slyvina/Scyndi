@@ -19,6 +19,9 @@
     <Filter Include="Source Files\Compiler">
       <UniqueIdentifier>{de29fdb5-abb9-4774-8156-4ef1c6446c99}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Compiler">
+      <UniqueIdentifier>{330e1430-93c2-436a-ba23-87d441dfbd71}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Script\ScyndiCore.lua">
@@ -40,5 +43,10 @@
     <ClCompile Include="Compiler\ScyndiGlobals.cpp">
       <Filter>Source Files\Compiler</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Compiler\ScyndiGlobals.hpp">
+      <Filter>Header Files\Compiler</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
