@@ -24,6 +24,7 @@
 // Version: 22.12.21
 // EndLic
 
+#include <Lunatic.hpp>
 #include <SlyvQCol.hpp>
 #include "ScyndiVersion.hpp"
 
@@ -35,5 +36,8 @@ int main(int nargs, char** args) {
 	QCol->LGreen("Scyndi Compiler\n");
 	QCol->Doing("Version", QVersion.Version(true));
 	QCol->Doing("Coded by", "Jeroen P. Broks");
+	std::cout << "\n";
+	QCol->Doing("Lua version", Slyvina::Lunatic::_Lunatic::Lua_Version());
+	QCol->Doing("Lua developed by", "PUC Rio");
 	return 0;
 }

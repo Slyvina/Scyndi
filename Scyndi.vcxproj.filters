@@ -28,10 +28,22 @@
     <Filter Include="Source Files\Slyvina\Units">
       <UniqueIdentifier>{223ba4c8-5ae6-4f74-a254-2e25b8399a3a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Lua">
+      <UniqueIdentifier>{d359debb-cbb8-4529-bbd4-adf69f9e29e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Lunatic">
+      <UniqueIdentifier>{a0c6462f-6803-4a0a-84fd-1f90504428d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\dlls">
+      <UniqueIdentifier>{40c79859-4932-4e54-b2bc-2f38cceac89c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Script\ScyndiCore.lua">
       <Filter>Source Files\Script</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\Libs\Lunatic\Lua\Lib\Lua.dll">
+      <Filter>Source Files\dlls</Filter>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
@@ -83,6 +95,9 @@
     </ClInclude>
     <ClInclude Include="ScyndiVersion.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp">
+      <Filter>Header Files\Lunatic</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
