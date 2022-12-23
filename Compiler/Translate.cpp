@@ -33,7 +33,20 @@ using namespace Slyvina::Units;
 
 namespace Scyndi {
 
+	enum class InsKind {Unknown,General,IfStatement,WhileStatement,Increment,Decrement,DeclareVariable,DefineFunction,CompilerDirective,WhiteLine};
+	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro };
 
+	struct _Word {
+		WordKind Kind{ WordKind::Unknown };
+		std::string Word;
+	};
+
+	struct _Instruction {
+		InsKind Kind{ InsKind::Unknown };
+		uint32 LineNumber{ 0 };
+		std::string RawInstruction{ "" };
+		std::vector<_Word> Words{};
+	};
 
 	std::string TranslationError() {
 		return std::string();
