@@ -46,6 +46,7 @@ namespace Scyndi {
 		uint32 LineNumber{ 0 };
 		std::string RawInstruction{ "" };
 		std::vector<_Word> Words{};
+		std::string comment{ "" };
 	};
 
 	std::string TranslationError() {
