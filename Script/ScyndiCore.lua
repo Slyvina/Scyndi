@@ -324,6 +324,9 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LEN",true,true,true,function(value)
 	end
 end)
 
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ASSERT",true,true,true,assert)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ROUND",true,true,true,function(a) return math.floor(a+.5) end)
+
 -- ***** C++ Generator for base globals so the compiler will know them ***** --
 function _Scyndi.GLOBALSFORCPLUSPLUS()
 	print("// Please note that this code is generated (also the reason why you can't find it in the respository)\n")
