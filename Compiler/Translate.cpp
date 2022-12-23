@@ -35,6 +35,9 @@ namespace Scyndi {
 
 	enum class InsKind {Unknown,General,IfStatement,WhileStatement,Increment,Decrement,DeclareVariable,DefineFunction,CompilerDirective,WhiteLine};
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro };
+	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group };
+
+	struct _Scope;
 
 	struct _Word {
 		WordKind Kind{ WordKind::Unknown };
@@ -47,17 +50,24 @@ namespace Scyndi {
 		std::string RawInstruction{ "" };
 		std::vector<_Word> Words{};
 		std::string comment{ "" };
+		_Scope* Parent;
+	};
+
+	struct _Scope {
+		_Scope* Parent;
+		std::vector<_Scope> KidScopes;
+		ScopeKind Kind{ ScopeKind::Unknown };
 	};
 
 	std::string TranslationError() {
 		return std::string();
 	}
 
-	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD) {
+	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
 		return Translation();
 	}
 
-	Translation Translate(std::string source, std::string srcfile, Slyvina::JCR6::JT_Dir JD) {
+	Translation Translate(std::string source, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
 		return Translate(Split(source, '\n'), srcfile, JD);
 	}
 
