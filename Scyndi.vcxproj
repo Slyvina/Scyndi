@@ -82,7 +82,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>Scyndi</OutDir>
-    <IncludePath>E:\Projects\Applications\Slyvina\Libs\Lunatic;E:\Projects\Applications\Slyvina\Libs\Units\Headers;$(IncludePath)</IncludePath>
+    <IncludePath>E:\Projects\Applications\Slyvina\Libs\JCR6\Headers;E:\Projects\Applications\Slyvina\Libs\Lunatic;E:\Projects\Applications\Slyvina\Libs\Units\Headers;$(IncludePath)</IncludePath>
     <LibraryPath>E:\Projects\Applications\Slyvina\Libs\Lunatic\Lua\Lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -158,6 +158,8 @@
     <None Include="Script\ScyndiCoreTest.lua" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Core.cpp" />
+    <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Write.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvAsk.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvBank.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvDir.cpp" />
@@ -168,11 +170,13 @@
     <ClCompile Include="..\..\Libs\Units\Source\SlyvTime.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvVolumes.cpp" />
     <ClCompile Include="Compiler\ScyndiGlobals.cpp" />
+    <ClCompile Include="Compiler\Translate.cpp" />
     <ClCompile Include="Scyndi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp" />
     <ClInclude Include="Compiler\ScyndiGlobals.hpp" />
+    <ClInclude Include="Compiler\Translate.hpp" />
     <ClInclude Include="ScyndiVersion.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

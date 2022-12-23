@@ -88,6 +88,15 @@
     <ClCompile Include="..\..\Libs\Units\Source\SlyvVolumes.cpp">
       <Filter>Source Files\Slyvina\Units</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Core.cpp">
+      <Filter>Source Files\Slyvina</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Write.cpp">
+      <Filter>Source Files\Slyvina</Filter>
+    </ClCompile>
+    <ClCompile Include="Compiler\Translate.cpp">
+      <Filter>Source Files\Compiler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Compiler\ScyndiGlobals.hpp">
@@ -98,6 +107,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp">
       <Filter>Header Files\Lunatic</Filter>
+    </ClInclude>
+    <ClInclude Include="Compiler\Translate.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
