@@ -281,6 +281,31 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","IPAIRS",true,true,true,function(tab)
 end)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","PAIRS",true,true,true,pairs)
 
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SPAIRS",true,true,true,function(t, order)
+		-- collect the keys
+		local keys = {}
+		local t2  = {}
+		for k,v in pairs(t) do keys[#keys+1] = k  t2[k]=v end
+			-- if order function given, sort by it by passing the table and keys a, b,
+			-- otherwise just sort the keys 
+			if order then
+				function bo(a,b) 
+					return order(t, a, b) 
+				end
+				table.sort(keys, bo)
+			else
+			table.sort(keys)
+		end
+		-- return the iterator function
+		local i = 0
+		return function()
+			i = i + 1
+			if keys[i] then
+				return keys[i], t2[keys[i]]
+			end
+		end
+	end)
+
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LEN",true,true,true,function(value)
 	if type(value)=="string" then
 		return #value
@@ -307,7 +332,7 @@ function _Scyndi.GLOBALSFORCPLUSPLUS()
 	print("namespace Scyndi {")
 	print("\tstd::map<std::string,std::string> CoreGlobals {\n")
 	local d
-	for k,v in pairs(classregister["..GLOBALS.."].staticmembers) do
+	for k,v in _Scyndi.GLOBALS.spairs(classregister["..GLOBALS.."].staticmembers) do
 		if d then print(",") end d = true
 		io.write(string.format("\t\t{\"%s\", \"Scyndi.Globals[\\\"%s\\\"]\"}",k,k))
 	end
