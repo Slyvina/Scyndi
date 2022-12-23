@@ -281,6 +281,24 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","IPAIRS",true,true,true,function(tab)
 end)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","PAIRS",true,true,true,pairs)
 
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LEN",true,true,true,function(value)
+	if type(value)=="string" then
+		return #value
+	elseif type(value)=="table" then
+		if (value[".ISCLASS"]) then
+			return value.GetLen()
+		elseif (value[".ISCLASSINSTANCE"]) then
+			return value.GetLen()
+		else
+			local i=0
+			while value[i] do i=i+1 end
+			return i
+		end
+	else
+		error(type(value).." can not be used as an argument for Len()")
+	end
+end)
+
 -- ***** C++ Generator for base globals so the compiler will know them ***** --
 function _Scyndi.GLOBALSFORCPLUSPLUS()
 	print("// Please note that this code is generated (also the reason why you can't find it in the respository)\n")
