@@ -40,20 +40,32 @@ namespace Scyndi {
 
 	struct _Scope;
 
+
+	struct Word;
+	typedef std::shared_ptr<_Word> Word;
 	struct _Word {
 		WordKind Kind{ WordKind::Unknown };
-		std::string Word;
+		std::string TheWord;
+		static Word NewWord(WordKind K, std::string W) { 
+			auto ret{ std::make_shared<_Word>() };
+			ret->Kind = K;
+			ret->TheWord = W;
+			return ret;
+		}
 	};
+
 
 	struct _Instruction {
 		InsKind Kind{ InsKind::Unknown };
 		uint32 LineNumber{ 0 };
 		std::string RawInstruction{ "" };
-		std::vector<_Word> Words{};
-		std::string comment{ "" };
+		std::vector<Word> Words{};
+		std::string Comment{ "" };
 		//_Scope* Parent;
 		_TransProcess* TransParent{ nullptr };
+		uint64 ScopeLevel{ 0 };
 	};
+	typedef std::shared_ptr<_Instruction> Instruction;
 
 	/*
 	struct _Scope {
@@ -65,6 +77,7 @@ namespace Scyndi {
 
 	struct _TransProcess {
 		//_Scope RootScope{};
+		std::vector < Instruction > Instructions;
 		Translation Trans{};
 	};
 
@@ -72,11 +85,63 @@ namespace Scyndi {
 	std::string TranslationError() {
 		return _TLError;
 	}
+#define TransError(Err) { _TLError=Err; _TLError += " in line #"+std::to_string(LineNumber)+" ("+srcfile+")"; return nullptr; }
+#define TransAssert(Condition,Err) { if (!(Condition)) TransError(Err); }
+
+	Instruction Chop(std::string Line, uint64 LineNumber, size_t& pos, std::string srcfile) {
+		bool
+			InString{ false },
+			InCharSeries{ false },
+			InComment{ false },
+			StringEscape{ false };
+		Instruction
+			Ret = std::make_shared<_Instruction>();
+		std::string FormWord{ "" };
+		while (pos < Line.size()) {
+			auto ch{ Line[pos] };
+			// In Comment
+			if (InComment) {
+				Ret->Comment += ch;
+				pos++;
+
+			// In a string
+			} else if (InString) {
+				if (StringEscape) {
+					FormWord += ch;
+					StringEscape = false;
+					pos++;
+				} else if (ch == '\\') {
+					StringEscape = true;
+					pos++;
+				} else if (ch == '"') {
+					InString = false;
+					auto W{ _Word::NewWord(WordKind::String,FormWord) };
+					FormWord = "";
+					Ret->Words.push_back(W);
+					pos++;
+				} else {
+					FormWord += ch;
+					pos++;
+				}
+				if (InString) TransAssert(pos < Line.size(), "Unfinished string");
+			}
+
+		}
+		return Ret; // debug
+	}
 
 	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
+		_TLError = "";
 		_TransProcess Ret;
 		Ret.Trans = std::make_shared<_Translation>();
-
+		uint64 ScopeLevel{ 0 };
+		for (size_t _ln = 0; _ln < sourcelines->size(); _ln++) {
+			auto LineNumber{ _ln + 1 };
+			size_t pos{0};
+			while (pos >= 0 && pos < (*sourcelines)[_ln].size()) {
+				auto Chopped = Chop((*sourcelines)[_ln], LineNumber, pos, srcfile); if (!Chopped) return nullptr;
+			}
+		}
 		return Ret.Trans;
 	}
 
