@@ -73,6 +73,7 @@ namespace Scyndi {
 		"LOOPWHILE",
 		"FOREVER",
 		"END",
+		"DO"
 
 		// Switch
 		"SWITCH", "SELECT",
