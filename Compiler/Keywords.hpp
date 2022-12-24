@@ -30,4 +30,5 @@
 #include <string>
 namespace Scyndi {
 	extern std::vector < std::string > KeyWords;
+	extern std::vector < std::string > Operators;
 }
