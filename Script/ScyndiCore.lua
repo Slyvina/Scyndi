@@ -1,7 +1,7 @@
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
--- version: 22.12.23
+-- version: 22.12.24
 -- Copyright (C) 2022 Jeroen P. Broks
 -- This software is provided 'as-is', without any express or implied
 -- warranty.  In no event will the authors be held liable for any damages
@@ -60,6 +60,15 @@ function _Scyndi.WANTVALUE(dtype,value)
 		if _Scyndi.SETTINGS.STRICTINT then assert(math.floor(value)~=value,"Byte expected value is not integer typed") end
 		if _Scyndi.SETTINGS.STRICTBYTE then assert(value>=0 and value<=255,"Byte expected, but the value exceeded the range") end
 		return math.floor(value) % 256
+	elseif dtype=="NUMBER" then
+		if _Scyndi.SETTINGS.STRICTNUM then assert(type(value)=="number","Number expected but got ("..type(value)..")") end
+		if type(value)=="string" then value=value:tonumber() or 0 end
+		return value
+	elseif dtype=="INT" or dtype=="INTEGER" then
+		if _Scyndi.SETTINGS.STRICTNUM then assert(type(value)=="number","Byte expected but got ("..type(value)..")") end
+		if type(value)=="string" then value=value:tonumber() or 0 end
+		if _Scyndi.SETTINGS.STRICTINT then assert(math.floor(value)~=value,"Byte expected value is not integer typed") end
+		return math.floor(value)
 	elseif dtype=="BOOLEAN" or dtype=="BOOL" then
 		return value~=nil and value~=false and value~="" and value~=0
 	elseif dtype=="STRING" then
@@ -190,10 +199,11 @@ function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 end
 
 function _Scyndi.SEAL(ch)
-	ch=ch:upper()
-	assert(classregister[cu],"Class "..cl.." unknown")
-	assert(classregister[cu].sealable,"Class "..cl.." is NOT sealable")
+	local cu=ch:upper()
+	assert(classregister[cu],"Class "..cu.." unknown")
+	assert(classregister[cu].sealable,"Class "..cu.." is NOT sealable")
 	classregister[cu].sealed=true
+	_Scyndi.ADDMBER("..GLOBALS..","TABLE",cu,true,true,true,classregister[cu].pub)
 end
 
 -- ***** Locals Definition Functions ***** --
@@ -241,6 +251,7 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SOUT",true,true,true,function(...)
 	return ret
 end)
 
+_Scyndi.ADDMBER("..GLOBALS..","NUMBER","PI",true,true,true,math.pi)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","TOSTRING",true,true,true,_Scyndi.TOSTRING)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","COUT",true,true,true,function(...) io.write(_Glob.SOUT(...)) end)
 _Scyndi.ADDMBER("..GLOBALS..","STRING","ENDL",true,true,true,"\n")
@@ -326,6 +337,41 @@ end)
 
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ASSERT",true,true,true,assert)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ROUND",true,true,true,function(a) return math.floor(a+.5) end)
+
+-- ***** Lua basic modules/libraries/whatever copied into Scyndi groups ***** --
+local function Lua2GlobGroup(original,target)
+	local pub,prv = _Scyndi.STARTCLASS(target,true,true,nil)
+	for k,v in pairs(original) do
+		if type(v)=="function" then
+			_Scyndi.ADDMBER(target,"DELEGATE",k:upper(),true,true,true,v)
+		elseif type(v)=="userdata" then
+			_Scyndi.ADDMBER(target,"VAR",k:upper(),true,true,true,v)
+		elseif type(v)=="number" then
+			_Scyndi.ADDMBER(target,"NUMBER",k:upper(),true,true,true,v)
+		elseif type(v)=="string" then
+			_Scyndi.ADDMBER(target,"STRING",k:upper(),true,true,true,v)
+		elseif type(v)=="boolean" then
+			_Scyndi.ADDMBER(target,"BOOLEAN",k:upper(),true,true,true,v)
+		elseif type(v)=="table" then
+			_Scyndi.ADDMBER(target,"TABLE",k:upper(),true,true,true,v)
+		else
+			_Scyndi.ADDMBER(target,"VAR",k:upper(),true,true,true,v)
+		end
+	end
+	_Scyndi.SEAL(target)
+end
+
+Lua2GlobGroup(debug,"LDebug") -- Actually just to make sure no confusion with a debug lib I may provide myself would ever be possible.
+Lua2GlobGroup(os,"io")
+Lua2GlobGroup(os,"os")
+Lua2GlobGroup(math,"math")
+Lua2GlobGroup(string,"lstring")
+Lua2GlobGroup(table,"ltable")
+
+Lua2GlobGroup(_G,"PrLua") -- Difference between this and "Lua" is that "Lua" links directly to _G and this one does not and can therefore also not access non-existent variables, nor be used to assign any data to either new or existent members
+
+
+
 
 -- ***** C++ Generator for base globals so the compiler will know them ***** --
 function _Scyndi.GLOBALSFORCPLUSPLUS()
