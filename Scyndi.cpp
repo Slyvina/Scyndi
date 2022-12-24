@@ -21,12 +21,12 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.23
+// Version: 22.12.24
 // EndLic
 
 #include <Lunatic.hpp>
 #include <SlyvQCol.hpp>
-#include "ScyndiVersion.hpp"
+#include "ScyndiVersion.hpp" 
 
 using namespace Scyndi;
 using namespace Slyvina;
