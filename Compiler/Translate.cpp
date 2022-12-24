@@ -23,7 +23,10 @@
 // 
 // Version: 22.12.24
 // EndLic
+
+#include <Slyvina.hpp>
 #include <SlyvString.hpp>
+#include <SlyvVecSearch.hpp>
 
 #include "Translate.hpp"
 #include "ScyndiGlobals.hpp"
@@ -35,22 +38,51 @@ using namespace Slyvina::Units;
 namespace Scyndi {
 
 	enum class InsKind { Unknown, HeaderDefintiion, General, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine };
-	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro };
+	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro, Comma, Field };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group };
 
-	struct _Scope;
+	//struct _Scope;
 
 
-	struct Word;
+	class Word;
 	typedef std::shared_ptr<_Word> Word;
-	struct _Word {
+	class _Word {
+	public:
 		WordKind Kind{ WordKind::Unknown };
 		std::string TheWord;
+		std::string UpWord;
 		static Word NewWord(WordKind K, std::string W) { 
 			auto ret{ std::make_shared<_Word>() };
 			ret->Kind = K;
 			ret->TheWord = W;
+			ret->UpWord = Upper(W);
 			return ret;
+		}
+
+		static Word NewWord(std::string W) {
+			auto ret{ std::make_shared<_Word>() };
+			ret->TheWord = W;
+			ret->UpWord = Upper(W);
+			if (ret->TheWord[0] == '$') {
+				ret->Kind = WordKind::Identifier;
+				ret->UpWord = Upper(ret->TheWord).substr(1);
+				if (!ret->UpWord.size()) ret->UpWord == "___DOLLARSIGN";
+			} else if (VecSearch(KeyWords, ret->UpWord))
+				ret->Kind = WordKind::KeyWord;
+			else if (ret->UpWord == ",")
+				ret->Kind = WordKind::Comma;
+			else if (VecSearch(Operators, ret->UpWord))
+				ret->Kind = WordKind::Operator;
+			else if (ret->UpWord[0] >= '0' && ret->UpWord[0] <= '9')
+				ret->Kind = WordKind::Number;
+			else if (ret->UpWord[0] == '.') {
+				if (ret->UpWord.size() < 2) return nullptr; // Cannot be completed. Syntax error!
+				if (ret->UpWord[1] >= '0' && ret->UpWord[1] <= 9) ret->Kind = WordKind::Number;
+				else ret->Kind = WordKind::Field;
+			} else
+				ret->Kind = WordKind::Identifier; // Although this is not entirely true
+			return ret;
+
 		}
 	};
 
@@ -93,6 +125,7 @@ namespace Scyndi {
 			InString{ false },
 			InCharSeries{ false },
 			InComment{ false },
+			FirstChar{ false },
 			StringEscape{ false };
 		Instruction
 			Ret = std::make_shared<_Instruction>();
@@ -111,6 +144,7 @@ namespace Scyndi {
 					StringEscape = false;
 					pos++;
 				} else if (ch == '\\') {
+					FormWord += "\\";
 					StringEscape = true;
 					pos++;
 				} else if (ch == '"') {
@@ -124,6 +158,39 @@ namespace Scyndi {
 					pos++;
 				}
 				if (InString) TransAssert(pos < Line.size(), "Unfinished string");
+
+			// In Char Chain
+			} else if (InCharSeries) {
+				if (StringEscape) {
+					if (!FirstChar) {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Comma, ","));
+						FirstChar = false;
+					}
+					Ret->Words.push_back(_Word::NewWord(WordKind::Number, std::to_string((int)ch)));
+					StringEscape = false;
+					pos++;
+				} else if (ch == '\\') {
+					StringEscape = true;
+					pos++;
+				} else if (ch == '\'') {
+					InCharSeries = false;
+					pos++;
+				} else {
+					if (!FirstChar) {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Comma, ","));
+						FirstChar = false;
+					}
+					Ret->Words.push_back(_Word::NewWord(WordKind::Number, std::to_string((int)ch)));
+					pos++;
+				}
+
+			// Start Comment
+			} else if (ch=='/' && pos<Line.size()-1 && Line[pos+1]=='/') {
+				InComment = true;
+				pos += 2;
+			// TODO: Next
+			} else {
+				TransError("Chopping this not yet implemented"); 
 			}
 
 		}
