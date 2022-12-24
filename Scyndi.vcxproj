@@ -142,7 +142,7 @@
       <AdditionalDependencies>lua.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
-      <Command>powershell ScyndiCoreDump.ps1</Command>
+      <Command>pwsh ScyndiCoreDump.ps1</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -169,12 +169,14 @@
     <ClCompile Include="..\..\Libs\Units\Source\SlyvString.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvTime.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvVolumes.cpp" />
+    <ClCompile Include="Compiler\KeyWords.cpp" />
     <ClCompile Include="Compiler\ScyndiGlobals.cpp" />
     <ClCompile Include="Compiler\Translate.cpp" />
     <ClCompile Include="Scyndi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp" />
+    <ClInclude Include="Compiler\Keywords.hpp" />
     <ClInclude Include="Compiler\ScyndiGlobals.hpp" />
     <ClInclude Include="Compiler\Translate.hpp" />
     <ClInclude Include="ScyndiVersion.hpp" />

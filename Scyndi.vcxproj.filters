@@ -97,6 +97,9 @@
     <ClCompile Include="Compiler\Translate.cpp">
       <Filter>Source Files\Compiler</Filter>
     </ClCompile>
+    <ClCompile Include="Compiler\KeyWords.cpp">
+      <Filter>Source Files\Compiler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Compiler\ScyndiGlobals.hpp">
@@ -110,6 +113,9 @@
     </ClInclude>
     <ClInclude Include="Compiler\Translate.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Compiler\Keywords.hpp">
+      <Filter>Header Files\Compiler</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
