@@ -59,6 +59,9 @@ namespace Scyndi {
 		"VAR",
 		"PLUA",
 
+		// Math
+		"DIV", // This because the '//' Lua itself uses for that is in Scyndi reserved for comments
+
 		// Loops and other scope based stuff
 		"FOR",
 		"WHILE",
