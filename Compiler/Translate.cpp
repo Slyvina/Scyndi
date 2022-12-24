@@ -21,19 +21,20 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.23
+// Version: 22.12.24
 // EndLic
 #include <SlyvString.hpp>
 
 #include "Translate.hpp"
 #include "ScyndiGlobals.hpp"
+#include "Keywords.hpp"
 
 using namespace Slyvina;
 using namespace Slyvina::Units;
 
 namespace Scyndi {
 
-	enum class InsKind {Unknown,General,IfStatement,WhileStatement,Increment,Decrement,DeclareVariable,DefineFunction,CompilerDirective,WhiteLine};
+	enum class InsKind { Unknown, HeaderDefintiion, General, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group };
 
@@ -59,12 +60,21 @@ namespace Scyndi {
 		ScopeKind Kind{ ScopeKind::Unknown };
 	};
 
+	struct _TransProcess {
+		_Scope RootScope{};
+		Translation Trans{};
+	};
+
+	static std::string _TLError{ "" };
 	std::string TranslationError() {
-		return std::string();
+		return _TLError;
 	}
 
 	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
-		return Translation();
+		_TransProcess Ret;
+		Ret.Trans = std::make_shared<_Translation>();
+
+		return Ret.Trans;
 	}
 
 	Translation Translate(std::string source, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
