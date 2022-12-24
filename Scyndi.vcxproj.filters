@@ -37,6 +37,12 @@
     <Filter Include="Source Files\dlls">
       <UniqueIdentifier>{40c79859-4932-4e54-b2bc-2f38cceac89c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Slyvina">
+      <UniqueIdentifier>{4ae3e391-5450-4af5-ac71-a72647c16972}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Slyvina\Units">
+      <UniqueIdentifier>{d0c18f67-e02a-44de-8015-f1abc96c05ee}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Script\ScyndiCore.lua">
@@ -116,6 +122,9 @@
     </ClInclude>
     <ClInclude Include="Compiler\Keywords.hpp">
       <Filter>Header Files\Compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvVecSearch.hpp">
+      <Filter>Header Files\Slyvina\Units</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

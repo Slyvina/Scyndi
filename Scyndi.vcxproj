@@ -176,6 +176,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp" />
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvVecSearch.hpp" />
     <ClInclude Include="Compiler\Keywords.hpp" />
     <ClInclude Include="Compiler\ScyndiGlobals.hpp" />
     <ClInclude Include="Compiler\Translate.hpp" />

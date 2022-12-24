@@ -38,7 +38,7 @@ using namespace Slyvina::Units;
 namespace Scyndi {
 
 	enum class InsKind { Unknown, HeaderDefintiion, General, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine };
-	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro, Comma, Field };
+	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro, Comma, Field, CompilerDirective };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group };
 
 	//struct _Scope;
@@ -79,8 +79,11 @@ namespace Scyndi {
 				if (ret->UpWord.size() < 2) return nullptr; // Cannot be completed. Syntax error!
 				if (ret->UpWord[1] >= '0' && ret->UpWord[1] <= 9) ret->Kind = WordKind::Number;
 				else ret->Kind = WordKind::Field;
+			} else if(ret->UpWord[0]=='#') {
+				ret->Kind = WordKind::CompilerDirective;
 			} else
 				ret->Kind = WordKind::Identifier; // Although this is not entirely true
+
 			return ret;
 
 		}
@@ -126,10 +129,16 @@ namespace Scyndi {
 			InCharSeries{ false },
 			InComment{ false },
 			FirstChar{ false },
-			StringEscape{ false };
+			StringEscape{ false },
+			FormNumber{ false },
+			FormNumberHex{ false },
+			FormingWord{ false }; // For both identifiers AND keywords!
 		Instruction
 			Ret = std::make_shared<_Instruction>();
+		std::vector<ScopeKind>
+			Scopes{ ScopeKind::Root };
 		std::string FormWord{ "" };
+		Ret->LineNumber = LineNumber;
 		while (pos < Line.size()) {
 			auto ch{ Line[pos] };
 			// In Comment
@@ -159,7 +168,7 @@ namespace Scyndi {
 				}
 				if (InString) TransAssert(pos < Line.size(), "Unfinished string");
 
-			// In Char Chain
+			// In Char Series
 			} else if (InCharSeries) {
 				if (StringEscape) {
 					if (!FirstChar) {
@@ -183,18 +192,141 @@ namespace Scyndi {
 					Ret->Words.push_back(_Word::NewWord(WordKind::Number, std::to_string((int)ch)));
 					pos++;
 				}
-
+				if (InCharSeries) TransAssert(pos < Line.size(), "Unfinished character series");
 			// Start Comment
-			} else if (ch=='/' && pos<Line.size()-1 && Line[pos+1]=='/') {
+			} else if (ch == '/' && pos < Line.size() - 1 && Line[pos + 1] == '/') {
 				InComment = true;
 				pos += 2;
+
+			// Doing Number
+			} else if (FormNumber) {
+				bool EndNum{ false };
+				// Please note! No position increase on end num (except for whitespaces). It's vital as otherwise the next character may not be taken up for what it should be taken up.
+				switch (ch) {
+				case 'x':
+				case 'X':
+					if (FormWord.size() == 1 && FormWord[0] == '0') {
+						FormNumberHex = true; pos++;
+						FormWord += "x";
+					} else EndNum = true;
+					break;
+				case '.':
+					TransAssert(!FormNumberHex, "Decimal point in hexadecimal number");
+					TransAssert(pos < Line.size() - 1, "Decimal point at the end of the line");
+					FormWord += ".";
+					pos++;
+					break;
+				case 'a':
+				case 'A':
+				case 'b':
+				case 'B':
+				case 'c':
+				case 'C':
+				case 'd':
+				case 'D':
+				case 'e':
+				case 'E':
+				case 'f':
+				case 'F':
+					if (FormNumberHex) {
+						FormWord += Lower("" + ch);
+						pos++;
+					} else {
+						EndNum = true;
+					}
+					break;
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+					FormWord += ch;
+					pos++;
+					break;
+				default:
+					EndNum = true;
+					break;
+				}
+				if (EndNum) {
+					Ret->Words.push_back(_Word::NewWord(WordKind::Number, FormWord));
+					FormWord = "";
+					FormNumber = false;
+					FormNumberHex = false;
+				}
+
+			} else if (FormingWord) {
+				bool GoOn{
+					(ch >= 'A' && ch <= 'Z') ||
+					(ch >= 'a' && ch <= 'z') ||
+					(ch >= '0' && ch <= '9') ||
+					(ch >= '_')
+				};
+				if (GoOn) {
+					FormingWord += ch;
+					pos++;
+				} else {
+					Ret->Words.push_back(_Word::NewWord(FormWord)); // Autodetection is now in order. Is this a keyword or is this an identifyer?
+					FormingWord = "";
+				}
 			// TODO: Next
 			} else {
-				TransError("Chopping this not yet implemented"); 
+				switch (ch) {
+				case ';':
+					if (FormWord.size())
+						Ret->Words.push_back(_Word::NewWord(FormWord));
+					pos++; // Remember this is reference based!
+					return Ret;
+				case ' ':
+					if (FormWord.size())
+						Ret->Words.push_back(_Word::NewWord(FormWord));
+					pos++;
+					break;
+				case '#':
+					TransAssert(pos == 0, "Syntax error! # is reserved for compiler directives and may only be at the start of the line");
+					FormingWord = true;
+					FormWord = "#";
+					break;
+				case '.': {
+					TransAssert(pos < Line.size() - 1 && Line[pos + 1] != ';', "No instruction can end with a period/dot");
+					auto next{ Line[pos + 1] };
+					if (next >= '0' && next <= '1') {
+						FormWord = "0." + next;
+						FormNumber = true;
+						FormNumberHex = false;
+						pos += 2;
+					} else if (next == '_' || (next >= 'A' && next <= 'Z') || (next >= 'a' && next <= 'z')) {
+						FormingWord = "." + next;
+						pos += 2;
+					}
+				} break;
+				case ',':
+					Ret->Words.push_back(_Word::NewWord(","));
+				default:
+					if (ch >= '0' && ch <= '9') {
+						FormNumber = true;
+						FormNumberHex = false;
+						FormWord = ch;
+					} else if (ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
+						FormingWord = true;
+						FormWord = ch;
+					} else if (VecSearch(Operators, std::string("" + ch))) {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "" + ch));
+						pos++;
+					} else if (pos < Line.size() - 1 && VecSearch(Operators, std::string("" + ch + Line[pos + 1]))) {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "" + ch+Line[pos+1]));
+						pos += 2;
+					} else {
+						TransError(TrSPrintF("Completely unexpected %s (Position %d) ", ch, pos));
+					}
+				}
 			}
-
 		}
-		return Ret; // debug
+		return Ret; 
 	}
 
 	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
@@ -207,6 +339,7 @@ namespace Scyndi {
 			size_t pos{0};
 			while (pos >= 0 && pos < (*sourcelines)[_ln].size()) {
 				auto Chopped = Chop((*sourcelines)[_ln], LineNumber, pos, srcfile); if (!Chopped) return nullptr;
+				// TODO: Process the chopped data
 			}
 		}
 		return Ret.Trans;
