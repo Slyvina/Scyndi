@@ -51,17 +51,20 @@ namespace Scyndi {
 		std::string RawInstruction{ "" };
 		std::vector<_Word> Words{};
 		std::string comment{ "" };
-		_Scope* Parent;
+		//_Scope* Parent;
+		_TransProcess* TransParent{ nullptr };
 	};
 
+	/*
 	struct _Scope {
 		_Scope* Parent;
 		std::vector<_Scope> KidScopes;
 		ScopeKind Kind{ ScopeKind::Unknown };
 	};
+	*/
 
 	struct _TransProcess {
-		_Scope RootScope{};
+		//_Scope RootScope{};
 		Translation Trans{};
 	};
 
