@@ -31,9 +31,13 @@
 #include <SlyvConInput.hpp>
 #include <SlyvGINIE.hpp>
 #include <SlyvAsk.hpp>
+
+#include <JCR6_RealDir.hpp>
+
 #include "ScyndiProject.hpp"
 
 using namespace Slyvina::Units;
+using namespace Slyvina::JCR6;
 
 namespace Scyndi {
 
@@ -75,5 +79,18 @@ namespace Scyndi {
 		Ask(PrjData, "AA_META", "04_License", "License:");
 		auto Dirs{ AskList(PrjData,"DIRECTORY","SOURCEFILES","Name the directories where I can find the source files:") };
 		auto Libs{ AskList(PrjData,"DIRECTORY","Libraries","Name the directories where I can find the libraries:",0) };
+		auto Res{ std::make_shared<Slyvina::JCR6::_JT_Dir>() };
+		for (auto& D : *Dirs) {
+			if (!DirectoryExists(D)) { QCol->Error("Source directory '" + D + "' does not exist."); return; }
+			auto DRes{ Slyvina::JCR6::GetDirAsJCR(D) };
+			Res->Patch(DRes, "Script/");
+			if (!Res) { QCol->Error("Source directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return; }
+		}
+		for (auto& D : *Libs) {
+			if (!DirectoryExists(D)) { QCol->Error("Library directory '" + D + "' does not exist."); return; }
+			auto DRes{ Slyvina::JCR6::GetDirAsJCR(D) };
+			Res->Patch(DRes, "Libs/");
+			if (!Res) { QCol->Error("Library directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return; }
+		}
 	}
 }

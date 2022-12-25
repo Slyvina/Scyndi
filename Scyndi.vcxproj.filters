@@ -31,9 +31,6 @@
     <Filter Include="Header Files\Lua">
       <UniqueIdentifier>{d359debb-cbb8-4529-bbd4-adf69f9e29e0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Lunatic">
-      <UniqueIdentifier>{a0c6462f-6803-4a0a-84fd-1f90504428d5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\dlls">
       <UniqueIdentifier>{40c79859-4932-4e54-b2bc-2f38cceac89c}</UniqueIdentifier>
     </Filter>
@@ -43,12 +40,24 @@
     <Filter Include="Header Files\Slyvina\Units">
       <UniqueIdentifier>{d0c18f67-e02a-44de-8015-f1abc96c05ee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Slyvina\JCR6">
+      <UniqueIdentifier>{5b902f87-9848-4e68-9015-beba7338b7ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Slyvina\Lunatic">
+      <UniqueIdentifier>{a0c6462f-6803-4a0a-84fd-1f90504428d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Slyvina\JCR6">
+      <UniqueIdentifier>{0d2845ed-5d4e-437c-a504-5caa99b04106}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Script\ScyndiCore.lua">
       <Filter>Source Files\Script</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="..\..\Libs\Lunatic\Lua\Lib\Lua.dll">
+      <Filter>Source Files\dlls</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\Libs\JCR6\3rdParty\zlib\zlib.dll">
       <Filter>Source Files\dlls</Filter>
     </CopyFileToFolders>
   </ItemGroup>
@@ -94,12 +103,6 @@
     <ClCompile Include="..\..\Libs\Units\Source\SlyvVolumes.cpp">
       <Filter>Source Files\Slyvina\Units</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Core.cpp">
-      <Filter>Source Files\Slyvina</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Write.cpp">
-      <Filter>Source Files\Slyvina</Filter>
-    </ClCompile>
     <ClCompile Include="Compiler\Translate.cpp">
       <Filter>Source Files\Compiler</Filter>
     </ClCompile>
@@ -115,6 +118,18 @@
     <ClCompile Include="Compiler\ScyndiProject.cpp">
       <Filter>Source Files\Compiler</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Core.cpp">
+      <Filter>Source Files\Slyvina\JCR6</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Write.cpp">
+      <Filter>Source Files\Slyvina\JCR6</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_zlib.cpp">
+      <Filter>Source Files\Slyvina\JCR6</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_RealDir.cpp">
+      <Filter>Source Files\Slyvina\JCR6</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Compiler\ScyndiGlobals.hpp">
@@ -124,7 +139,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp">
-      <Filter>Header Files\Lunatic</Filter>
+      <Filter>Header Files\Slyvina\Lunatic</Filter>
     </ClInclude>
     <ClInclude Include="Compiler\Translate.hpp">
       <Filter>Header Files</Filter>
@@ -149,6 +164,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvAsk.hpp">
       <Filter>Header Files\Slyvina\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Libs\JCR6\Headers\JCR6_RealDir.hpp">
+      <Filter>Header Files\Slyvina\JCR6</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

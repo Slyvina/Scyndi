@@ -29,6 +29,9 @@
 #include <SlyvArgParse.hpp>
 #include <SlyvString.hpp>
 
+#include <JCR6_RealDir.hpp>
+#include <JCR6_zlib.hpp>
+
 #include "ScyndiVersion.hpp" 
 #include "Compiler/Config.hpp"
 #include "Compiler/ScyndiProject.hpp"
