@@ -19,3 +19,7 @@ Scyndi/ScyndiCore.lua
 # MKL files are NEVER needed on github
 MKL_*
 *.MKL.*
+
+
+# Only for testing, and will likely be deleted after I'm done anyway
+Test/*
