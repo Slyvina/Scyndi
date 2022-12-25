@@ -23,9 +23,48 @@
 // 
 // Version: 22.12.25
 // EndLic
+
+#include <SlyvString.hpp>
+#include <SlyvStream.hpp>
+#include <SlyvQCol.hpp>
+#include <SlyvTime.hpp>
+#include <SlyvConInput.hpp>
 #include "ScyndiProject.hpp"
+
+using namespace Slyvina::Units;
+
 namespace Scyndi {
-	void ProcessProject(std::string prj, bool force, bool debug) {
+
+	bool QuickYes(std::string Question) {
+		do {
+			QCol->Yellow(Question);
+			QCol->LMagenta(" ? ");
+			QCol->LCyan("<Y/N> ");
+			auto answer{ Trim(ReadLine()) };
+			if (answer.size()) {
+				switch (answer[0]) {
+				case 'J': // Ja (Dutch for "yes")
+				case 'j':
+				case 'Y': // Yes
+				case 'y':
+					return true;
+				case 'N': // Nee (Dutch for "no") and "No"
+				case 'n':
+					return false;
+				}
+			}
+		} while (true);
 	}
 
+	void ProcessProject(std::string prj, bool force, bool debug) {
+		if (!FileExists(prj)) {
+			if (!QuickYes("Project '" + prj + "' does not yet exist. Create it"))
+				return;
+			if (!DirectoryExists(ExtractDir(prj))) {
+				if (!QuickYes("Create directory '" + ExtractDir(prj) + "'")) return;
+				MakeDir(ExtractDir(prj));
+			}
+			SaveString(prj,"[Project]\nCreated=" + CurrentDate() + "; " + CurrentTime()+"\n");
+		}
+	}
 }
