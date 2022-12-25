@@ -38,6 +38,12 @@ namespace Scyndi {
 		"CLASS",
 		"GROUP",
 
+		"CONSTRUCTOR",
+		"DESTRUCTOR"
+
+		// Init
+		"INIT",
+
 		// Declaration
 		"STATIC",
 		"ABSTRACT",
