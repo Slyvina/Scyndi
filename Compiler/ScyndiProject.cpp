@@ -29,6 +29,8 @@
 #include <SlyvQCol.hpp>
 #include <SlyvTime.hpp>
 #include <SlyvConInput.hpp>
+#include <SlyvGINIE.hpp>
+#include <SlyvAsk.hpp>
 #include "ScyndiProject.hpp"
 
 using namespace Slyvina::Units;
@@ -66,5 +68,10 @@ namespace Scyndi {
 			}
 			SaveString(prj,"[Project]\nCreated=" + CurrentDate() + "; " + CurrentTime()+"\n");
 		}
+		auto PrjData{ LoadGINIE(prj,prj,"Project header for a Scyndi Project") };
+		Ask(PrjData, "AA_META", "01_Title", "Project title: ", StripAll(prj));
+		auto author=Ask(PrjData, "AA_META", "02_CreatedBy", "Created by: ");
+		Ask(PrjData, "AA_META", "03_Copyright", "Copyright: ", "(c) " + author);
+		Ask(PrjData, "AA_META", "04_License", "License:");
 	}
 }
