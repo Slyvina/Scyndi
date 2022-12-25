@@ -112,6 +112,9 @@
     <ClCompile Include="Compiler\Config.cpp">
       <Filter>Source Files\Compiler</Filter>
     </ClCompile>
+    <ClCompile Include="Compiler\ScyndiProject.cpp">
+      <Filter>Source Files\Compiler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Compiler\ScyndiGlobals.hpp">
@@ -140,6 +143,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvQCol.hpp">
       <Filter>Header Files\Slyvina\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="Compiler\ScyndiProject.hpp">
+      <Filter>Header Files\Compiler</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

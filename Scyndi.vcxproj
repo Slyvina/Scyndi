@@ -173,6 +173,7 @@
     <ClCompile Include="Compiler\Config.cpp" />
     <ClCompile Include="Compiler\KeyWords.cpp" />
     <ClCompile Include="Compiler\ScyndiGlobals.cpp" />
+    <ClCompile Include="Compiler\ScyndiProject.cpp" />
     <ClCompile Include="Compiler\Translate.cpp" />
     <ClCompile Include="Scyndi.cpp" />
   </ItemGroup>
@@ -184,6 +185,7 @@
     <ClInclude Include="Compiler\Config.hpp" />
     <ClInclude Include="Compiler\Keywords.hpp" />
     <ClInclude Include="Compiler\ScyndiGlobals.hpp" />
+    <ClInclude Include="Compiler\ScyndiProject.hpp" />
     <ClInclude Include="Compiler\Translate.hpp" />
     <ClInclude Include="ScyndiVersion.hpp" />
   </ItemGroup>
