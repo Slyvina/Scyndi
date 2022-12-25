@@ -37,6 +37,8 @@ using namespace Slyvina::Units;
 
 namespace Scyndi {
 
+	bool TransVerbose{ false };
+
 	enum class InsKind { Unknown, HeaderDefintiion, General, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro, Comma, Field, CompilerDirective };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group };
