@@ -97,16 +97,16 @@ namespace Scyndi {
 		}
 	};
 
-
+	struct _TransProcess;
 	struct _Instruction {
+		_TransProcess* TransParent{ nullptr };
 		InsKind Kind{ InsKind::Unknown };
-		std::string SourceFile;
+		std::string SourceFile{""};
 		uint32 LineNumber{ 0 };
 		std::string RawInstruction{ "" };
 		std::vector<Word> Words{};
 		std::string Comment{ "" };
 		//_Scope* Parent;
-		_TransProcess* TransParent{ nullptr };
 		uint64 ScopeLevel{ 0 };
 	};
 	typedef std::shared_ptr<_Instruction> Instruction;
