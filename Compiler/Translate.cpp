@@ -27,6 +27,8 @@
 #include <Slyvina.hpp>
 #include <SlyvString.hpp>
 #include <SlyvVecSearch.hpp>
+#include <SlyvQCol.hpp>
+#include <SlyvStream.hpp>
 
 #include "Translate.hpp"
 #include "ScyndiGlobals.hpp"
@@ -45,8 +47,12 @@ namespace Scyndi {
 
 	//struct _Scope;
 
+	inline void Verb(std::string DHead, std::string DObj, std::string ending = "\n") {
+		if (TransVerbose) QCol->Doing(DHead, DObj, ending);
+	}
 
-	class Word;
+
+	class _Word;
 	typedef std::shared_ptr<_Word> Word;
 	class _Word {
 	public:
@@ -94,6 +100,7 @@ namespace Scyndi {
 
 	struct _Instruction {
 		InsKind Kind{ InsKind::Unknown };
+		std::string SourceFile;
 		uint32 LineNumber{ 0 };
 		std::string RawInstruction{ "" };
 		std::vector<Word> Words{};
@@ -140,6 +147,7 @@ namespace Scyndi {
 		std::vector<ScopeKind>
 			Scopes{ ScopeKind::Root };
 		std::string FormWord{ "" };
+		Ret->SourceFile = srcfile;
 		Ret->LineNumber = LineNumber;
 		while (pos < Line.size()) {
 			auto ch{ Line[pos] };
@@ -331,20 +339,64 @@ namespace Scyndi {
 		return Ret; 
 	}
 
+	static std::vector<Instruction> ChopCode(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
+		std::vector<Instruction> Ret;
+		for (size_t _ln = 0; _ln < sourcelines->size(); _ln++) {
+			auto LineNumber{ _ln + 1 };
+			size_t pos{0};
+			while (pos >= 0 && pos < (*sourcelines)[_ln].size()) {
+				auto Chopped = Chop((*sourcelines)[_ln], LineNumber, pos, srcfile); if (!Chopped) return std::vector<Instruction>();
+			}
+		}
+		return Ret;
+	}
+
 	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
 		_TLError = "";
 		_TransProcess Ret;
 		Ret.Trans = std::make_shared<_Translation>();
 		uint64 ScopeLevel{ 0 };
 		// Chopping
-		for (size_t _ln = 0; _ln < sourcelines->size(); _ln++) {
-			auto LineNumber{ _ln + 1 };
-			size_t pos{0};
-			while (pos >= 0 && pos < (*sourcelines)[_ln].size()) {
-				auto Chopped = Chop((*sourcelines)[_ln], LineNumber, pos, srcfile); if (!Chopped) return nullptr;
-				// TODO: Process the chopped data
+		Ret.Instructions = ChopCode(sourcelines, srcfile, JD, debug);
+		if (!Ret.Instructions.size()) return nullptr; // Something must have gone wrong
+		// Include
+	StartInclude:
+		for (size_t ln = 0; ln < Ret.Instructions.size(); ln++) {
+			auto Ins = Ret.Instructions[ln];
+			auto LineNumber = Ins->LineNumber;
+			if (Ins->Words.size()>=2) {
+				auto _hashtag = Ins->Words[0];
+				auto _include = Ins->Words[1];
+				if (_hashtag->TheWord == "#" && _include->UpWord == "INCLUDE") {
+					TransAssert(Ins->Words.size() >= 3, "Incomplete #INCLUDE request");
+					auto _file = Ins->Words[2];
+					TransAssert(_file->Kind == WordKind::String, "#INCLUDE expects a string for a filename");
+					Verb("Including", _file->TheWord);
+					std::vector<Instruction> IncChopped{};
+					if (FileExists(_file->TheWord)) {
+						auto isrc = LoadLines(_file->TheWord);
+						IncChopped = ChopCode(isrc,srcfile,JD,debug);
+						Ret.Trans->RealIncludes->push_back(_file->TheWord);
+					} else if (JD->EntryExists(_file->TheWord)) {
+						auto isrc = JD->GetLines(_file->TheWord);
+						IncChopped = ChopCode(isrc, srcfile, JD, debug);
+						Ret.Trans->JCRIncludes->push_back(_file->TheWord);
+					} else {
+						TransError("Inclusion of " + _file->TheWord + " failed!\nFile not found");
+					}
+					TransAssert(IncChopped.size(), "Inclusion of " + _file->TheWord + " failed!\n" + _TLError + "\n");
+					std::vector<Instruction> NewVec{};
+					for (size_t oi = 0; oi < ln; ++oi) NewVec.push_back(Ret.Instructions[oi]);
+					for (auto ich : IncChopped) NewVec.push_back(ich);
+					for (size_t oi = ln + 1; oi < Ret.Instructions.size(); ++oi) NewVec.push_back(Ret.Instructions[oi]);
+					Ret.Instructions = NewVec;
+					goto StartInclude; // Basically this should not be needed, but ya never know, eh?
+				}
 			}
 		}
+
+		// Pre-Processing
+
 		return Ret.Trans;
 	}
 

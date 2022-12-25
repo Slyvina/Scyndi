@@ -39,6 +39,9 @@ namespace Scyndi {
 			Headers{ "" }; // Needed for imports with global definitions
 		ScriptKind
 			Kind{ ScriptKind::Unknown };
+		Slyvina::VecString
+			RealIncludes{ Slyvina::NewVecString() },
+			JCRIncludes{ Slyvina::NewVecString() };
 	};
 	typedef std::shared_ptr<_Translation> Translation;
 
