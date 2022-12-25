@@ -160,6 +160,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Core.cpp" />
     <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Write.cpp" />
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvArgParse.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvAsk.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvBank.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvDir.cpp" />
@@ -169,6 +170,7 @@
     <ClCompile Include="..\..\Libs\Units\Source\SlyvString.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvTime.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvVolumes.cpp" />
+    <ClCompile Include="Compiler\Config.cpp" />
     <ClCompile Include="Compiler\KeyWords.cpp" />
     <ClCompile Include="Compiler\ScyndiGlobals.cpp" />
     <ClCompile Include="Compiler\Translate.cpp" />
@@ -176,7 +178,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp" />
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvArgParse.hpp" />
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvQCol.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvVecSearch.hpp" />
+    <ClInclude Include="Compiler\Config.hpp" />
     <ClInclude Include="Compiler\Keywords.hpp" />
     <ClInclude Include="Compiler\ScyndiGlobals.hpp" />
     <ClInclude Include="Compiler\Translate.hpp" />

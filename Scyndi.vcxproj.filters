@@ -106,6 +106,12 @@
     <ClCompile Include="Compiler\KeyWords.cpp">
       <Filter>Source Files\Compiler</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvArgParse.cpp">
+      <Filter>Source Files\Slyvina\Units</Filter>
+    </ClCompile>
+    <ClCompile Include="Compiler\Config.cpp">
+      <Filter>Source Files\Compiler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Compiler\ScyndiGlobals.hpp">
@@ -124,6 +130,15 @@
       <Filter>Header Files\Compiler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvVecSearch.hpp">
+      <Filter>Header Files\Slyvina\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvArgParse.hpp">
+      <Filter>Header Files\Slyvina\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="Compiler\Config.hpp">
+      <Filter>Header Files\Compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvQCol.hpp">
       <Filter>Header Files\Slyvina\Units</Filter>
     </ClInclude>
   </ItemGroup>

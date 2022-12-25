@@ -26,18 +26,40 @@
 
 #include <Lunatic.hpp>
 #include <SlyvQCol.hpp>
+#include <SlyvArgParse.hpp>
+#include <SlyvString.hpp>
+
 #include "ScyndiVersion.hpp" 
+#include "Compiler/Config.hpp"
 
 using namespace Scyndi;
 using namespace Slyvina;
 using namespace Slyvina::Units;
 
 int main(int nargs, char** args) {
+	using namespace Scyndi;
 	QCol->LGreen("Scyndi Compiler\n");
 	QCol->Doing("Version", QVersion.Version(true));
 	QCol->Doing("Coded by", "Jeroen P. Broks");
 	std::cout << "\n";
 	QCol->Doing("Lua version", Slyvina::Lunatic::_Lunatic::Lua_Version());
 	QCol->Doing("Lua developed by", "PUC Rio");
+	std::cout << "\n\n\n";
+	FlagConfig cargs{};
+	AddFlag(cargs, "sf", true); // if true project, if false single file
+	AddFlag(cargs, "dbg", false);
+	RegArgs(cargs, nargs, args);
+	if (!NumFiles()) {
+		QCol->White("Usage: ");
+		QCol->Yellow(StripAll(args[0]));
+		QCol->LMagenta(" [<switchs>]");
+		QCol->LCyan(" <source files/project>\n\n");
+		QCol->Yellow("Switches:\n");
+		QCol->LCyan("\t-sf     "); QCol->LGreen("Single files (in stead of project\n");
+		QCol->LCyan("\t-dbg    "); QCol->LGreen("Make debug builds\n");
+		QCol->Reset();
+		std::cout << "\n\n\n";
+		return 1;
+	}
 	return 0;
 }
