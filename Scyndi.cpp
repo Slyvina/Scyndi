@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.24
+// Version: 22.12.25
 // EndLic
 
 #include <Lunatic.hpp>
@@ -31,6 +31,7 @@
 
 #include "ScyndiVersion.hpp" 
 #include "Compiler/Config.hpp"
+#include "Compiler/ScyndiProject.hpp"
 
 using namespace Scyndi;
 using namespace Slyvina;
@@ -46,8 +47,9 @@ int main(int nargs, char** args) {
 	QCol->Doing("Lua developed by", "PUC Rio");
 	std::cout << "\n\n\n";
 	FlagConfig cargs{};
-	AddFlag(cargs, "sf", true); // if true project, if false single file
+	AddFlag(cargs, "sf", false); // if true project, if false single file
 	AddFlag(cargs, "dbg", false);
+	AddFlag(cargs, "force", false);
 	RegArgs(cargs, nargs, args);
 	if (!NumFiles()) {
 		QCol->White("Usage: ");
@@ -57,9 +59,18 @@ int main(int nargs, char** args) {
 		QCol->Yellow("Switches:\n");
 		QCol->LCyan("\t-sf     "); QCol->LGreen("Single files (in stead of project\n");
 		QCol->LCyan("\t-dbg    "); QCol->LGreen("Make debug builds\n");
+		QCol->LCyan("\t-force    "); QCol->LGreen("Force a compilation\n");
 		QCol->Reset();
 		std::cout << "\n\n\n";
 		return 1;
+	} else if (WantProject()) {
+		auto F{ Files() };
+		for (size_t i = 0; i < NumFiles(); i++) {
+			auto Prj = (*F)[i];
+			if (!Suffixed(Lower(Prj), ".scyndiproject")) Prj += ".ScyndiProject";
+			QCol->Doing(TrSPrintF("Project %d/%d", i+1, NumFiles()), Prj);
+			ProcessProject(Prj, WantForce(), WantDebug());
+		}
 	}
 	return 0;
 }
