@@ -147,5 +147,8 @@
     <ClInclude Include="Compiler\ScyndiProject.hpp">
       <Filter>Header Files\Compiler</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvAsk.hpp">
+      <Filter>Header Files\Slyvina\Units</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
