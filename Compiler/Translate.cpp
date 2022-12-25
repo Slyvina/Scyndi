@@ -336,6 +336,7 @@ namespace Scyndi {
 		_TransProcess Ret;
 		Ret.Trans = std::make_shared<_Translation>();
 		uint64 ScopeLevel{ 0 };
+		// Chopping
 		for (size_t _ln = 0; _ln < sourcelines->size(); _ln++) {
 			auto LineNumber{ _ln + 1 };
 			size_t pos{0};
