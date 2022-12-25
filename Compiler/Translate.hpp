@@ -29,6 +29,8 @@
 
 namespace Scyndi {
 
+	extern bool TransVerbose;
+
 	enum class ScriptKind { Unknown, Script, Module };
 
 	struct _Translation {
