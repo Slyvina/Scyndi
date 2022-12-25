@@ -68,10 +68,12 @@ namespace Scyndi {
 			}
 			SaveString(prj,"[Project]\nCreated=" + CurrentDate() + "; " + CurrentTime()+"\n");
 		}
-		auto PrjData{ LoadGINIE(prj,prj,"Project header for a Scyndi Project") };
+		auto PrjData{ LoadGINIE(prj,prj,"Project file for a Scyndi Project\nLast modified: "+CurrentDate()) };
 		Ask(PrjData, "AA_META", "01_Title", "Project title: ", StripAll(prj));
 		auto author=Ask(PrjData, "AA_META", "02_CreatedBy", "Created by: ");
 		Ask(PrjData, "AA_META", "03_Copyright", "Copyright: ", "(c) " + author);
 		Ask(PrjData, "AA_META", "04_License", "License:");
+		auto Dirs{ AskList(PrjData,"DIRECTORY","SOURCEFILES","Name the directories where I can find the source files:") };
+		auto Libs{ AskList(PrjData,"DIRECTORY","Libraries","Name the directories where I can find the libraries:",0) };
 	}
 }
