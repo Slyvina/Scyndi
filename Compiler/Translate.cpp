@@ -50,9 +50,9 @@ namespace Scyndi {
 
 	bool TransVerbose{ false };
 
-	enum class InsKind { Unknown, HeaderDefintiion, General, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, MutedByIfDef, StartInit };
+	enum class InsKind { Unknown, HeaderDefintiion, General, QuickMeta, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, MutedByIfDef, StartInit, EndScope };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
-	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init };
+	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta };
 
 	//struct _Scope;
 
@@ -532,13 +532,35 @@ namespace Scyndi {
 				}
 			} else if (MuteByIfDef) {
 				ins->Kind = InsKind::MutedByIfDef;
-			} else if (ins->Words[0]->UpWord=="INIT") {
+			} else if (ins->Words[0]->UpWord == "INIT") {
 				TransAssert(Ret.ScopeLevel() == 0, "INIT scopes can only be started from the root scope");
 				TransAssert(ins->Words.size() == 1, "INIT does not take any parameters or anything");
 				ins->Kind = InsKind::StartInit;
 				Ret.Scopes.push_back(ScopeKind::Init);
+			} else if (ins->Words[0]->UpWord == "END") {
+				TransAssert(ins->Words.size() == 1, "END does not take any parameters or anything");
+				switch (Ret.Scope()) {
+				case ScopeKind::Root:
+					TransError("END without any start of a scope");
+				case ScopeKind::Repeat:
+					TransError("REPEAT scope can only be ended with either UNTIL, FOREVER or LOOPWHILE");
+				}
+				ins->Kind = InsKind::EndScope;
+				Ret.Scopes.pop_back();
+			} else if (ins->Words[0]->Kind==WordKind::Identifier) {
+				switch (Ret.Scope()) {
+				case ScopeKind::Root:
+					TransError("General instruction not possible in root scope");
+				case ScopeKind::Class:
+					TransError("General instruction not possible in class scope");
+				case ScopeKind::Group:
+					TransError("General instruction not possible in group scope");
+				case ScopeKind::QuickMeta:
+					TransError("General instruction not possible in QuickMetaScope");
+				}
+				ins->Kind = InsKind::General;
 			} else {
-				QCol->Error("The next kind of instruction is not yet understood, due to the translator not yet being finished (" + std::to_string(LineNumber) + ")");
+				QCol->Error("The next kind of instruction is not yet understood, due to the translator not yet being finished (Line #" + std::to_string(LineNumber) + ")");
 			}
 
 		}
