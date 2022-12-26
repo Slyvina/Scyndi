@@ -50,9 +50,9 @@ namespace Scyndi {
 
 	bool TransVerbose{ false };
 
-	enum class InsKind { Unknown, HeaderDefintiion, General, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, MutedByIfDef };
+	enum class InsKind { Unknown, HeaderDefintiion, General, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, MutedByIfDef, StartInit };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
-	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group };
+	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init };
 
 	//struct _Scope;
 
@@ -121,6 +121,7 @@ namespace Scyndi {
 		std::string Comment{ "" };
 		//_Scope* Parent;
 		uint64 ScopeLevel{ 0 };
+		ScopeKind Scope{ ScopeKind::Unknown };
 	};
 	typedef std::shared_ptr<_Instruction> Instruction;
 
@@ -132,10 +133,18 @@ namespace Scyndi {
 	};
 	*/
 
-	struct _TransProcess {
+	class _TransProcess {
+	public:
 		//_Scope RootScope{};
 		std::vector < Instruction > Instructions;
 		Translation Trans{};
+		std::vector<ScopeKind> Scopes;
+		uint64 ScopeLevel() { return Scopes.size(); };
+		ScopeKind Scope() {
+			auto lvl{ ScopeLevel() };
+			if (lvl == 0) return ScopeKind::Root;						
+			return Scopes[lvl - 1];
+		}
 	};
 
 	static std::string _TLError{ "" };
@@ -398,7 +407,8 @@ namespace Scyndi {
 		_TLError = "";
 		_TransProcess Ret;
 		Ret.Trans = std::make_shared<_Translation>();
-		uint64 ScopeLevel{ 0 };
+		//uint64 ScopeLevel{ 0 };
+		
 		// Chopping
 		Ret.Instructions = ChopCode(sourcelines, srcfile, JD, debug);
 		if (!Ret.Instructions.size()) return nullptr; // Something must have gone wrong
@@ -448,6 +458,8 @@ namespace Scyndi {
 			HaveElse{ false },
 			First{ false };
 		for (auto ins : Ret.Instructions) {
+			ins->ScopeLevel = Ret.ScopeLevel();
+			ins->Scope = Ret.Scope();
 			Chat("Preprocessing in instruction on line #" << ins->LineNumber);
 #ifdef TransDebug
 			for (size_t i = 0; i < ins->Words.size(); i++) { Chat("Word " << i + 1 << "/" << ins->Words.size()<<"> "<<ins->Words[i]->TheWord); }
@@ -520,10 +532,19 @@ namespace Scyndi {
 				}
 			} else if (MuteByIfDef) {
 				ins->Kind = InsKind::MutedByIfDef;
+			} else if (ins->Words[0]->UpWord=="INIT") {
+				TransAssert(Ret.ScopeLevel() == 0, "INIT scopes can only be started from the root scope");
+				TransAssert(ins->Words.size() == 1, "INIT does not take any parameters or anything");
+				ins->Kind = InsKind::StartInit;
+				Ret.Scopes.push_back(ScopeKind::Init);
 			} else {
 				QCol->Error("The next kind of instruction is not yet understood, due to the translator not yet being finished (" + std::to_string(LineNumber) + ")");
 			}
 
+		}
+		{
+			auto LineNumber = Ret.Instructions[Ret.Instructions.size() - 1]->LineNumber;
+			TransAssert(Ret.ScopeLevel() == 0, TrSPrintF("Unclosed scope (%d)", (int)Ret.Scope()));
 		}
 
 		return Ret.Trans;
