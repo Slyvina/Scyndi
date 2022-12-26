@@ -38,6 +38,16 @@ setmetatable(Scyndi,{
 	end
 
 })
+
+setmetatable(_Scyndi.SETTINGS,{
+	__newindex = function(self,key,value)
+		self[key:upper()]=value
+	end,
+	__index = function(self,key)
+		return self[key:upper()]
+	end
+})
+
 -- ***** Bas Values ***** --
 function _Scyndi.BASEVALUE(dtype)
 	dtype=dtype:upper()

@@ -41,7 +41,7 @@ namespace Scyndi {
 
 	bool TransVerbose{ false };
 
-	enum class InsKind { Unknown, HeaderDefintiion, General, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine };
+	enum class InsKind { Unknown, HeaderDefintiion, General, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, MutedByIfDef };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro, Comma, Field, CompilerDirective };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group };
 
@@ -352,6 +352,7 @@ namespace Scyndi {
 	}
 
 	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
+		Verb("Compiling:", srcfile);
 		_TLError = "";
 		_TransProcess Ret;
 		Ret.Trans = std::make_shared<_Translation>();
@@ -371,7 +372,7 @@ namespace Scyndi {
 					TransAssert(Ins->Words.size() >= 3, "Incomplete #INCLUDE request");
 					auto _file = Ins->Words[2];
 					TransAssert(_file->Kind == WordKind::String, "#INCLUDE expects a string for a filename");
-					Verb("Including", _file->TheWord);
+					Verb("=> Including", _file->TheWord);
 					std::vector<Instruction> IncChopped{};
 					if (FileExists(_file->TheWord)) {
 						auto isrc = LoadLines(_file->TheWord);
@@ -396,6 +397,82 @@ namespace Scyndi {
 		}
 
 		// Pre-Processing
+		Verb("=> Pre-processing", srcfile);
+		std::map<std::string, Word> TransConfig;
+		std::map<std::string, bool> Defs;
+		bool
+			MuteByIfDef{ false },
+			HaveIfDef{ false },
+			HaveElse{ false },
+			First{ false };
+		for (auto ins : Ret.Instructions) {
+			auto LineNumber = ins->LineNumber;
+			if (!ins->Words.size())
+				ins->Kind = InsKind::WhiteLine;
+			else if(ins->Words[0]->TheWord=="#") {
+				// Please note this comes before 'first'. This because #define/#ifdef etc. can have some influence here!
+				ins->Kind = InsKind::CompilerDirective;
+				TransAssert(ins->Words.size() >= 2,"Incomplete compiler directive");
+				auto Opdracht{ ins->Words[1]->UpWord };
+				std::string Para{ "" }; if (ins->Words.size() >= 3) Para = ins->Words[2]->TheWord;
+				if (Opdracht == "ERROR") {
+					if (!MuteByIfDef) { // Ignore error if definitions call for that
+						_TLError = Para + " in line #" + std::to_string(ins->LineNumber) + " of file " + srcfile;
+						return nullptr;
+					}
+				} else if (Opdracht == "PRAGMA") {
+					// Do nothing at the present time, but 'Pragma' can be used for engine specific settings (if the compiler supports those).					
+				} else if (Opdracht == "REGION" || Opdracht == "ENDREGION") {
+					// Do nothing as these are merely markers that some (advanced) IDEs may be able to use. Similar to #region and #endregion in C#.
+				} else if (Opdracht == "DEF" || Opdracht == "DEFINE") {
+					if (!MuteByIfDef) Defs[Upper(Para)] = true;
+				} else if (Opdracht == "UNDEF" || Opdracht == "UNDEFINE") {
+					if (!MuteByIfDef) Defs[Upper(Para)] = false;
+				} else if (Opdracht == "IF" || Opdracht == "IFDEF") {
+					TransAssert(ins->Words.size() < 3, "Incomplete #IF statement");
+					TransAssert(!(HaveIfDef || HaveElse), "Old #IF must be closed before starting a new one!");
+					auto outcome{ true };
+					for (size_t p = 2; p < ins->Words.size(); p++) {
+						outcome = outcome && Defs[ins->Words[p]->UpWord];
+					}
+					MuteByIfDef = !outcome;
+					HaveIfDef = true;
+				} else if (Opdracht == "ELSEIF" || Opdracht == "ELIF") {
+					TransAssert(ins->Words.size() < 3, "Incomplete #ELSEIF statement");
+					TransAssert(HaveIfDef && (! HaveElse), "Unexpected #ELSEIF must be closed before starting a new one!");
+					if (MuteByIfDef) {
+						auto outcome{ true };
+						for (size_t p = 2; p < ins->Words.size(); p++) {
+							outcome = outcome && Defs[ins->Words[p]->UpWord];
+						}
+						MuteByIfDef = !outcome;
+					} else MuteByIfDef = true;
+				} else if (Opdracht == "ELSE") {
+					TransAssert(HaveIfDef && (!HaveElse), "Unexpected #ELSE must be closed before starting a new one!");
+					MuteByIfDef = !MuteByIfDef;
+					HaveElse = true;
+				} else if (Opdracht == "ENDIF" || Opdracht == "FI") {
+					TransAssert(HaveIfDef || HaveElse, "Unexpected #ENDIF");
+					MuteByIfDef = false;
+					HaveElse = false;
+					HaveIfDef = false;
+				} else if (Opdracht == "WARN") {
+					QCol->Warn("\x07 " + Para);
+				} else {
+					TransError("Unknown compiler directive #" + Opdracht);
+				}
+			} else if (!First) {
+				if (!MuteByIfDef) {
+					First = true;
+					ins->Kind = InsKind::HeaderDefintiion; // Script or Module
+				}
+			} else if (MuteByIfDef) {
+				ins->Kind = InsKind::MutedByIfDef;
+			} else {
+				QCol->Error("The next kind of instruction is not yet understood, due to the translator not yet being finished (" + std::to_string(LineNumber)+")");
+			}
+
+		}
 
 		return Ret.Trans;
 	}

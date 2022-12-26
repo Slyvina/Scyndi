@@ -83,14 +83,15 @@ namespace Scyndi {
 		for (auto& D : *Dirs) {
 			if (!DirectoryExists(D)) { QCol->Error("Source directory '" + D + "' does not exist."); return; }
 			auto DRes{ Slyvina::JCR6::GetDirAsJCR(D) };
+			if (!DRes) { QCol->Error("Source directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return; }
 			Res->Patch(DRes, "Script/");
-			if (!Res) { QCol->Error("Source directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return; }
 		}
 		for (auto& D : *Libs) {
 			if (!DirectoryExists(D)) { QCol->Error("Library directory '" + D + "' does not exist."); return; }
 			auto DRes{ Slyvina::JCR6::GetDirAsJCR(D) };
+			if (!DRes) { QCol->Error("Library directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return; }
 			Res->Patch(DRes, "Libs/");
-			if (!Res) { QCol->Error("Library directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return; }
 		}
+		auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
 	}
 }
