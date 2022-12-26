@@ -456,7 +456,8 @@ namespace Scyndi {
 			MuteByIfDef{ false },
 			HaveIfDef{ false },
 			HaveElse{ false },
-			First{ false };
+			First{ false },
+			HasInit{ false }; // If there's at least one init this must be true.
 		for (auto ins : Ret.Instructions) {
 			ins->ScopeLevel = Ret.ScopeLevel();
 			ins->Scope = Ret.Scope();
@@ -537,6 +538,7 @@ namespace Scyndi {
 				TransAssert(ins->Words.size() == 1, "INIT does not take any parameters or anything");
 				ins->Kind = InsKind::StartInit;
 				Ret.Scopes.push_back(ScopeKind::Init);
+				HasInit = true;
 			} else if (ins->Words[0]->UpWord == "END") {
 				TransAssert(ins->Words.size() == 1, "END does not take any parameters or anything");
 				switch (Ret.Scope()) {
