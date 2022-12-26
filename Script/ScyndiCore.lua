@@ -1,7 +1,7 @@
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
--- version: 22.12.24
+-- version: 22.12.26
 -- Copyright (C) 2022 Jeroen P. Broks
 -- This software is provided 'as-is', without any express or implied
 -- warranty.  In no event will the authors be held liable for any damages
@@ -23,7 +23,8 @@
 -- ***** Core Init ***** --
 Scyndi = {}
 local _Scyndi = {}
-_Scyndi.SETTINGS={ STRICTNUM=true }
+local SETTINGS={ STRICTNUM=true }
+_Scyndi.SETTINGS={}
 setmetatable(Scyndi,{
 	__newindex = function(self,key,value)
 		key=key:upper()		
@@ -41,10 +42,10 @@ setmetatable(Scyndi,{
 
 setmetatable(_Scyndi.SETTINGS,{
 	__newindex = function(self,key,value)
-		self[key:upper()]=value
+		SETTINGS[key:upper()]=value
 	end,
 	__index = function(self,key)
-		return self[key:upper()]
+		return SETTINGS[key:upper()]
 	end
 })
 

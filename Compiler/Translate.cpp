@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.25
+// Version: 22.12.26
 // EndLic
 
 #include <Slyvina.hpp>
@@ -34,6 +34,15 @@
 #include "ScyndiGlobals.hpp"
 #include "Keywords.hpp"
 
+#undef TransDebug
+
+
+#ifdef TransDebug
+#define Chat(abc) QCol->LGreen("SCYNDI TRANSLATOR DEBUG> "); QCol->White(""); std::cout << abc << std::endl;
+#else
+#define Chat(abc)
+#endif
+
 using namespace Slyvina;
 using namespace Slyvina::Units;
 
@@ -42,7 +51,7 @@ namespace Scyndi {
 	bool TransVerbose{ false };
 
 	enum class InsKind { Unknown, HeaderDefintiion, General, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, MutedByIfDef };
-	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro, Comma, Field, CompilerDirective };
+	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group };
 
 	//struct _Scope;
@@ -79,6 +88,10 @@ namespace Scyndi {
 				ret->Kind = WordKind::KeyWord;
 			else if (ret->UpWord == ",")
 				ret->Kind = WordKind::Comma;
+			else if (ret->UpWord == "(")
+				ret->Kind = WordKind::HaakjeOpenen;
+			else if (ret->UpWord == ")")
+				ret->Kind = WordKind::HaakjeSluiten;
 			else if (VecSearch(Operators, ret->UpWord))
 				ret->Kind = WordKind::Operator;
 			else if (ret->UpWord[0] >= '0' && ret->UpWord[0] <= '9')
@@ -151,6 +164,7 @@ namespace Scyndi {
 		Ret->LineNumber = LineNumber;
 		while (pos < Line.size()) {
 			auto ch{ Line[pos] };
+			Chat("==> " << pos << "/" << Line.size() << "; Char: "<<ch);
 			// In Comment
 			if (InComment) {
 				Ret->Comment += ch;
@@ -167,6 +181,7 @@ namespace Scyndi {
 					StringEscape = true;
 					pos++;
 				} else if (ch == '"') {
+					Chat("==> Ending string: " << FormWord);
 					InString = false;
 					auto W{ _Word::NewWord(WordKind::String,FormWord) };
 					FormWord = "";
@@ -276,12 +291,15 @@ namespace Scyndi {
 					(ch >= '0' && ch <= '9') ||
 					(ch >= '_')
 				};
+				Chat("==> Char '" << ch << "' on pos " << pos << " leaves GoOn >" << GoOn);
 				if (GoOn) {
-					FormingWord += ch;
+					FormWord += ch;
 					pos++;
 				} else {
 					Ret->Words.push_back(_Word::NewWord(FormWord)); // Autodetection is now in order. Is this a keyword or is this an identifyer?
-					FormingWord = "";
+					Chat("==> Ended word: " << FormWord);
+					FormWord = "";
+					FormingWord = false;
 				}
 			// TODO: Next
 			} else {
@@ -292,14 +310,23 @@ namespace Scyndi {
 					pos++; // Remember this is reference based!
 					return Ret;
 				case ' ':
+				case '\t':
 					if (FormWord.size())
 						Ret->Words.push_back(_Word::NewWord(FormWord));
 					pos++;
 					break;
+				case '(':
+				case ')': {
+					std::string w{ "" }; w += ch;
+					Ret->Words.push_back(_Word::NewWord(w));
+					pos++;
+				} break;
 				case '#':
 					TransAssert(pos == 0, "Syntax error! # is reserved for compiler directives and may only be at the start of the line");
-					FormingWord = true;
-					FormWord = "#";
+					Ret->Words.push_back(_Word::NewWord("#"));
+					FormingWord = false;
+					FormWord = "";
+					pos++;
 					break;
 				case '.': {
 					TransAssert(pos < Line.size() - 1 && Line[pos + 1] != ';', "No instruction can end with a period/dot");
@@ -316,14 +343,20 @@ namespace Scyndi {
 				} break;
 				case ',':
 					Ret->Words.push_back(_Word::NewWord(","));
+				case '"':
+					InString = true;
+					pos++;
+					break;
 				default:
 					if (ch >= '0' && ch <= '9') {
 						FormNumber = true;
 						FormNumberHex = false;
 						FormWord = ch;
+						pos++;
 					} else if (ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
 						FormingWord = true;
 						FormWord = ch;
+						pos++;
 					} else if (VecSearch(Operators, std::string("" + ch))) {
 						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "" + ch));
 						pos++;
@@ -331,28 +364,37 @@ namespace Scyndi {
 						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "" + ch+Line[pos+1]));
 						pos += 2;
 					} else {
-						TransError(TrSPrintF("Completely unexpected %s (Position %d) ", ch, pos));
+						std::string chs{ "character '" }; chs += ch; chs += "'";				
+						TransError(TrSPrintF("Completely unexpected %s (Position %d) ", chs.c_str(), pos));
 					}
 				}
 			}
+		}
+		if (FormWord.size()) {
+			Ret->Words.push_back(_Word::NewWord(FormWord));
 		}
 		return Ret; 
 	}
 
 	static std::vector<Instruction> ChopCode(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
+		Chat("Chopping " << srcfile);
 		std::vector<Instruction> Ret;
 		for (size_t _ln = 0; _ln < sourcelines->size(); _ln++) {
 			auto LineNumber{ _ln + 1 };
+			Chat("=> Line " << LineNumber << "/" << sourcelines->size());
 			size_t pos{0};
 			while (pos >= 0 && pos < (*sourcelines)[_ln].size()) {
-				auto Chopped = Chop((*sourcelines)[_ln], LineNumber, pos, srcfile); if (!Chopped) return std::vector<Instruction>();
+				Chat("=> Postion: " << pos << "/" << (*sourcelines)[_ln].size());
+				auto Chopped = Chop((*sourcelines)[_ln], LineNumber, pos, srcfile);
+				if (!Chopped) return std::vector<Instruction>();				
+				Ret.push_back(Chopped);
 			}
 		}
 		return Ret;
 	}
 
 	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
-		Verb("Compiling:", srcfile);
+		Verb("Compiling", srcfile);
 		_TLError = "";
 		_TransProcess Ret;
 		Ret.Trans = std::make_shared<_Translation>();
@@ -406,15 +448,22 @@ namespace Scyndi {
 			HaveElse{ false },
 			First{ false };
 		for (auto ins : Ret.Instructions) {
+			Chat("Preprocessing in instruction on line #" << ins->LineNumber);
+#ifdef TransDebug
+			for (size_t i = 0; i < ins->Words.size(); i++) { Chat("Word " << i + 1 << "/" << ins->Words.size()<<"> "<<ins->Words[i]->TheWord); }
+#endif
 			auto LineNumber = ins->LineNumber;
-			if (!ins->Words.size())
+			if (!ins->Words.size()) {
+				Chat("--> Whiteline!");
 				ins->Kind = InsKind::WhiteLine;
-			else if(ins->Words[0]->TheWord=="#") {
+			} else if (ins->Words[0]->TheWord == "#") {
+				Chat("Parsing compilier directive");
 				// Please note this comes before 'first'. This because #define/#ifdef etc. can have some influence here!
 				ins->Kind = InsKind::CompilerDirective;
 				TransAssert(ins->Words.size() >= 2,"Incomplete compiler directive");
 				auto Opdracht{ ins->Words[1]->UpWord };
 				std::string Para{ "" }; if (ins->Words.size() >= 3) Para = ins->Words[2]->TheWord;
+				Chat("Compiler directive: " << Opdracht << "  (Param: " << Para << ")");
 				if (Opdracht == "ERROR") {
 					if (!MuteByIfDef) { // Ignore error if definitions call for that
 						_TLError = Para + " in line #" + std::to_string(ins->LineNumber) + " of file " + srcfile;
@@ -458,6 +507,9 @@ namespace Scyndi {
 					HaveIfDef = false;
 				} else if (Opdracht == "WARN") {
 					QCol->Warn("\x07 " + Para);
+				} else if (Opdracht == "CONFIG") {
+					TransAssert(ins->Words.size() >= 4, "Incomplete #CONFIG");
+					TransConfig[Upper(Para)] = ins->Words[3];
 				} else {
 					TransError("Unknown compiler directive #" + Opdracht);
 				}
@@ -469,7 +521,7 @@ namespace Scyndi {
 			} else if (MuteByIfDef) {
 				ins->Kind = InsKind::MutedByIfDef;
 			} else {
-				QCol->Error("The next kind of instruction is not yet understood, due to the translator not yet being finished (" + std::to_string(LineNumber)+")");
+				QCol->Error("The next kind of instruction is not yet understood, due to the translator not yet being finished (" + std::to_string(LineNumber) + ")");
 			}
 
 		}

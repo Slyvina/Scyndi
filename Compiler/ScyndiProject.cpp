@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.25
+// Version: 22.12.26
 // EndLic
 
 #include <SlyvString.hpp>
@@ -35,6 +35,7 @@
 #include <JCR6_RealDir.hpp>
 
 #include "ScyndiProject.hpp"
+#include "Translate.hpp"
 
 using namespace Slyvina::Units;
 using namespace Slyvina::JCR6;
@@ -63,6 +64,7 @@ namespace Scyndi {
 	}
 
 	void ProcessProject(std::string prj, bool force, bool debug) {
+		TransVerbose = true;
 		if (!FileExists(prj)) {
 			if (!QuickYes("Project '" + prj + "' does not yet exist. Create it"))
 				return;
@@ -93,5 +95,20 @@ namespace Scyndi {
 			Res->Patch(DRes, "Libs/");
 		}
 		auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
+		auto Entries{ Res->Entries() };
+		for (auto SD : *Entries) {
+			auto E{ Upper(ExtractExt(SD->Name())) };
+			if (E == "LUA") {
+				QCol->Error("Pure Lua code not (yet) supported");
+			} else if (E == "SCYNDI") {
+				QCol->Doing("Reading", SD->Name());
+				auto src{ Res->GetString(SD->Name()) };
+
+				auto T{ Translate(src,SD->Name(),Res,debug) };
+				if (!T) {
+					QCol->Error(TranslationError());
+				}
+			}
+		}
 	}
 }
