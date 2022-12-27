@@ -50,7 +50,7 @@ namespace Scyndi {
 
 	bool TransVerbose{ false };
 
-	enum class InsKind { Unknown, HeaderDefintiion, General, QuickMeta, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, MutedByIfDef, StartInit, EndScope };
+	enum class InsKind { Unknown, HeaderDefintiion, General, QuickMeta, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta };
 
@@ -655,6 +655,14 @@ namespace Scyndi {
 			auto LineNumber = Ret.Instructions[Ret.Instructions.size() - 1]->LineNumber;
 			TransAssert(Ret.ScopeLevel() == 0, TrSPrintF("Unclosed scope (%d)", (int)Ret.ScopeK()));
 		}
+		// Class management
+		// TODO!
+
+		// Declaration management
+		// TODO!
+
+		// Translate
+
 
 		return Ret.Trans;
 	}

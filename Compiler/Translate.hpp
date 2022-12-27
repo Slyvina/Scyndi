@@ -26,6 +26,8 @@
 
 #pragma once
 #include <Slyvina.hpp>
+#include <SlyvGINIE.hpp>
+#include <SlyvTime.hpp>
 #include <JCR6_Core.hpp>
 
 namespace Scyndi {
@@ -47,6 +49,8 @@ namespace Scyndi {
 		Slyvina::VecString
 			RealIncludes{ Slyvina::NewVecString() },
 			JCRIncludes{ Slyvina::NewVecString() };
+		Slyvina::Units::GINIE
+			Data{ ParseGINIE("[Create]\nData=" + Slyvina::Units::CurrentDate()) };
 	};
 	typedef std::shared_ptr<_Translation> Translation;
 
