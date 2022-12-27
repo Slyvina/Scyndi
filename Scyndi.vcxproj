@@ -82,7 +82,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>Scyndi</OutDir>
-    <IncludePath>E:\Projects\Applications\Slyvina\Libs\JCR6\Headers;E:\Projects\Applications\Slyvina\Libs\Lunatic;E:\Projects\Applications\Slyvina\Libs\Units\Headers;$(IncludePath)</IncludePath>
+    <IncludePath>E:\Projects\Applications\Slyvina\Libs\Lunatic\Lua\Raw\src;E:\Projects\Applications\Slyvina\Libs\JCR6\Headers;E:\Projects\Applications\Slyvina\Libs\Lunatic;E:\Projects\Applications\Slyvina\Libs\Units\Headers;$(IncludePath)</IncludePath>
     <LibraryPath>E:\Projects\Applications\Slyvina\Libs\JCR6\3rdParty\zlib;E:\Projects\Applications\Slyvina\Libs\Lunatic\Lua\Lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -139,7 +139,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>zlib.lib;lua.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib.lib;Lua.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>pwsh ScyndiCoreDump.ps1</Command>
@@ -157,6 +157,7 @@
     <CopyFileToFolders Include="..\..\Libs\JCR6\3rdParty\zlib\zlib.dll">
       <FileType>Document</FileType>
     </CopyFileToFolders>
+    <None Include="..\..\Libs\Lunatic\Lua\Raw\src\Makefile" />
     <None Include="Script\ScyndiCoreDump.lua" />
     <None Include="Script\ScyndiCoreTest.lua" />
   </ItemGroup>
@@ -165,6 +166,38 @@
     <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_RealDir.cpp" />
     <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_Write.cpp" />
     <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_zlib.cpp" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lapi.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lauxlib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lbaselib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lcode.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lcorolib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lctype.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\ldblib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\ldebug.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\ldo.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\ldump.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lfunc.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lgc.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\linit.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\liolib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\llex.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lmathlib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lmem.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\loadlib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lobject.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lopcodes.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\loslib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lparser.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lstate.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lstring.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lstrlib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\ltable.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\ltablib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\ltm.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lundump.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lutf8lib.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lvm.c" />
+    <ClCompile Include="..\..\Libs\Lunatic\Lua\Raw\src\lzio.c" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvArgParse.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvAsk.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvBank.cpp" />
@@ -178,6 +211,7 @@
     <ClCompile Include="..\..\Libs\Units\Source\SlyvVolumes.cpp" />
     <ClCompile Include="Compiler\Config.cpp" />
     <ClCompile Include="Compiler\KeyWords.cpp" />
+    <ClCompile Include="Compiler\SaveTranslation.cpp" />
     <ClCompile Include="Compiler\ScyndiGlobals.cpp" />
     <ClCompile Include="Compiler\ScyndiProject.cpp" />
     <ClCompile Include="Compiler\Translate.cpp" />
@@ -185,6 +219,34 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Libs\JCR6\Headers\JCR6_RealDir.hpp" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lapi.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lauxlib.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lcode.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lctype.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\ldebug.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\ldo.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lfunc.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lgc.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\ljumptab.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\llex.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\llimits.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lmem.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lobject.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lopcodes.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lopnames.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lparser.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lprefix.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lstate.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lstring.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\ltable.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\ltm.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lua.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lua.hpp" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\luaconf.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lualib.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lundump.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lvm.h" />
+    <ClInclude Include="..\..\Libs\Lunatic\Lua\Raw\src\lzio.h" />
     <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvArgParse.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvAsk.hpp" />
@@ -193,6 +255,7 @@
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvVecSearch.hpp" />
     <ClInclude Include="Compiler\Config.hpp" />
     <ClInclude Include="Compiler\Keywords.hpp" />
+    <ClInclude Include="Compiler\SaveTranslation.hpp" />
     <ClInclude Include="Compiler\ScyndiGlobals.hpp" />
     <ClInclude Include="Compiler\ScyndiProject.hpp" />
     <ClInclude Include="Compiler\Translate.hpp" />

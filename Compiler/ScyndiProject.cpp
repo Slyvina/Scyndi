@@ -33,9 +33,11 @@
 #include <SlyvAsk.hpp>
 
 #include <JCR6_RealDir.hpp>
+#include <JCR6_Write.hpp>
 
 #include "ScyndiProject.hpp"
 #include "Translate.hpp"
+#include "SaveTranslation.hpp"
 
 using namespace Slyvina::Units;
 using namespace Slyvina::JCR6;
@@ -61,6 +63,28 @@ namespace Scyndi {
 				}
 			}
 		} while (true);
+	}
+
+	void Compile(GINIE PrjData,Slyvina::JCR6::JT_Dir Res,std::string ScyndiSource,bool debug,bool force) {
+		// TODO: Skip if compilation if up-to-date, unless forced!
+		QCol->Doing("Reading", ScyndiSource);
+		auto src{ Res->GetString(ScyndiSource) };
+
+		auto T{ Translate(src,ScyndiSource,Res,debug) };
+		if (!T) {
+			QCol->Error(TranslationError());
+		} else {
+			QCol->LGreen(T->LuaSource + "\n"); // debug only!
+			auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".STB" }; // STB = Scyndi Translated Bundle
+			QCol->Doing("Bundling", OutputFile);
+			auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
+			auto JO{ CreateJCR6(OutputFile) };
+			SaveTranslation(T, JO, Storage);
+			JO->Close();
+			QCol->Doing("Completed", ScyndiSource);
+			std::cout << "\n\n";
+		}
+
 	}
 
 	void ProcessProject(std::string prj, bool force, bool debug) {
@@ -94,21 +118,14 @@ namespace Scyndi {
 			if (!DRes) { QCol->Error("Library directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return; }
 			Res->Patch(DRes, "Libs/");
 		}
-		auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
+		//auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
 		auto Entries{ Res->Entries() };
 		for (auto SD : *Entries) {
 			auto E{ Upper(ExtractExt(SD->Name())) };
 			if (E == "LUA") {
 				QCol->Error("Pure Lua code not (yet) supported");
 			} else if (E == "SCYNDI") {
-				QCol->Doing("Reading", SD->Name());
-				auto src{ Res->GetString(SD->Name()) };
-
-				auto T{ Translate(src,SD->Name(),Res,debug) };
-				if (!T) {
-					QCol->Error(TranslationError());
-				}
-				if (T) QCol->LGreen(T->LuaSource + "\n"); // debug only!
+				Compile(PrjData, Res, SD->Name(), debug, force);
 			}
 		}
 	}
