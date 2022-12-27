@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.26
+// Version: 22.12.27
 // EndLic
 
 #include <Slyvina.hpp>
@@ -114,7 +114,7 @@ namespace Scyndi {
 		}
 	};
 
-	struct _TransProcess;
+	class _TransProcess;
 	struct _Instruction {
 		_TransProcess* TransParent{ nullptr };
 		InsKind Kind{ InsKind::Unknown };
@@ -150,15 +150,44 @@ namespace Scyndi {
 			Scopes.push_back(NS);
 		}
 		uint64 ScopeLevel() { return Scopes.size(); };
-		Scope Scope() {
+		Scope GetScope() {
 			auto lvl{ ScopeLevel() };
 			if (lvl == 0) return RootScope; //ScopeKind::Root;						
 			return Scopes[lvl - 1];
 		}
-		ScopeKind ScopeK() { return Scope()->Kind; }
+		Scope GetScope(size_t lvl) {
+			if (lvl == 0) return RootScope; //ScopeKind::Root;						
+			return Scopes[lvl - 1];
+		}
+		ScopeKind ScopeK() { return GetScope()->Kind; }
 		_TransProcess() {
 			RootScope = std::make_shared<_Scope>();
 			RootScope->Kind = ScopeKind::Root;
+		}
+		std::string Identifier(std::string _id,bool ignoreglobals=false) {
+			if (_id[0] == '@') {
+				_id = _id.substr(1);
+				if (Trans->Classes->count(_id)) {
+					auto CL{ Trans->Classes };
+					return (*CL)[_id];
+				}
+				return "";
+			}
+			if (_id[0] == '$') _id = _id.substr(1);
+			Trans2Upper(_id);
+			for (size_t i = Scopes.size(); i > 0; --i) {
+				size_t idx{ i - 1 };
+				auto Sc{ GetScope(idx) };
+				if (Sc->LocalVars->count(_id)) {
+					auto LV{ Sc->LocalVars };
+					return (*LV)[_id];
+				}
+			}
+			if (ignoreglobals) return "";
+			if (CoreGlobals.count(_id)) return CoreGlobals[_id];
+			if (Trans->GlobalVar->count(_id)) { auto GV{ Trans->GlobalVar }; return (*GV)[_id]; }
+			if (Trans->Classes->count(_id)) { auto CL{ Trans->Classes }; return (*CL)[_id]; }
+			return ""; // Empty string just means unrecognized
 		}
 	};
 
@@ -481,7 +510,7 @@ namespace Scyndi {
 			HasInit{ false }; // If there's at least one init this must be true.
 		for (auto ins : Ret.Instructions) {
 			ins->ScopeLevel = Ret.ScopeLevel();
-			ins->Scope = Ret.Scope();
+			ins->Scope = Ret.GetScope()->Kind;
 			Chat("Preprocessing in instruction on line #" << ins->LineNumber);
 #ifdef TransDebug
 			for (size_t i = 0; i < ins->Words.size(); i++) { Chat("Word " << i + 1 << "/" << ins->Words.size()<<"> "<<ins->Words[i]->TheWord); }
@@ -551,6 +580,41 @@ namespace Scyndi {
 				if (!MuteByIfDef) {
 					First = true;
 					ins->Kind = InsKind::HeaderDefintiion; // Script or Module
+					if (ins->Words[0]->UpWord == "SCRIPT") {
+						Ret.Trans->Kind = ScriptKind::Script;
+						std::string _id = "MAINSCRIPT";
+						if (ins->Words.size() > 2) {
+							TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected");
+							_id = ins->Words[1]->UpWord;
+							TransAssert(Ret.Identifier(_id) == "", "Script header creates duplicate identifier");
+						}
+						(*Ret.Trans->GlobalVar)[_id] = "SCYNDI.CLASS[\"" + _id + "\"]";
+					} else if (ins->Words[0]->UpWord == "MODULE") {
+						Ret.Trans->Kind = ScriptKind::Script;
+						std::string _sid = Upper(StripAll(srcfile));
+						std::string _id{ "" };
+						if (ins->Words.size() > 2) {
+							TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected");
+							_id = ins->Words[1]->UpWord;
+							TransAssert(Ret.Identifier(_id) == "", "Script header creates duplicate identifier");
+						} else {
+							for (size_t p = 0; p < _sid.size(); p++) {
+								if (
+									(_sid[p] >= 'A' && _sid[p] <= 'Z') ||
+									(_sid[p] >= '0' && _sid[p] <= '9') ||
+									(_sid[p] == '_')
+									)
+									_id += _sid[p];
+								else if (_sid[p] == ' ')
+									_id += '_';
+								else
+									TransError("Cannot generate valid identifier name from "+_sid);
+							}
+						}
+						(*Ret.Trans->GlobalVar)[_id] = "SCYNDI.CLASS[\"" + _id + "\"]";
+					} else {
+						TransError("Script header expected");
+					}
 				}
 			} else if (MuteByIfDef) {
 				ins->Kind = InsKind::MutedByIfDef;
@@ -558,11 +622,11 @@ namespace Scyndi {
 				TransAssert(Ret.ScopeLevel() == 0, "INIT scopes can only be started from the root scope");
 				TransAssert(ins->Words.size() == 1, "INIT does not take any parameters or anything");
 				ins->Kind = InsKind::StartInit;
-				Ret.Scopes.push_back(ScopeKind::Init);
+				Ret.PushScope(ScopeKind::Init);
 				HasInit = true;
 			} else if (ins->Words[0]->UpWord == "END") {
 				TransAssert(ins->Words.size() == 1, "END does not take any parameters or anything");
-				switch (Ret.Scope()) {
+				switch (Ret.ScopeK()) {
 				case ScopeKind::Root:
 					TransError("END without any start of a scope");
 				case ScopeKind::Repeat:
@@ -571,7 +635,7 @@ namespace Scyndi {
 				ins->Kind = InsKind::EndScope;
 				Ret.Scopes.pop_back();
 			} else if (ins->Words[0]->Kind==WordKind::Identifier) {
-				switch (Ret.Scope()) {
+				switch (Ret.ScopeK()) {
 				case ScopeKind::Root:
 					TransError("General instruction not possible in root scope");
 				case ScopeKind::Class:
@@ -589,7 +653,7 @@ namespace Scyndi {
 		}
 		{
 			auto LineNumber = Ret.Instructions[Ret.Instructions.size() - 1]->LineNumber;
-			TransAssert(Ret.ScopeLevel() == 0, TrSPrintF("Unclosed scope (%d)", (int)Ret.Scope()));
+			TransAssert(Ret.ScopeLevel() == 0, TrSPrintF("Unclosed scope (%d)", (int)Ret.ScopeK()));
 		}
 
 		return Ret.Trans;

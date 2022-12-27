@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.25
+// Version: 22.12.27
 // EndLic
 
 #pragma once
@@ -36,6 +36,7 @@ namespace Scyndi {
 
 	struct _Translation {
 		std::string
+			ScriptName{ "" }, // Used to store the name set up with the SCRIPT or MODULE top line
 			LuaSource{ "" },
 			Headers{ "" }; // Needed for imports with global definitions
 		ScriptKind
