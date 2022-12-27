@@ -108,7 +108,7 @@ namespace Scyndi {
 				if (!T) {
 					QCol->Error(TranslationError());
 				}
-				QCol->LGreen(T->LuaSource + "\n"); // debug only!
+				if (T) QCol->LGreen(T->LuaSource + "\n"); // debug only!
 			}
 		}
 	}
