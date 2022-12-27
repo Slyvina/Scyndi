@@ -51,7 +51,7 @@ namespace Scyndi {
 	bool TransVerbose{ false };
 
 	enum class InsKind { Unknown, HeaderDefintiion, General, QuickMeta, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, MutedByIfDef, StartInit, EndScope };
-	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
+	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta };
 
 	//struct _Scope;
@@ -82,6 +82,10 @@ namespace Scyndi {
 			ret->UpWord = Upper(W);
 			if (ret->TheWord[0] == '$') {
 				ret->Kind = WordKind::Identifier;
+				ret->UpWord = Upper(ret->TheWord).substr(1);
+				if (!ret->UpWord.size()) ret->UpWord == "___DOLLARSIGN";
+			} else if (ret->TheWord[0]=='@') {
+				ret->Kind = WordKind::IdentifierClass;
 				ret->UpWord = Upper(ret->TheWord).substr(1);
 				if (!ret->UpWord.size()) ret->UpWord == "___DOLLARSIGN";
 			} else if (VecSearch(KeyWords, ret->UpWord))
@@ -125,25 +129,36 @@ namespace Scyndi {
 	};
 	typedef std::shared_ptr<_Instruction> Instruction;
 
-	/*
+	
 	struct _Scope {
-		_Scope* Parent;
-		std::vector<_Scope> KidScopes;
-		ScopeKind Kind{ ScopeKind::Unknown };
+		ScopeKind Kind;
+		StringMap LocalVars{ NewStringMap() };
 	};
-	*/
+	typedef std::shared_ptr<_Scope> Scope;
+	
 
 	class _TransProcess {
 	public:
 		//_Scope RootScope{};
 		std::vector < Instruction > Instructions;
 		Translation Trans{};
-		std::vector<ScopeKind> Scopes;
+		std::vector<Scope> Scopes;
+		Scope RootScope;
+		void PushScope(ScopeKind K) {
+			auto NS{ std::make_shared<_Scope>() };
+			NS->Kind = K;
+			Scopes.push_back(NS);
+		}
 		uint64 ScopeLevel() { return Scopes.size(); };
-		ScopeKind Scope() {
+		Scope Scope() {
 			auto lvl{ ScopeLevel() };
-			if (lvl == 0) return ScopeKind::Root;						
+			if (lvl == 0) return RootScope; //ScopeKind::Root;						
 			return Scopes[lvl - 1];
+		}
+		ScopeKind ScopeK() { return Scope()->Kind; }
+		_TransProcess() {
+			RootScope = std::make_shared<_Scope>();
+			RootScope->Kind = ScopeKind::Root;
 		}
 	};
 
@@ -354,6 +369,12 @@ namespace Scyndi {
 					Ret->Words.push_back(_Word::NewWord(","));
 				case '"':
 					InString = true;
+					pos++;
+					break;
+				case '@': // Forces a class refereces
+				case '$': // Forces are referrence to any other kind of identifyer
+					FormingWord = true;
+					FormWord = ch;
 					pos++;
 					break;
 				default:

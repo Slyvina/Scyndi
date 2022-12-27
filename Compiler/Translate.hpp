@@ -23,6 +23,7 @@
 // 
 // Version: 22.12.25
 // EndLic
+
 #pragma once
 #include <Slyvina.hpp>
 #include <JCR6_Core.hpp>
@@ -39,6 +40,9 @@ namespace Scyndi {
 			Headers{ "" }; // Needed for imports with global definitions
 		ScriptKind
 			Kind{ ScriptKind::Unknown };
+		Slyvina::StringMap
+			Classes{ Slyvina::NewStringMap() },
+			GlobalVar{ Slyvina::NewStringMap() };
 		Slyvina::VecString
 			RealIncludes{ Slyvina::NewVecString() },
 			JCRIncludes{ Slyvina::NewVecString() };
