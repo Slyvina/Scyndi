@@ -405,3 +405,56 @@ function _Scyndi.GLOBALSFORCPLUSPLUS()
 	end
 	print("\n\t};\n}\n")
 end
+
+
+-- ***** DEBUG linkups ***** --
+
+-- Please note that these require the underlying engine to work properly. 
+-- When not properly configured, the functions here will be ignored.
+-- The engine should contain its own script linkups to take care of this and load thise prior to the translated scripts.
+
+local _ScyndiDebug = {}
+
+function _Scyndi.INITDEBUGFUNCTIONS(
+
+	-- void SetDebug(bool DebugOnOrOff)
+	SetDebug,
+
+	-- string StateName()
+	StateName,
+
+	-- void Push(string functionname)
+	Push,
+
+	-- void Pop()
+	Pop,
+
+	-- void Line(string State,string source, int linenumber)
+	Line,
+
+	-- bool ReadOnly = treu
+	ReadOnly
+)
+
+	_ScyndiDebug.SETDEBUG=SetDebug
+	_ScyndiDebug.STATENAME=StateName
+	_ScyndiDebug.PUSH=Push
+	_ScyndiDebug.POP=Pop
+	_ScyndiDebug.LINE=Line
+	_ScyndiDebug.READONLY=ReadOnly~=false
+end
+
+function _Scyndi.NIKS() end -- "Niks" means "nothing" in Dutch, and that's precisely what I want from this function!
+
+_Scyndi.DEBUG = setmetatable({},{
+	__newindex = function(s,k,v)
+		if _ScyndiDebug.READONLY then return end
+		_ScyndiDebug[k:upper()] = v
+	end,
+	__index = function(s,k)
+		k=k:upper()
+		if k=="READONLY" then return _ScyndiDebug.READONLY end
+		return _ScyndiDebug[k] || _Scyndi.NIKS
+	end
+		
+})
