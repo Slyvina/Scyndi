@@ -189,7 +189,7 @@ end
 
 _Scyndi.CLASSES = setmetatable({},{
 	__newindex=function() error("Scyndi.Classes is read-only!") end,
-	__index=function(s,key) {
+	__index=function(s,key) 
 		key = key:upper()
 		assert(classregister[key],"No class named "..key.." found")
 		return classregstier[key]
@@ -412,6 +412,10 @@ end
 -- Please note that these require the underlying engine to work properly. 
 -- When not properly configured, the functions here will be ignored.
 -- The engine should contain its own script linkups to take care of this and load thise prior to the translated scripts.
+
+-- Please note. Scyndi code itself should not be able to link directly 
+-- to this (although you can ways do Lua.Globals.Scyndi.Debug if you really desire)
+-- The Scyndi compiler will put the calls if you set it to make a debug build
 
 local _ScyndiDebug = {}
 
