@@ -1,7 +1,7 @@
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
--- version: 22.12.26
+-- version: 22.12.27
 -- Copyright (C) 2022 Jeroen P. Broks
 -- This software is provided 'as-is', without any express or implied
 -- warranty.  In no event will the authors be held liable for any damages
@@ -187,6 +187,13 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	return ret,retpriv
 end
 
+_Scyndi.CLASSES = setmetatable({},{
+	__newindex=function() error("Scyndi.Classes is read-only!") end,
+	__index=function(s,key) {
+		key = key:upper()
+		assert(classregister[key],"No class named "..key.." found")
+		return classregstier[key]
+	end	})
 
 
 
