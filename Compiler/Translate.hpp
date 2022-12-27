@@ -50,7 +50,7 @@ namespace Scyndi {
 			RealIncludes{ Slyvina::NewVecString() },
 			JCRIncludes{ Slyvina::NewVecString() };
 		Slyvina::Units::GINIE
-			Data{ ParseGINIE("[Create]\nData=" + Slyvina::Units::CurrentDate()) };
+			Data{ Slyvina::Units::ParseGINIE("[Create]\nData=" + Slyvina::Units::CurrentDate()) };
 	};
 	typedef std::shared_ptr<_Translation> Translation;
 

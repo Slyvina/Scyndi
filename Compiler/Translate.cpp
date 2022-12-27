@@ -29,6 +29,7 @@
 #include <SlyvVecSearch.hpp>
 #include <SlyvQCol.hpp>
 #include <SlyvStream.hpp>
+#include <SlyvMD5.hpp>
 
 #include "Translate.hpp"
 #include "ScyndiGlobals.hpp"
@@ -50,7 +51,7 @@ namespace Scyndi {
 
 	bool TransVerbose{ false };
 
-	enum class InsKind { Unknown, HeaderDefintiion, General, QuickMeta, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope };
+	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta };
 
@@ -114,6 +115,8 @@ namespace Scyndi {
 		}
 	};
 
+	class _Scope;
+	typedef std::shared_ptr<_Scope> Scope;
 	class _TransProcess;
 	struct _Instruction {
 		_TransProcess* TransParent{ nullptr };
@@ -125,16 +128,57 @@ namespace Scyndi {
 		std::string Comment{ "" };
 		//_Scope* Parent;
 		uint64 ScopeLevel{ 0 };
+		Scyndi::Scope ScopeData{ nullptr };
 		ScopeKind Scope{ ScopeKind::Unknown };
 	};
 	typedef std::shared_ptr<_Instruction> Instruction;
 
 	
-	struct _Scope {
+	class _Scope {
+	public:
 		ScopeKind Kind;
 		StringMap LocalVars{ NewStringMap() };
+		_Scope* Parent{ nullptr };
+		Scope Breed() {
+			auto ret = std::make_shared<_Scope>();
+			ret->Parent = this;
+			return ret;
+		}
+
+		std::string Identifier(Translation Trans, std::string _id, bool ignoreglobals = false) {
+			if (_id[0] == '@') {
+				_id = _id.substr(1);
+				if (Trans->Classes->count(_id)) {
+					auto CL{ Trans->Classes };
+					return (*CL)[_id];
+				}
+				return "";
+			}
+			if (_id[0] == '$') _id = _id.substr(1);
+			Trans2Upper(_id);
+			for (auto fscope = this; fscope; fscope = fscope->Parent) {
+				if (fscope->LocalVars->count(_id)) {
+					auto LV{ fscope->LocalVars };
+					return (*LV)[_id];
+				}
+			}
+				/* Copied from elsewhere, for I have been a stupid idiot!
+			for (size_t i = Scopes.size(); i > 0; --i) {
+				size_t idx{ i - 1 };
+				auto Sc{ GetScope(idx) };
+				if (Sc->LocalVars->count(_id)) {
+					auto LV{ Sc->LocalVars };
+					return (*LV)[_id];
+				}
+			}
+			*/
+			if (ignoreglobals) return "";
+			if (CoreGlobals.count(_id)) return CoreGlobals[_id];
+			if (Trans->GlobalVar->count(_id)) { auto GV{ Trans->GlobalVar }; return (*GV)[_id]; }
+			if (Trans->Classes->count(_id)) { auto CL{ Trans->Classes }; return (*CL)[_id]; }
+			return ""; // Empty string just means unrecognized
+		}
 	};
-	typedef std::shared_ptr<_Scope> Scope;
 	
 
 	class _TransProcess {
@@ -144,17 +188,18 @@ namespace Scyndi {
 		Translation Trans{};
 		std::vector<Scope> Scopes;
 		Scope RootScope;
-		void PushScope(ScopeKind K) {
-			auto NS{ std::make_shared<_Scope>() };
-			NS->Kind = K;
-			Scopes.push_back(NS);
-		}
-		uint64 ScopeLevel() { return Scopes.size(); };
 		Scope GetScope() {
 			auto lvl{ ScopeLevel() };
 			if (lvl == 0) return RootScope; //ScopeKind::Root;						
 			return Scopes[lvl - 1];
 		}
+		void PushScope(ScopeKind K) {
+			//auto NS{ std::make_shared<_Scope>() };
+			auto NS{ GetScope()->Breed() };
+			NS->Kind = K;
+			Scopes.push_back(NS);
+		}
+		uint64 ScopeLevel() { return Scopes.size(); };
 		Scope GetScope(size_t lvl) {
 			if (lvl == 0) return RootScope; //ScopeKind::Root;						
 			return Scopes[lvl - 1];
@@ -164,6 +209,7 @@ namespace Scyndi {
 			RootScope = std::make_shared<_Scope>();
 			RootScope->Kind = ScopeKind::Root;
 		}
+
 		std::string Identifier(std::string _id,bool ignoreglobals=false) {
 			if (_id[0] == '@') {
 				_id = _id.substr(1);
@@ -452,6 +498,46 @@ namespace Scyndi {
 		return Ret;
 	}
 
+	static std::string GetWordKind(WordKind K) {
+		static std::map<WordKind, std::string> GWK{
+			{WordKind::KeyWord, "Keyword"},
+			{WordKind::Identifier,"Identifier"},
+			{WordKind::HaakjeOpenen,"("},
+			{WordKind::HaakjeSluiten,")"},
+			{WordKind::String,"String"}
+		};
+		if (GWK.count(K)) return GWK[K];
+		return "WK" + std::to_string((int)K);
+	}
+
+	static std::unique_ptr<std::string> Expression(Translation T,Instruction Ins, size_t start,bool ignoreglobals=false) {
+		std::string Ret{ "" };
+		auto srcfile{ Ins->SourceFile };
+		auto LineNumber{ Ins->LineNumber };
+		for (size_t pos=start; pos < Ins->Words.size(); pos++) {
+			auto W{ Ins->Words[pos] };
+			switch (W->Kind) {
+			case WordKind::Identifier: {
+				auto WT{ Ins->ScopeData->Identifier(T,W->UpWord,ignoreglobals) };
+				TransAssert(WT.size(), "Unknown identifier " + W->TheWord);
+				Ret += WT;
+			} break;
+			case WordKind::HaakjeOpenen:
+			case WordKind::HaakjeSluiten:
+				Ret += W->TheWord;
+				break;
+			case WordKind::String:
+				Ret += '"';
+				Ret += W->TheWord;
+				Ret += '"';
+				break;
+			default:
+				TransError(TrSPrintF("Unexpected %s (W%03d) '%s'", GetWordKind(W->Kind).c_str(), pos + 1, W->TheWord.c_str()));
+			}
+		}
+		return std::unique_ptr<std::string>(new std::string(Ret));
+	}
+
 	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
 		Verb("Compiling", srcfile);
 		_TLError = "";
@@ -510,6 +596,7 @@ namespace Scyndi {
 			HasInit{ false }; // If there's at least one init this must be true.
 		for (auto ins : Ret.Instructions) {
 			ins->ScopeLevel = Ret.ScopeLevel();
+			ins->ScopeData = Ret.GetScope();
 			ins->Scope = Ret.GetScope()->Kind;
 			Chat("Preprocessing in instruction on line #" << ins->LineNumber);
 #ifdef TransDebug
@@ -579,7 +666,7 @@ namespace Scyndi {
 			} else if (!First) {
 				if (!MuteByIfDef) {
 					First = true;
-					ins->Kind = InsKind::HeaderDefintiion; // Script or Module
+					ins->Kind = InsKind::HeaderDefintion; // Script or Module
 					if (ins->Words[0]->UpWord == "SCRIPT") {
 						Ret.Trans->Kind = ScriptKind::Script;
 						std::string _id = "MAINSCRIPT";
@@ -662,8 +749,47 @@ namespace Scyndi {
 		// TODO!
 
 		// Translate
-
-
+		auto InitTag{ TrSPrintF("__Scyndi__Init__%s",md5(srcfile + CurrentDate() + CurrentTime()).c_str()) };
+		auto Trans{ &Ret.Trans->LuaSource };
+		*Trans = "--[[ Script Generated by Scyndi on " + CurrentDate() + ", " + CurrentTime() + "]] ";
+		if (HasInit) *Trans += "\nlocal " + InitTag + " = {}\n";
+		for (auto& Ins : Ret.Instructions) {
+			auto LineNumber{ Ins->LineNumber };
+			switch (Ins->Kind) {
+				// Alright! Move along! There's nothing to see here.
+				// These kind of instructions were valid to preprocessing and stuff, but have no value any more during translating itself.
+				// It has ben taken care of by now!
+			case InsKind::WhiteLine:
+			case InsKind::CompilerDirective: // Not needed anymore! This has already been taken care of, remember?
+			case InsKind::HeaderDefintion:
+				break;
+			case InsKind::StartInit:
+				*Trans += InitTag + "[#" + InitTag + "+1]=function()\n";
+				break;
+			case InsKind::EndScope:
+				switch (Ins->Scope) {
+				case ScopeKind::Init:
+					*Trans += "end\n";
+					break;
+				default:
+					TransError(TrSPrintF("Unknown scope kind (%03d)! Cannot end it (Internal error! Please report!)",(int)Ins->Scope));
+					//break;
+				}
+				break;
+			case InsKind::General: {
+				auto Ex{ Expression(Ret.Trans,Ins,0) };
+				if (!Ex) return nullptr;
+				*Trans += *Ex;
+				*Trans += '\n';
+			} break;
+			default:
+				TransError(TrSPrintF("Unknown instruction kind (%d) (Internal error. Please report!)",(int)Ins->Kind));
+				//break;
+			}
+		}
+		if (HasInit) {
+			*Trans += "\n\nfor _,ifunc in ipairs(" + InitTag + ") do ifunc() end; " + InitTag + " = nil";
+		}
 		return Ret.Trans;
 	}
 
