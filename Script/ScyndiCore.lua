@@ -458,7 +458,7 @@ _Scyndi.DEBUG = setmetatable({},{
 	__index = function(s,k)
 		k=k:upper()
 		if k=="READONLY" then return _ScyndiDebug.READONLY end
-		return _ScyndiDebug[k] || _Scyndi.NIKS
+		return _ScyndiDebug[k] or _Scyndi.NIKS
 	end
 		
 })
