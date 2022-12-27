@@ -1,0 +1,7 @@
+#warn "Hello World!"
+
+Script
+
+Init
+	Print("Hello world!")
+End
