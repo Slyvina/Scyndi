@@ -130,6 +130,9 @@
     <ClCompile Include="..\..\Libs\JCR6\Source\JCR6_RealDir.cpp">
       <Filter>Source Files\Slyvina\JCR6</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvMD5.cpp">
+      <Filter>Source Files\Slyvina\Units</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Compiler\ScyndiGlobals.hpp">
@@ -167,6 +170,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Libs\JCR6\Headers\JCR6_RealDir.hpp">
       <Filter>Header Files\Slyvina\JCR6</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvMD5.hpp">
+      <Filter>Header Files\Slyvina\Units</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

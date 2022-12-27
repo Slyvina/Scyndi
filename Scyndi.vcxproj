@@ -173,6 +173,7 @@
     <ClCompile Include="..\..\Libs\Units\Source\SlyvSTOI.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvStream.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvString.cpp" />
+    <ClCompile Include="..\..\Libs\Units\Source\SlyvMD5.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvTime.cpp" />
     <ClCompile Include="..\..\Libs\Units\Source\SlyvVolumes.cpp" />
     <ClCompile Include="Compiler\Config.cpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvArgParse.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvAsk.hpp" />
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvMD5.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvQCol.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvVecSearch.hpp" />
     <ClInclude Include="Compiler\Config.hpp" />
