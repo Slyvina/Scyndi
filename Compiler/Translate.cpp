@@ -515,6 +515,27 @@ namespace Scyndi {
 						pos += 1;						 
 					}
 					break;
+				case '>':
+				case '<': {
+					Chat(pos << " >< ");
+					TransAssert(pos < Line.size() - 1, "There can never be a < or > at the end of a line");
+					std::string W{ "" }; W += ch;
+					if (Line[pos + 1] == '=') {
+						W += '=';
+						pos += 2;
+					} else {						
+						pos += 1;
+					}
+					Ret->Words.push_back(_Word::NewWord(WordKind::Operator, W));
+					break;
+				} break;
+				case '+':
+				case '-':
+				case '*':
+					Chat("Plus/Minus/Times");
+					Ret->Words.push_back(_Word::NewWord(WordKind::Operator, ch));
+					pos++;
+					break;
 				default:
 					if (ch >= '0' && ch <= '9') {
 						FormNumber = true;
