@@ -108,6 +108,15 @@ namespace Scyndi {
 			return ret;			
 		}
 
+		static Word NewWord(WordKind K, char C) {
+			std::string W{ "" }; W += C;
+			auto ret{ std::make_shared<_Word>() };
+			ret->Kind = K;
+			ret->TheWord = W;
+			ret->UpWord = Upper(W);
+			return ret;
+		}
+
 		static Word NewWord(std::string W) {
 			auto ret{ std::make_shared<_Word>() };
 			ret->TheWord = W;
