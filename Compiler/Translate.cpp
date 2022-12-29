@@ -680,7 +680,7 @@ namespace Scyndi {
 			auto LineNumber = ins->LineNumber;
 			auto DecScope{ false }; // needed this way to end declaration scopes abruptly
 			//*
-			if (ins->Words.size() && ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord)) {
+			if (ins->Words.size() && ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord)) {
 				TransAssert(ScriptName.size(), "Header first");
 				DecScope = true;
 				size_t pos{ 0 };
@@ -689,37 +689,62 @@ namespace Scyndi {
 				for (pos = 0; pos < ins->Words.size() && (!Prefixed(ins->Words[pos]->UpWord, "@")) && (!_Declaration::S2E.count(ins->Words[pos]->UpWord)); pos++) {
 					if (ins->Words[0]->UpWord == "GLOBAL") dec->IsGlobal = true;
 					if (ins->Words[1]->UpWord == "STATIC") dec->IsStatic = true;
+					if (ins->Words[1]->UpWord == "CONST") dec->IsConstant = true;
+					if (ins->Words[1]->UpWord == "READONLY") dec->IsReadOnly = true;
 				}
 				TransAssert(pos < ins->Words.size(), "Incomplete declaration");
-				if (Prefixed(ins->Words[pos]->UpWord, "@")) { 
-					dec->Type == VarType::CustomClass; 
-					dec->CustomClass = ins->Words[pos]->UpWord.substr(1); }
-				else {
+				if (Prefixed(ins->Words[pos]->UpWord, "@")) {
+					dec->Type == VarType::CustomClass;
+					dec->CustomClass = ins->Words[pos]->UpWord.substr(1);
+				} else {
 					TransAssert(_Declaration::S2E.count(ins->Words[pos]->UpWord), "Type error (Intenal error! Please report) ");
 					dec->Type = _Declaration::S2E[ins->Words[pos]->UpWord];
 				}
 				auto CScope{ Ret.GetScope() };
 				if (CScope->Kind == ScopeKind::Declaration) Ret.Scopes.pop_back();
-				if (pos == ins->Words.size()) {
+				//std::cout << "Dec: Line:" << ins->LineNumber << "; Pos:" << pos << "; Words:" << ins->Words.size() << "\n";
+				if (pos == ins->Words.size() - 1) {
+					ins->Kind = InsKind::StartDeclarationScope;
 					Ret.PushScope(ScopeKind::Declaration);
+					Ret.GetScope()->DecData = dec;
 				} else {
 					ins->ForEachExpression = pos + 1;
 					if (pos + 2 >= ins->Words.size());
-					// TODO: Declare if global
-					if (dec->IsGlobal) {
-						TransAssert(Ret.GetScope()->Kind == ScopeKind::Root, "Global declaration only possible in the root scope");
-					} else if (Ret.GetScope()->Kind==ScopeKind::Root) {
-						dec->IsRoot = true;
-					} else if (Ret.GetScope()->Kind == ScopeKind::Class) {
-						TransError("Class declarations not yet supported");
-					}
 					if (ins->Words.size() > ins->ForEachExpression + 1 && ins->Words[ins->ForEachExpression + 1]->UpWord == "(") ins->Kind = InsKind::DefineFunction; else ins->Kind = InsKind::Declaration;
 				}
+				if (dec->IsGlobal) {
+					TransAssert(CScope->Kind == ScopeKind::Root, "Global declaration only possible in the root scope");
+				} else if (Ret.GetScope()->Kind == ScopeKind::Root || (Ret.GetScope()->Kind == ScopeKind::Declaration && Ret.GetScope()->Parent->Kind == ScopeKind::Root)) {
+					dec->IsRoot = true;
+				} else if (Ret.GetScope()->Kind == ScopeKind::Class) {
+					TransError("Class declarations not yet supported");
+				}
+
+				if (dec->Type == VarType::pLua) {
+					TransAssert(!dec->IsConstant, "pLua variables can NOT be constant");
+					TransAssert(!dec->IsReadOnly, "pLua variables can NOT be read-only");
+				}
 			} else if (Ret.GetScope()->Kind == ScopeKind::Declaration) {
-				TransError("Scope style declarations not yet supported");
+				if (ins->Words.size() && ins->Words[0]->UpWord == "END") {
+					Ret.Scopes.pop_back();
+					DecScope = true;					
+				} else if (ins->Words.size() && ins->Words[0]->Kind != WordKind::Identifier) {
+					Ret.Scopes.pop_back();
+					DecScope = false;
+					//std::cout << "Ending";
+				} else if (ins->Words.size() ) {
+					//TransError("Scope style declarations not yet supported");
+					ins->ForEachExpression = 0;
+					ins->Kind = InsKind::Declaration;
+					ins->DecData = Ret.GetScope()->DecData;
+					DecScope = true;
+					//std::cout << "Hello? Anybody home?\n";
+					std::cout << (ins->Words[0]->Kind == WordKind::Identifier) << ": "<<ins->Words[0]->UpWord<<"; ID(Line: " << ins->LineNumber << ")\n";
+				}
 			}
 			//*/
 			if (DecScope) {
+				// Do NOTHING
 			} else if (!ins->Words.size()) {
 				Chat("--> Whiteline!");
 				ins->Kind = InsKind::WhiteLine;
@@ -897,7 +922,10 @@ namespace Scyndi {
 				case ScopeKind::QuickMeta:
 					TransError("General instruction not possible in QuickMetaScope");
 				}
-				ins->Kind = InsKind::General;
+				if (Ret.ScopeK() == ScopeKind::Declaration)
+					ins->Kind = InsKind::Declaration;
+				else
+					ins->Kind = InsKind::General;
 			} else {
 				QCol->Error("The next kind of instruction is not yet understood, due to the translator not yet being finished (Line #" + std::to_string(LineNumber) + ")");
 			}
@@ -1008,6 +1036,7 @@ namespace Scyndi {
 			case InsKind::WhiteLine:
 			case InsKind::CompilerDirective: // Not needed anymore! This has already been taken care of, remember?
 			case InsKind::HeaderDefintion:
+			case InsKind::StartDeclarationScope: // The declaration scoping is already taken care of while pre-processing.
 				break;
 			case InsKind::StartInit:
 				*Trans += InitTag + "[#" + InitTag + "+1]=function()\n";
