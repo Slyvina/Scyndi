@@ -39,7 +39,7 @@ namespace Scyndi {
 		"GROUP",
 
 		"CONSTRUCTOR",
-		"DESTRUCTOR"
+		"DESTRUCTOR",
 
 		// Init
 		"INIT",
