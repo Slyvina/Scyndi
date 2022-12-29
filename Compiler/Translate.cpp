@@ -51,9 +51,40 @@ namespace Scyndi {
 
 	bool TransVerbose{ false };
 
-	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope };
+	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, ElseIfStatement, ElseStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope, StartFor, StartForEach, Declaration, StartDeclarationScope, StartFunction };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
-	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta };
+	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration };
+
+	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate };
+
+	
+	class _Declaration {
+	public:
+		static std::map<std::string, VarType> S2E;
+		VarType Type{ VarType::Unknown };
+		bool
+			IsGet{ false }, IsSet{ false },
+			IsRoot{ false }, // Only checked if not global
+			IsStatic{ false },
+			IsGlobal{ false }, // May not be used in classes and groups			
+			IsReadOnly{ false },
+			IsConstant{ false };
+		std::string CustomClass;
+		static std::string E2S(VarType T) {
+			for (auto& K : S2E) if (K.second == T) return K.first;
+			return "";
+		}
+	};
+	std::map<std::string, VarType> _Declaration::S2E{
+		{"INT", VarType::Integer},
+		{"STRING",VarType::String},
+		{"TABLE",VarType::Table},
+		{"BOOL",VarType::Boolean},
+		{"PLUA",VarType::pLua},
+		{"DELEGATE",VarType::Delegate},
+		{"BYTE",VarType::Byte}
+	};
+	typedef std::shared_ptr<_Declaration> Declaration;
 
 	//struct _Scope;
 
@@ -74,7 +105,7 @@ namespace Scyndi {
 			ret->Kind = K;
 			ret->TheWord = W;
 			ret->UpWord = Upper(W);
-			return ret;
+			return ret;			
 		}
 
 		static Word NewWord(std::string W) {
@@ -84,11 +115,11 @@ namespace Scyndi {
 			if (ret->TheWord[0] == '$') {
 				ret->Kind = WordKind::Identifier;
 				ret->UpWord = Upper(ret->TheWord).substr(1);
-				if (!ret->UpWord.size()) ret->UpWord == "___DOLLARSIGN";
+				if (!ret->UpWord.size()) ret->UpWord = "___DOLLARSIGN";
 			} else if (ret->TheWord[0]=='@') {
 				ret->Kind = WordKind::IdentifierClass;
 				ret->UpWord = Upper(ret->TheWord).substr(1);
-				if (!ret->UpWord.size()) ret->UpWord == "___DOLLARSIGN";
+				if (!ret->UpWord.size()) ret->UpWord = "___DOLLARSIGN";
 			} else if (VecSearch(KeyWords, ret->UpWord))
 				ret->Kind = WordKind::KeyWord;
 			else if (ret->UpWord == ",")
@@ -119,6 +150,7 @@ namespace Scyndi {
 	typedef std::shared_ptr<_Scope> Scope;
 	class _TransProcess;
 	struct _Instruction {
+		Declaration DecData{ nullptr };
 		_TransProcess* TransParent{ nullptr };
 		InsKind Kind{ InsKind::Unknown };
 		std::string SourceFile{""};
@@ -130,6 +162,10 @@ namespace Scyndi {
 		uint64 ScopeLevel{ 0 };
 		Scyndi::Scope ScopeData{ nullptr };
 		ScopeKind Scope{ ScopeKind::Unknown };
+		size_t ForEachExpression;
+		std::vector < std::string > ForVars{};
+		StringMap ForTrans{ NewStringMap() };
+		//std::string ForStart{ "0" }, ForTo{ "0" }, ForStep{ "1" };  // Although only numbers processed, in translation this is the better ride
 	};
 	typedef std::shared_ptr<_Instruction> Instruction;
 
@@ -138,14 +174,16 @@ namespace Scyndi {
 	public:
 		ScopeKind Kind;
 		StringMap LocalVars{ NewStringMap() };
+		std::map<std::string, size_t> LocalDeclaLine{};
 		_Scope* Parent{ nullptr };
+		Declaration DecData{ nullptr };
 		Scope Breed() {
 			auto ret = std::make_shared<_Scope>();
 			ret->Parent = this;
 			return ret;
 		}
 
-		std::string Identifier(Translation Trans, std::string _id, bool ignoreglobals = false) {
+		std::string Identifier(Translation Trans, size_t lnr, std::string _id, bool ignoreglobals = false) {
 			if (_id[0] == '@') {
 				_id = _id.substr(1);
 				if (Trans->Classes->count(_id)) {
@@ -156,8 +194,11 @@ namespace Scyndi {
 			}
 			if (_id[0] == '$') _id = _id.substr(1);
 			Trans2Upper(_id);
+			// Is this a local?
 			for (auto fscope = this; fscope; fscope = fscope->Parent) {
-				if (fscope->LocalVars->count(_id)) {
+				if (!LocalDeclaLine.count(_id)) LocalDeclaLine[_id] = 0;
+				// std::cout << "Local check " << _id << " in scope " << (uint64)fscope << "(" << (uint32)fscope->Kind<< "); Found: " << fscope->LocalVars->count(_id) << "; Declared in line: " << LocalDeclaLine[_id] << "; Instruction line: " << lnr << std::endl; // DEBUG ONLY!!!
+				if (fscope->LocalVars->count(_id) && lnr>=LocalDeclaLine[_id]) {
 					auto LV{ fscope->LocalVars };
 					return (*LV)[_id];
 				}
@@ -442,6 +483,8 @@ namespace Scyndi {
 				} break;
 				case ',':
 					Ret->Words.push_back(_Word::NewWord(","));
+					pos++;
+					break;
 				case '"':
 					InString = true;
 					pos++;
@@ -451,6 +494,17 @@ namespace Scyndi {
 					FormingWord = true;
 					FormWord = ch;
 					pos++;
+					break;
+				case '=':
+					Chat(pos << " = ");
+					TransAssert(pos < Line.size() - 1, "There can never be an = at the end of a line");
+					if (Line[pos + 1] == '=') {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "=="));
+						pos += 2;
+					} else {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "="));
+						pos += 1;						 
+					}
 					break;
 				default:
 					if (ch >= '0' && ch <= '9') {
@@ -504,7 +558,10 @@ namespace Scyndi {
 			{WordKind::Identifier,"Identifier"},
 			{WordKind::HaakjeOpenen,"("},
 			{WordKind::HaakjeSluiten,")"},
-			{WordKind::String,"String"}
+			{WordKind::String,"String"},
+			{WordKind::Number,"Number"},
+			{WordKind::Comma,"Comma"},
+			{WordKind::Operator,"Operator"},
 		};
 		if (GWK.count(K)) return GWK[K];
 		return "WK" + std::to_string((int)K);
@@ -515,10 +572,11 @@ namespace Scyndi {
 		auto srcfile{ Ins->SourceFile };
 		auto LineNumber{ Ins->LineNumber };
 		for (size_t pos=start; pos < Ins->Words.size(); pos++) {
+			if (Ret.size()) Ret += " ";
 			auto W{ Ins->Words[pos] };
 			switch (W->Kind) {
 			case WordKind::Identifier: {
-				auto WT{ Ins->ScopeData->Identifier(T,W->UpWord,ignoreglobals) };
+				auto WT{ Ins->ScopeData->Identifier(T,Ins->LineNumber,W->UpWord,ignoreglobals) };
 				TransAssert(WT.size(), "Unknown identifier " + W->TheWord);
 				Ret += WT;
 			} break;
@@ -531,8 +589,24 @@ namespace Scyndi {
 				Ret += W->TheWord;
 				Ret += '"';
 				break;
+			case WordKind::Number:
+			case WordKind::Comma:
+			case WordKind::Operator:
+				Ret += W->TheWord;
+				break;
 			default:
-				TransError(TrSPrintF("Unexpected %s (W%03d) '%s'", GetWordKind(W->Kind).c_str(), pos + 1, W->TheWord.c_str()));
+				if (W->UpWord == "TRUE")
+					Ret += "true";
+				else if (W->UpWord == "FALSE")
+					Ret += "false";
+				else if (W->UpWord == "NIL")
+					Ret += "nil";
+				else if (W->UpWord == "INFINITY")
+					Ret += " ... ";
+				else if (W->UpWord == "DIV")
+					Ret += " // ";
+				else
+					TransError(TrSPrintF("Unexpected %s (W%03d) '%s'", GetWordKind(W->Kind).c_str(), pos + 1, W->TheWord.c_str()));
 			}
 		}
 		return std::unique_ptr<std::string>(new std::string(Ret));
@@ -588,6 +662,7 @@ namespace Scyndi {
 		Verb("=> Pre-processing", srcfile);
 		std::map<std::string, Word> TransConfig;
 		std::map<std::string, bool> Defs;
+		std::string ScriptName{ "" };
 		bool
 			MuteByIfDef{ false },
 			HaveIfDef{ false },
@@ -603,7 +678,49 @@ namespace Scyndi {
 			for (size_t i = 0; i < ins->Words.size(); i++) { Chat("Word " << i + 1 << "/" << ins->Words.size()<<"> "<<ins->Words[i]->TheWord); }
 #endif
 			auto LineNumber = ins->LineNumber;
-			if (!ins->Words.size()) {
+			auto DecScope{ false }; // needed this way to end declaration scopes abruptly
+			//*
+			if (ins->Words.size() && ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord)) {
+				TransAssert(ScriptName.size(), "Header first");
+				DecScope = true;
+				size_t pos{ 0 };
+				auto dec = std::make_shared<_Declaration>();
+				ins->DecData = dec;
+				for (pos = 0; pos < ins->Words.size() && (!Prefixed(ins->Words[pos]->UpWord, "@")) && (!_Declaration::S2E.count(ins->Words[pos]->UpWord)); pos++) {
+					if (ins->Words[0]->UpWord == "GLOBAL") dec->IsGlobal = true;
+					if (ins->Words[1]->UpWord == "STATIC") dec->IsStatic = true;
+				}
+				TransAssert(pos < ins->Words.size(), "Incomplete declaration");
+				if (Prefixed(ins->Words[pos]->UpWord, "@")) { 
+					dec->Type == VarType::CustomClass; 
+					dec->CustomClass = ins->Words[pos]->UpWord.substr(1); }
+				else {
+					TransAssert(_Declaration::S2E.count(ins->Words[pos]->UpWord), "Type error (Intenal error! Please report) ");
+					dec->Type = _Declaration::S2E[ins->Words[pos]->UpWord];
+				}
+				auto CScope{ Ret.GetScope() };
+				if (CScope->Kind == ScopeKind::Declaration) Ret.Scopes.pop_back();
+				if (pos == ins->Words.size()) {
+					Ret.PushScope(ScopeKind::Declaration);
+				} else {
+					ins->ForEachExpression = pos + 1;
+					if (pos + 2 >= ins->Words.size());
+					// TODO: Declare if global
+					if (dec->IsGlobal) {
+						TransAssert(Ret.GetScope()->Kind == ScopeKind::Root, "Global declaration only possible in the root scope");
+					} else if (Ret.GetScope()->Kind==ScopeKind::Root) {
+						dec->IsRoot = true;
+					} else if (Ret.GetScope()->Kind == ScopeKind::Class) {
+						TransError("Class declarations not yet supported");
+					}
+					if (ins->Words.size() > ins->ForEachExpression + 1 && ins->Words[ins->ForEachExpression + 1]->UpWord == "(") ins->Kind = InsKind::DefineFunction; else ins->Kind = InsKind::Declaration;
+				}
+			} else if (Ret.GetScope()->Kind == ScopeKind::Declaration) {
+				TransError("Scope style declarations not yet supported");
+			}
+			//*/
+			if (DecScope) {
+			} else if (!ins->Words.size()) {
 				Chat("--> Whiteline!");
 				ins->Kind = InsKind::WhiteLine;
 			} else if (ins->Words[0]->TheWord == "#") {
@@ -676,6 +793,7 @@ namespace Scyndi {
 							TransAssert(Ret.Identifier(_id) == "", "Script header creates duplicate identifier");
 						}
 						(*Ret.Trans->GlobalVar)[_id] = "SCYNDI.CLASS[\"" + _id + "\"]";
+						ScriptName = _id;
 					} else if (ins->Words[0]->UpWord == "MODULE") {
 						Ret.Trans->Kind = ScriptKind::Script;
 						std::string _sid = Upper(StripAll(srcfile));
@@ -699,6 +817,7 @@ namespace Scyndi {
 							}
 						}
 						(*Ret.Trans->GlobalVar)[_id] = "SCYNDI.CLASS[\"" + _id + "\"]";
+						ScriptName = _id;
 					} else {
 						TransError("Script header expected");
 					}
@@ -721,6 +840,52 @@ namespace Scyndi {
 				}
 				ins->Kind = InsKind::EndScope;
 				Ret.Scopes.pop_back();
+			} else if (ins->Words[0]->UpWord == "FOR") {
+				TransAssert(ins->Words.size() > 1, "FOR without stuff");
+				ins->Kind = InsKind::StartFor;
+				Ret.PushScope(ScopeKind::ForLoop);
+				std::vector < std::string > ForVars;
+				bool isforeach{ false };
+				size_t endexpression{ 0 };
+				for (size_t wk = 1; true; wk += 2) {
+					TransAssert(wk < ins->Words.size() - 1, "Incomplete FOR instruction");
+					TransAssert(ins->Words[wk]->Kind == WordKind::Identifier, TrSPrintF("FOR syntax error! Identifier expected but got %s (%s)", GetWordKind(ins->Words[wk]->Kind).c_str(), ins->Words[wk]->TheWord.c_str()));
+					auto varname{ ins->Words[wk]->UpWord }; if (varname[0] == '$') varname = varname.substr(1);
+					TransAssert(varname[0] != '@', "You cannot use classes as FOR variable");
+					ForVars.push_back(varname);
+					if (ins->Words[wk + 1]->UpWord == "IN") { ins->Kind = InsKind::StartForEach; isforeach = true; endexpression = wk + 2; break; }
+					if (ins->Words[wk + 1]->UpWord == "=") { endexpression = wk + 2; break; }
+					TransAssert(ins->Words[wk + 1]->UpWord == ",", TrSPrintF("FOR syntax error! Unexpected %s(%s)! Expected ',', '=' or 'IN' instead! ", GetWordKind(ins->Words[wk + 1]->Kind).c_str(), ins->Words[wk + 1]->TheWord.c_str()));
+				}
+				TransAssert(ForVars.size(), "FOR without variables");
+				if (!isforeach) {
+					TransAssert(ForVars.size() == 1, "Too many variables declared for a regular FOR loop");
+					//TransAssert(ins->Words.size() >= endexpression + 2, "Unfinished regular FOR");
+				}
+				for (auto& loc : ForVars) {
+					static size_t count{ 0 };
+					auto sv{ Ret.GetScope()->LocalVars };
+					(*sv)[loc] = TrSPrintF("__Scyndi_For_Variable_%08x_%s", count++, md5(loc).c_str());
+					Ret.GetScope()->LocalDeclaLine[loc] = ins->LineNumber;
+					ins->ForVars.push_back(loc);
+					(*ins->ForTrans)[loc] = (*sv)[loc];
+					//std::cout << "FORVAR: ("<<(uint64)Ret.GetScope().get() << "): " << loc << " -> " << (*sv)[loc] << " (line " << Ret.GetScope()->LocalDeclaLine[loc] << ")" << std::endl;
+				}
+				ins->ForEachExpression = endexpression;
+			} else if (ins->Words[0]->UpWord == "IF") {
+				ins->Kind = InsKind::IfStatement;
+				Ret.PushScope(ScopeKind::IfScope);
+			} else if (ins->Words[0]->UpWord == "ELSEIF" || ins->Words[0]->UpWord == "ELIF") {
+				TransAssert(Ret.GetScope()->Kind == ScopeKind::IfScope || Ret.GetScope()->Kind == ScopeKind::ElIf, "ELSEIF without IF");
+				Ret.Scopes.pop_back();
+				Ret.PushScope(ScopeKind::ElIf);
+				ins->Kind = InsKind::ElseIfStatement;
+			} else if (ins->Words[0]->UpWord == "ELSE") {
+				TransAssert(Ret.GetScope()->Kind == ScopeKind::IfScope || Ret.GetScope()->Kind == ScopeKind::ElIf, "ELSEIF without IF");
+				TransAssert(ins->Words.size() == 1, "ELSE does not take any argumentation");
+				Ret.Scopes.pop_back();
+				Ret.PushScope(ScopeKind::ElseScope);
+				ins->Kind = InsKind::ElseStatement;
 			} else if (ins->Words[0]->Kind==WordKind::Identifier) {
 				switch (Ret.ScopeK()) {
 				case ScopeKind::Root:
@@ -742,16 +907,97 @@ namespace Scyndi {
 			auto LineNumber = Ret.Instructions[Ret.Instructions.size() - 1]->LineNumber;
 			TransAssert(Ret.ScopeLevel() == 0, TrSPrintF("Unclosed scope (%d)", (int)Ret.ScopeK()));
 		}
+		auto Trans{ &Ret.Trans->LuaSource };
+		*Trans = "-- " + srcfile + "\n";
+		*Trans += "--[[ Script Generated by Scyndi on " + CurrentDate() + ", " + CurrentTime() + "]]\n\n ";
+		*Trans += TrSPrintF("local %s = _Scyndi.STARTCLASS(\"%s\",true,true,nil)\n", ScriptName.c_str(), ScriptName.c_str());
+
 		// Class management
 		// TODO!
 
 		// Declaration management
-		// TODO!
+		for (auto Ins : Ret.Instructions) {
+			auto LineNumber{ Ins->LineNumber };
+			auto Dec{ Ins->DecData };
+			if (Dec) {
+				auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };
+				auto PluaName{ Ins->Words[Ins->ForEachExpression]->TheWord };			
+				std::string Value{ "" };
+				std::string DType{ "" };
+				if (Dec->Type == VarType::CustomClass)
+					DType == Dec->CustomClass;
+				else {
+					TransAssert(_Declaration::E2S(Dec->Type).size(), "Internal error type unknown (Dec stage)");
+					DType = _Declaration::E2S(Dec->Type);
+				}
+				if (VarName[0] == '$') VarName = VarName.substr(1);
+				// Please note, everything not recongized as a variable declaration or function definition should be ignored.
+				switch (Ins->Kind) {
+				case InsKind::DefineFunction:
+					TransError("Function definitions not yet supported");
+				case InsKind::Declaration:
+					if (Ins->Words.size() == Ins->ForEachExpression + 1) {
+						switch (Dec->Type) {
+						case VarType::Number:
+						case VarType::Integer:
+						case VarType::Byte:
+							Value = "0";
+							break;
+						case VarType::Boolean:
+							Value = "false";
+							break;
+						case VarType::String:
+							Value = "\"\"";
+							break;
+						case VarType::Table:
+							Value = "{}";
+							break;
+						default:
+							Value = "nil";
+							break;
+						}
+					} else {
+						TransAssert(Ins->Words[Ins->ForEachExpression + 1]->TheWord == "=", "Variable declaration syntax error");
+						TransAssert(Ins->Words.size() > Ins->ForEachExpression + 1, "Default value expected");
+						auto EX{ Expression(Ret.Trans,Ins,Ins->ForEachExpression + 2) };
+						if (!EX) return nullptr;
+						Value = *EX;
+					}
+					if (Dec->IsGlobal) {
+						if (Dec->Type == VarType::pLua) {
+							std::string Prefix{ "" }; if (TransConfig.count("PLUAPREFIX")) Prefix = TransConfig["PLUAPREFIX"]->TheWord;
+							auto ref{ TrSPrintF("%s%s",Prefix.c_str(),PluaName.c_str()) };
+							Ret.Trans->Data->Add("Globals", "-list-", VarName);
+							Ret.Trans->Data->Value("Globals", VarName, ref);
+							(*Ret.Trans->GlobalVar)[VarName] = ref;
+							*Trans += TrSPrintF("%s = %s\n", ref.c_str(), Value.c_str());
+						} else {
+							auto ref{ TrSPrintF("Scyndi.Globals[\"%s\"]",VarName.c_str()) };
+							Ret.Trans->Data->Add("Globals", "-list-", VarName);
+							Ret.Trans->Data->Value("Globals", VarName, ref);
+							(*Ret.Trans->GlobalVar)[VarName] = ref;
+							//Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
+							*Trans += TrSPrintF("Scyndi.ADDMBER(\"..GLOBALS..\",\"%s\",\"%s\",true,%s,%s,%s)\n", DType.c_str(), VarName.c_str(), Lower(boolstring(Dec->IsReadOnly)).c_str(), Lower(boolstring(Dec->IsConstant)).c_str(), Value.c_str());
+						}
+					} else if (Dec->IsRoot) {
+						if (Dec->Type == VarType::pLua) {
+							std::string Prefix{ "" }; if (TransConfig.count("PLUAPREFIX")) Prefix = TransConfig["PLUAPREFIX"]->TheWord;
+							auto ref{ TrSPrintF("%s%s",Prefix.c_str(),PluaName.c_str()) };
+							*Trans += TrSPrintF("local %s = %s\n", ref.c_str(), Value.c_str());
+							(*Ret.RootScope->LocalVars)[VarName] = ref;
+						} else {
+							auto ref{ TrSPrintF("Scyndi.Class[\"%s\"][\"%s\"]",ScriptName.c_str(),VarName.c_str()) };
+							(*Ret.RootScope->LocalVars)[VarName] = ref;
+							//Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
+							*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"%s\",\"%s\",true,%s,%s,%s)\n", ScriptName.c_str(), DType.c_str(), VarName.c_str(), Lower(boolstring(Dec->IsReadOnly)).c_str(), Lower(boolstring(Dec->IsConstant)).c_str(), Value.c_str());
+						}
+					}
+				}
+			}
+		}
 
 		// Translate
 		auto InitTag{ TrSPrintF("__Scyndi__Init__%s",md5(srcfile + CurrentDate() + CurrentTime()).c_str()) };
-		auto Trans{ &Ret.Trans->LuaSource };
-		*Trans = "--[[ Script Generated by Scyndi on " + CurrentDate() + ", " + CurrentTime() + "]] ";
 		if (HasInit) *Trans += "\nlocal " + InitTag + " = {}\n";
 		for (auto& Ins : Ret.Instructions) {
 			auto LineNumber{ Ins->LineNumber };
@@ -766,9 +1012,53 @@ namespace Scyndi {
 			case InsKind::StartInit:
 				*Trans += InitTag + "[#" + InitTag + "+1]=function()\n";
 				break;
+			case InsKind::StartFor:
+			case InsKind::StartForEach: {
+				*Trans += "for ";
+				for (size_t i = 0; i < Ins->ForVars.size(); i++) {
+					if (i) *Trans += ", ";
+					//auto tvar{ Ins->ScopeData->Identifier(Ret.Trans, Ins->LineNumber, Ins->ForVars[i], true) };
+					auto getsm{ Ins->ForTrans };
+					auto tvar{ (*getsm)[Ins->ForVars[i]] };
+					TransAssert(tvar.size(),TrSPrintF("FOR variable '%s' didn't seem to have a translation. This is an internal error! Please report! ", Ins->ForVars[i].c_str()))
+					*Trans += tvar;
+				}
+				switch (Ins->Kind) {
+				case InsKind::StartFor: *Trans += " = "; break;
+				case InsKind::StartForEach: *Trans += " in "; break;
+				default: TransError("Internal error in FOR translation! Please report!"); break; // This should be impossible!
+				}
+				auto Ex{ Expression(Ret.Trans,Ins,Ins->ForEachExpression) };
+				if (!Ex) return nullptr;
+				*Trans += *Ex;
+				*Trans += " do\n";
+			} break;
+			case InsKind::IfStatement: {
+				*Trans += "if ";
+				auto Ex{ Expression(Ret.Trans,Ins,1) };
+				if (!Ex) return nullptr;
+				*Trans += *Ex;
+				*Trans += " then\n";
+			} break;
+			case InsKind::ElseIfStatement: {
+				*Trans += "elseif ";
+				auto Ex{ Expression(Ret.Trans,Ins,1) };
+				if (!Ex) return nullptr;
+				*Trans += *Ex;
+				*Trans += " then\n";
+			} break;
+			case InsKind::ElseStatement:
+				*Trans += "else\n";
+				break;
 			case InsKind::EndScope:
 				switch (Ins->Scope) {
-				case ScopeKind::Init:
+				case ScopeKind::Init: // I do take this apart. Init can be a bit more sensitive
+					*Trans += "end\n";
+					break;
+				case ScopeKind::ForLoop:
+				case ScopeKind::IfScope:
+				case ScopeKind::ElIf:
+				case ScopeKind::ElseScope:
 					*Trans += "end\n";
 					break;
 				default:
@@ -776,6 +1066,10 @@ namespace Scyndi {
 					//break;
 				}
 				break;
+			case InsKind::Declaration:
+				TransAssert(Ins->DecData, "No DecData in translation (transphase) - This is an internal error! Please report!");
+				if (Ins->DecData->IsGlobal || Ins->DecData->IsRoot) break;
+				TransError("This kind of declaration not YET supported");
 			case InsKind::General: {
 				auto Ex{ Expression(Ret.Trans,Ins,0) };
 				if (!Ex) return nullptr;

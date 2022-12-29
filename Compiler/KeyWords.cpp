@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.25
+// Version: 22.12.29
 // EndLic
 
 #include <string>
@@ -65,6 +65,9 @@ namespace Scyndi {
 		"VAR",
 		"PLUA",
 
+		// Infinite arguments
+		"INFINITY",
+
 		// Math
 		"DIV", // This because the '//' Lua itself uses for that is in Scyndi reserved for comments
 
@@ -84,7 +87,18 @@ namespace Scyndi {
 		// Switch
 		"SWITCH", "SELECT",
 		"CASE",
-		"DEFAULT"
+		"DEFAULT",
+
+		// For
+		"IN",
+		//"TO",
+		//"STEP"
+
+		// Value Based Keywords
+		"NIL",
+		"TRUE",
+		"FALSE"
+
 	};
 
 

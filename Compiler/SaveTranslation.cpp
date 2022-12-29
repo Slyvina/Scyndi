@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.27
+// Version: 22.12.29
 // EndLic
 extern "C" {
 #include <lua.h>
@@ -30,6 +30,7 @@ extern "C" {
 }
 
 #include <SlyvQCol.hpp>
+#include <SlyvString.hpp>
 #include <JCR6_Write.hpp>
 
 #include "Translate.hpp"
@@ -80,17 +81,31 @@ namespace Scyndi {
     }
 
 	bool SaveTranslation(Translation Trans, JT_Create Out,std::string Storage) {
+        err = false;
         auto L{ luaL_newstate() };
         auto source{ Trans->LuaSource };
         QCol->Doing("Compiling", "Lua translation");
-        err = false;
-        luaL_openlibs(L);
         lua_atpanic(L, LuaPaniek);
+        luaL_openlibs(L);
         luaL_loadstring(L, source.c_str());
         //lua_call(L, 0, 0);
         if (!err) {
             OutBuf = std::make_shared < std::vector < char > >();
             lua_dump(L, DumpLua, NULL, 0);
+        }
+        if (!OutBuf->size()) {
+            QCol->Error("Lua translation failed!");
+            LuaPaniek(L); // Test
+            QCol->LGreen("<source>\n"); 
+            auto Lines = Split(source,'\n');
+            for (size_t ln = 0; ln < Lines->size(); ln++) {
+                QCol->LMagenta(TrSPrintF("%9d\t", ln + 1));
+                QCol->LCyan((*Lines)[ln]);
+                QCol->White("\n");
+            }
+            QCol->LGreen("</source>\n");
+            lua_close(L);
+            return false;
         }
         if (Out) {
             QCol->Doing("Writing", "Bytecode");
@@ -104,6 +119,7 @@ namespace Scyndi {
             else
                 Out->AddString(source, "Translation.lua");
             QCol->Doing("Writing", "Configuration");
+            Trans->Data->Value("Lua", "Version", TrSPrintF("%s.%s.%s", LUA_VERSION_MAJOR, LUA_VERSION_MINOR, LUA_VERSION_RELEASE));
             auto UPD{ Trans->Data->UnParse() };
             if (UPD.size() > 2048)
                 Out->AddString(UPD, "Configuration.ini", Storage);

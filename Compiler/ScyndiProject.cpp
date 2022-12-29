@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.27
+// Version: 22.12.29
 // EndLic
 
 #include <SlyvString.hpp>
@@ -65,7 +65,7 @@ namespace Scyndi {
 		} while (true);
 	}
 
-	void Compile(GINIE PrjData,Slyvina::JCR6::JT_Dir Res,std::string ScyndiSource,bool debug,bool force) {
+	bool Compile(GINIE PrjData,Slyvina::JCR6::JT_Dir Res,std::string ScyndiSource,bool debug,bool force) {
 		// TODO: Skip if compilation if up-to-date, unless forced!
 		QCol->Doing("Reading", ScyndiSource);
 		auto src{ Res->GetString(ScyndiSource) };
@@ -73,21 +73,28 @@ namespace Scyndi {
 		auto T{ Translate(src,ScyndiSource,Res,debug) };
 		if (!T) {
 			QCol->Error(TranslationError());
+			return false;
 		} else {
-			QCol->LGreen(T->LuaSource + "\n"); // debug only!
+			// QCol->LGreen(T->LuaSource + "\n"); // debug only!
 			auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".STB" }; // STB = Scyndi Translated Bundle
 			QCol->Doing("Bundling", OutputFile);
 			auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
 			auto JO{ CreateJCR6(OutputFile) };
-			SaveTranslation(T, JO, Storage);
+			auto ret{ SaveTranslation(T, JO, Storage) };
 			JO->Close();
 			QCol->Doing("Completed", ScyndiSource);
 			std::cout << "\n\n";
+			return ret;
 		}
 
 	}
 
 	void ProcessProject(std::string prj, bool force, bool debug) {
+		Slyvina::uint32
+			Success{ 0 },
+			Skipped{ 0 },
+			Failed{ 0 };
+
 		TransVerbose = true;
 		if (!FileExists(prj)) {
 			if (!QuickYes("Project '" + prj + "' does not yet exist. Create it"))
@@ -125,8 +132,15 @@ namespace Scyndi {
 			if (E == "LUA") {
 				QCol->Error("Pure Lua code not (yet) supported");
 			} else if (E == "SCYNDI") {
-				Compile(PrjData, Res, SD->Name(), debug, force);
+				if (Compile(PrjData, Res, SD->Name(), debug, force))
+					Success++;
+				else
+					Failed++;
 			}
 		}
+		QCol->Green("Project complete\n");
+		if (Success) QCol->Doing("Success", Success);
+		if (Failed) QCol->Doing("Failed", Failed);
+		if (Skipped) QCol->Doing("Skipped", Skipped);
 	}
 }
