@@ -1059,9 +1059,13 @@ namespace Scyndi {
 
 		// Translate
 		auto InitTag{ TrSPrintF("__Scyndi__Init__%s",md5(srcfile + CurrentDate() + CurrentTime()).c_str()) };
-		if (HasInit) *Trans += "\nlocal " + InitTag + " = {}\n";
+		if (HasInit) *Trans += "\nlocal " + InitTag + " = {}\n";	
 		for (auto& Ins : Ret.Instructions) {
 			auto LineNumber{ Ins->LineNumber };
+			if (Ins->Kind == InsKind::EndScope || Ins->Kind==InsKind::ElseIfStatement || Ins->Kind==InsKind::ElseStatement)
+				for (size_t tab = 1; tab < Ins->ScopeLevel; tab++) *Trans += '\t';
+			else
+				for (size_t tab = 0; tab < Ins->ScopeLevel; tab++) *Trans += '\t';
 			switch (Ins->Kind) {
 				// Alright! Move along! There's nothing to see here.
 				// These kind of instructions were valid to preprocessing and stuff, but have no value any more during translating itself.
