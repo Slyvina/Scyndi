@@ -53,7 +53,7 @@ namespace Scyndi {
 
 	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, ElseIfStatement, ElseStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope, StartFor, StartForEach, Declaration, StartDeclarationScope, StartFunction };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
-	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration };
+	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope };
 
 	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate };
 
@@ -769,7 +769,7 @@ namespace Scyndi {
 					ins->DecData = Ret.GetScope()->DecData;
 					DecScope = true;
 					//std::cout << "Hello? Anybody home?\n";
-					std::cout << (ins->Words[0]->Kind == WordKind::Identifier) << ": "<<ins->Words[0]->UpWord<<"; ID(Line: " << ins->LineNumber << ")\n";
+					//std::cout << (ins->Words[0]->Kind == WordKind::Identifier) << ": "<<ins->Words[0]->UpWord<<"; ID(Line: " << ins->LineNumber << ")\n";
 				}
 			}
 			//*/
@@ -927,6 +927,9 @@ namespace Scyndi {
 					//std::cout << "FORVAR: ("<<(uint64)Ret.GetScope().get() << "): " << loc << " -> " << (*sv)[loc] << " (line " << Ret.GetScope()->LocalDeclaLine[loc] << ")" << std::endl;
 				}
 				ins->ForEachExpression = endexpression;
+			} else if (ins->Words[0]->UpWord=="WHILE") {
+				ins->Kind = InsKind::WhileStatement;
+				Ret.PushScope(ScopeKind::WhileScope);
 			} else if (ins->Words[0]->UpWord == "IF") {
 				ins->Kind = InsKind::IfStatement;
 				Ret.PushScope(ScopeKind::IfScope);
@@ -1092,6 +1095,13 @@ namespace Scyndi {
 				*Trans += *Ex;
 				*Trans += " do\n";
 			} break;
+			case InsKind::WhileStatement: {
+				*Trans += "while ";
+				auto Ex{ Expression(Ret.Trans,Ins,1) };
+				if (!Ex) return nullptr;
+				*Trans += *Ex;
+				*Trans += " do\n";
+			} break;
 			case InsKind::IfStatement: {
 				*Trans += "if ";
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
@@ -1118,6 +1128,7 @@ namespace Scyndi {
 				case ScopeKind::IfScope:
 				case ScopeKind::ElIf:
 				case ScopeKind::ElseScope:
+				case ScopeKind::WhileScope:
 					*Trans += "end\n";
 					break;
 				default:
