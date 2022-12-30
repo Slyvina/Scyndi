@@ -379,6 +379,21 @@ function _Scyndi.DEC(v)
 		error("Decrementor not possible to type "..t)
 	end
 end
+
+function _Scyndi.ADD(v,a)
+	local t=type(v)
+	if t=="number" then
+		return v+a
+	elseif t=="string"
+		return v..a
+	elseif t=="table" and v[".ClassInstance"] then
+		return v.__ADD(v,a)
+	elseif t=="table" then
+		v[_Scyndi.GLOBALS.LEN(v)] = a
+	else
+		error("Don't know how to add to a "..t)
+	end
+end
 	
 
 
