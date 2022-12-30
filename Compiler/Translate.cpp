@@ -1195,6 +1195,22 @@ namespace Scyndi {
 				*Trans += *Ex;
 				*Trans += '\n';
 			} break;
+			case InsKind::Increment: {			
+				auto Ex{ Expression(Ret.Trans,Ins,1) };
+				if (!Ex) return nullptr;
+				*Trans += *Ex;
+				*Trans += " = Scyndi.Inc(";
+				*Trans += *Ex;
+				*Trans += ")\n";
+			} break;
+			case InsKind::Decrement: {
+				auto Ex{ Expression(Ret.Trans,Ins,1) };
+				if (!Ex) return nullptr;
+				*Trans += *Ex;
+				*Trans += " = Scyndi.Dec(";
+				*Trans += *Ex;
+				*Trans += ")\n";
+			} break;
 			default:
 				TransError(TrSPrintF("Unknown instruction kind (%d) (Internal error. Please report!)",(int)Ins->Kind));
 				//break;
