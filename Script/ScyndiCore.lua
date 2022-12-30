@@ -416,7 +416,7 @@ function _Scyndi.ADD(v,a)
 	local t=type(v)
 	if t=="number" then
 		return v+a
-	elseif t=="string"
+	elseif t=="string" then
 		return v..a
 	elseif t=="table" and v[".ClassInstance"] then
 		return v.__ADD(v,a)
@@ -431,7 +431,7 @@ function _Scyndi.SUBSTRACT(v,a)
 	local t=type(v)
 	if t=="number" then
 		return v-a
-	elseif t=="string"
+	elseif t=="string" then
 		error("Can't substract from strings")
 	elseif t=="table" and v[".ClassInstance"] then
 		return v.__SUBSTRACT(v,a)
