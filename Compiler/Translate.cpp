@@ -121,6 +121,7 @@ namespace Scyndi {
 
 		static Word NewWord(std::string W) {
 			auto ret{ std::make_shared<_Word>() };
+			Chat("New Word <AUTO> string: " << W);
 			ret->TheWord = W;
 			ret->UpWord = Upper(W);
 			if (ret->TheWord[0] == '$') {
