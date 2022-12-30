@@ -88,6 +88,7 @@ namespace Scyndi {
 		"SWITCH", "SELECT",
 		"CASE",
 		"DEFAULT",
+		"FALLTHROUGH"
 
 		// For
 		"IN",
