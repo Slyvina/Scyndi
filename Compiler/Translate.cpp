@@ -105,6 +105,7 @@ namespace Scyndi {
 			ret->Kind = K;
 			ret->TheWord = W;
 			ret->UpWord = Upper(W);
+			Chat("New Word <" << (int)K << "> string: " << W);
 			return ret;			
 		}
 
@@ -114,6 +115,7 @@ namespace Scyndi {
 			ret->Kind = K;
 			ret->TheWord = W;
 			ret->UpWord = Upper(W);
+			Chat("New Word <" << (int)K << "> Char: " << (int)C << "/" << W);
 			return ret;
 		}
 
@@ -562,6 +564,11 @@ namespace Scyndi {
 		if (FormWord.size()) {
 			Ret->Words.push_back(_Word::NewWord(FormWord));
 		}
+#ifdef TransDebug
+		for (size_t p = 0; p < Ret->Words.size(); p++) {
+			if (!Ret->Words[p]) QCol->Warn(TrSPrintF("\x7\x7There is null word on position %d/%d found!", p, Ret->Words.size()));
+		}
+#endif
 		return Ret; 
 	}
 
