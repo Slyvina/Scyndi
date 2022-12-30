@@ -427,6 +427,20 @@ function _Scyndi.ADD(v,a)
 	end
 end
 	
+function _Scyndi.SUBSTRACT(v,a)
+	local t=type(v)
+	if t=="number" then
+		return v-a
+	elseif t=="string"
+		error("Can't substract from strings")
+	elseif t=="table" and v[".ClassInstance"] then
+		return v.__SUBSTRACT(v,a)
+	elseif t=="table" then
+		_Scyndi.Globals.ArrayRemove(v,a,1)
+	else
+		error("Don't know how to substract a "..t)
+	end
+end
 
 
 -- ***** Lua basic modules/libraries/whatever copied into Scyndi groups ***** --
