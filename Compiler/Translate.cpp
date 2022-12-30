@@ -51,9 +51,9 @@ namespace Scyndi {
 
 	bool TransVerbose{ false };
 
-	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, ElseIfStatement, ElseStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope, StartFor, StartForEach, Declaration, StartDeclarationScope, StartFunction };
+	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, ElseIfStatement, ElseStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope, StartFor, StartForEach, Declaration, StartDeclarationScope, StartFunction, Switch, Case, Default, FallThrough };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
-	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope };
+	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope, Switch, Case, Default };
 
 	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate };
 
@@ -170,6 +170,9 @@ namespace Scyndi {
 		std::string RawInstruction{ "" };
 		std::vector<Word> Words{};
 		std::string Comment{ "" };
+		std::shared_ptr<std::vector<VecString>> switchcase{ nullptr };
+		bool* switchHasDefault{ nullptr };
+		std::string* SwitchName{ nullptr };
 		//_Scope* Parent;
 		uint64 ScopeLevel{ 0 };
 		Scyndi::Scope ScopeData{ nullptr };
@@ -187,6 +190,11 @@ namespace Scyndi {
 		ScopeKind Kind;
 		StringMap LocalVars{ NewStringMap() };
 		std::map<std::string, size_t> LocalDeclaLine{};
+		std::string switchID{ "" };
+		bool switchHasDefault{ false };
+		std::shared_ptr<std::vector<VecString>> switchCases{ nullptr };
+		bool caseFallThrough{ false }; // Only works in case scopes.
+		size_t caseCount{ 0 }; // Only for the translation itself so the labels can be created properly.
 		_Scope* Parent{ nullptr };
 		Declaration DecData{ nullptr };
 		Scope Breed() {
@@ -923,9 +931,81 @@ namespace Scyndi {
 					TransError("END without any start of a scope");
 				case ScopeKind::Repeat:
 					TransError("REPEAT scope can only be ended with either UNTIL, FOREVER or LOOPWHILE");
+				case ScopeKind::Switch:
+					TransError("CASEless SWITCH scope ended");
+				case ScopeKind::Case:
+				case ScopeKind::Default: {
+					//ins->SwitchName = &Ret.GetScope()->Parent->Parent->switchID;
+					auto SwS{ Ret.GetScope()->Parent };
+					ins->Kind = InsKind::Case;
+					ins->SwitchName = &SwS->switchID;
+					Ret.Scopes.pop_back();
+				} break;
 				}
 				ins->Kind = InsKind::EndScope;
 				Ret.Scopes.pop_back();
+			} else if (ins->Words[0]->UpWord == "SWITCH" || ins->Words[0]->UpWord == "SELECT") {
+				auto S{ Ret.GetScope() };
+				TransAssert(S->Kind != ScopeKind::Root, "Cannot start a SWITCH in the root scope");
+				TransAssert(S->Kind != ScopeKind::Class, "Cannot start a SWITCH in a class scope");
+				TransAssert(S->Kind != ScopeKind::Switch, "Double Switch");
+				static size_t countswitch{ 0 };
+				auto switchname{ TrSPrintF("_Scyndi_Switch_%08x_",countswitch++) }; switchname += md5(srcfile + switchname) + "_";
+				ins->Kind = InsKind::Switch;
+				Ret.PushScope(ScopeKind::Switch);
+				auto NS{ Ret.GetScope() };
+				NS->switchCases = std::make_shared<std::vector<VecString>>(); //NewVecString();
+				NS->switchHasDefault = false;
+				NS->switchID = switchname;
+				ins->switchcase = NS->switchCases;
+				ins->SwitchName = &NS->switchID;
+				ins->switchHasDefault = &NS->switchHasDefault;
+			} else if (ins->Words[0]->UpWord == "CASE") {
+				TransAssert(Ret.GetScope()->Kind == ScopeKind::Switch || Ret.GetScope()->Kind == ScopeKind::Case, "CASE without SWITCH");
+				if (Ret.GetScope()->Kind == ScopeKind::Case) Ret.Scopes.pop_back();
+				Ret.PushScope(ScopeKind::Case);
+				auto SwS{ Ret.GetScope()->Parent };
+				ins->Kind = InsKind::Case;
+				ins->SwitchName = &SwS->switchID;
+				TransAssert(ins->Words.size() > 1, "CASE without values");
+				auto CaseChain{ NewVecString() };
+				SwS->switchCases->push_back(CaseChain);
+				for (size_t p = 1; p < ins->Words.size(); p++) {
+					//std::cout << "Case! Check " << p << " " << ins->Words.size() << (size_t)ins->Words[p].get()<<std::endl; // DEBUG only
+					switch (ins->Words[p]->Kind) {
+					case WordKind::Comma:
+						break; // Comma's are optional now. You can place them if you think it makes your code more beautiful, but it's not needed.
+					case WordKind::String:
+						CaseChain->push_back(TrSPrintF("\"%s\"", ins->Words[p]->TheWord));
+						break;
+					case WordKind::Number:
+						for (size_t lp = 0; lp < ins->Words[p]->UpWord.size(); lp++) TransAssert(ins->Words[p]->UpWord[lp] != '.', "Only integers, strings, true and false can be used for casing");
+						CaseChain->push_back(ins->Words[p]->UpWord);
+						break;
+					case WordKind::KeyWord:
+						if (ins->Words[p]->UpWord == "TRUE" || ins->Words[p]->UpWord == "FALSE")
+							CaseChain->push_back(ins->Words[p]->UpWord);
+						else
+							TransError("Invalid CASE value (keyword?)");
+						break;
+					default:
+						TransError("Invalid CASE");
+					}
+				}
+			} else if (ins->Words[0]->UpWord == "DEFAULT") {
+				TransAssert(Ret.GetScope()->Kind == ScopeKind::Case, "DEFAULT without SWITCH or in a CASEless SWITCH");
+				TransAssert(ins->Words.size(), "DEFAULT takes no further values");
+				auto SwS{ Ret.GetScope()->Parent };
+				SwS->switchHasDefault = true;
+				ins->SwitchName = &SwS->switchID;
+				Ret.Scopes.pop_back();
+				Ret.PushScope(ScopeKind::Default);
+				ins->Kind = InsKind::Default;
+			} else if (ins->Words[0]->UpWord == "FALLTHROUGH") {
+				TransAssert(Ret.GetScope()->Kind == ScopeKind::Case, "FALLTHROUGH without CASE");
+				TransAssert(!Ret.GetScope()->caseFallThrough, "Duplicate FALLTHROUGH");
+				Ret.GetScope()->caseFallThrough = true;
+				ins->Kind = InsKind::FallThrough;
 			} else if (ins->Words[0]->UpWord == "++") {
 				ins->Kind = InsKind::Increment;
 			} else if (ins->Words[ins->Words.size()-1]->TheWord=="++") {
@@ -1180,6 +1260,11 @@ namespace Scyndi {
 				case ScopeKind::WhileScope:
 					*Trans += "end\n";
 					break;
+				case ScopeKind::Case:
+				case ScopeKind::Default:
+					*Trans += "end\t";
+					*Trans += "::" + *Ins->SwitchName + "_End::\n";
+					break;
 				default:
 					TransError(TrSPrintF("Unknown scope kind (%03d)! Cannot end it (Internal error! Please report!)",(int)Ins->Scope));
 					//break;
@@ -1210,6 +1295,36 @@ namespace Scyndi {
 				*Trans += " = Scyndi.Dec(";
 				*Trans += *Ex;
 				*Trans += ")\n";
+			} break;
+			case InsKind::Switch: {
+				auto Ex{ Expression(Ret.Trans,Ins,1) };
+				if (!Ex) return nullptr;
+				auto SwName{ *Ins->SwitchName };
+				auto SwVar{ *Ins->SwitchName }; SwVar += "_CheckVar"; 
+				*Trans += "local " + SwVar + "= "; *Trans += *Ex; *Trans += ";\t";
+				for (size_t i = 0; i < Ins->switchcase->size(); i++) {
+					auto CaseChain{ (*Ins->switchcase)[i] };
+					for (auto MyCase : *CaseChain) {
+						*Trans += "if " + SwVar + " == " + MyCase + " then goto " + SwName + "_Case_" + std::to_string(i) + " end; ";
+					}
+				}
+				if (*Ins->switchHasDefault) *Trans += "goto " + SwName + "_Default"; else *Trans += "goto " + SwName + "_End";
+				*Trans += "\n";
+			} break;
+			case InsKind::Case: {
+				static std::map<std::string, size_t> CaseCount{};
+				if (!CaseCount.count(*Ins->SwitchName)) CaseCount[*Ins->SwitchName] = 0;
+				if (CaseCount[*Ins->SwitchName]) {
+					if (!Ins->ScopeData->caseFallThrough) *Trans += "goto " + *Ins->SwitchName + "_End;\t";
+					*Trans += "end;\t";
+				}
+				*Trans += TrSPrintF("::%s_Case_%d:: do ", Ins->SwitchName->c_str(), CaseCount[*Ins->SwitchName]++);
+				// std::cout << *Ins->SwitchName << ":\tCase count: " << CaseCount[*Ins->SwitchName] << std::endl; // debug only
+			} break;
+			case InsKind::Default: {
+				if (!Ins->ScopeData->caseFallThrough) *Trans += "goto " + (*Ins->SwitchName) + "_End;\t";
+				*Trans += "end;\t";
+				*Trans += TrSPrintF("::%s_Default:: do ", Ins->SwitchName->c_str());
 			} break;
 			default:
 				TransError(TrSPrintF("Unknown instruction kind (%d) (Internal error. Please report!)",(int)Ins->Kind));
