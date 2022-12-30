@@ -356,6 +356,38 @@ end)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ASSERT",true,true,true,assert)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ROUND",true,true,true,function(a) return math.floor(a+.5) end)
 
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","FIND",true,true,true,function(HayStack,Needle)
+	if type(HayStack)=="string" then
+		for i=1,#HayStack do
+			if _Scyndi.GLOBALS.MID(HayStack,i,#Needle)==Needle then return i-1 end
+		end
+		return nil
+	end
+	if type(HayStack)=="table" then
+		for i=0,_Scyndi.Globals.Len(HayStack)-1 do
+			if Needle==HeyStack[i] then return i end
+		end
+		return nil
+	end
+	error("Cannot search "..type(HayStack))
+end)
+
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ARRAYREMOVE",true,true,true,function(ARRAY,VICTIM,TIMES)
+	assert(type(ARRAY)=="table","Table expected for ArrayRemove. Got "..type(ARRAY))
+	repeat
+		if TIMES then
+			if TIMES<=0 then return end 
+			TIMES = TIMES - 1
+		end
+		local pos = _Scyndi.Globals.Find(ARRAY,VICTIM)
+		if not pos then return end
+		local siz = _Scyndi.Globals.Len(ARRAY)
+		for i=pos,siz do
+			ARRAY[i] = ARRAY[i+1]
+		end
+	until false
+end)
+
 
 -- ***** Incrementor / Decrementor support ***** --
 function _Scyndi.INC(v)
