@@ -740,7 +740,8 @@ namespace Scyndi {
 			auto LineNumber = ins->LineNumber;
 			auto DecScope{ false }; // needed this way to end declaration scopes abruptly
 			//*
-			if (ins->Words.size() && ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord)) {
+			//Chat(ins->Words.size());
+			if (ins->Words.size() &&( ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
 				TransAssert(ScriptName.size(), "Header first");
 				DecScope = true;
 				size_t pos{ 0 };
