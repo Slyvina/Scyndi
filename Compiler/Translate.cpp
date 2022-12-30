@@ -878,7 +878,7 @@ namespace Scyndi {
 							_id = ins->Words[1]->UpWord;
 							TransAssert(Ret.Identifier(_id) == "", "Script header creates duplicate identifier");
 						}
-						(*Ret.Trans->GlobalVar)[_id] = "SCYNDI.CLASS[\"" + _id + "\"]";
+						(*Ret.Trans->GlobalVar)[_id] = "SCYNDI.CLASSES[\"" + _id + "\"]";
 						ScriptName = _id;
 					} else if (ins->Words[0]->UpWord == "MODULE") {
 						Ret.Trans->Kind = ScriptKind::Script;
