@@ -926,6 +926,20 @@ namespace Scyndi {
 				}
 				ins->Kind = InsKind::EndScope;
 				Ret.Scopes.pop_back();
+			} else if (ins->Words[0]->UpWord == "++") {
+				ins->Kind = InsKind::Increment;
+			} else if (ins->Words[ins->Words.size()-1]->TheWord=="++") {
+				ins->Kind = InsKind::Increment;
+				std::vector<Word> Nw{ _Word::NewWord(WordKind::Operator,"++") };
+				for (size_t i = 0; i < ins->Words.size() - 1; i++) Nw.push_back(ins->Words[i]);
+				ins->Words = Nw;
+			} else if (ins->Words[0]->UpWord == "--") {
+				ins->Kind = InsKind::Decrement;
+			} else if (ins->Words[ins->Words.size() - 1]->TheWord == "--") {
+				ins->Kind = InsKind::Decrement;
+				std::vector<Word> Nw{ _Word::NewWord(WordKind::Operator,"--") };
+				for (size_t i = 0; i < ins->Words.size() - 1; i++) Nw.push_back(ins->Words[i]);
+				ins->Words = Nw;
 			} else if (ins->Words[0]->UpWord == "FOR") {
 				TransAssert(ins->Words.size() > 1, "FOR without stuff");
 				ins->Kind = InsKind::StartFor;
