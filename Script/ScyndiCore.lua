@@ -65,6 +65,7 @@ end
 
 function _Scyndi.WANTVALUE(dtype,value)
 	dtype=dtype:upper()
+	--print("Want value for "..dtype.." -> ",value,type(value)) -- debug only
 	if (dtype=="BYTE") then
 		if _Scyndi.SETTINGS.STRICTNUM then assert(type(value)=="number","Byte expected but got ("..type(value)..")") end
 		if type(value)=="string" then value=value:tonumber() or 0 end
@@ -76,9 +77,12 @@ function _Scyndi.WANTVALUE(dtype,value)
 		if type(value)=="string" then value=value:tonumber() or 0 end
 		return value
 	elseif dtype=="INT" or dtype=="INTEGER" then
-		if _Scyndi.SETTINGS.STRICTNUM then assert(type(value)=="number","Byte expected but got ("..type(value)..")") end
+		--print("1:Integer wanted",value,type(value))
+		if _Scyndi.SETTINGS.STRICTNUM then assert(type(value)=="number","Integer expected but got ("..type(value)..")") end
 		if type(value)=="string" then value=value:tonumber() or 0 end
-		if _Scyndi.SETTINGS.STRICTINT then assert(math.floor(value)~=value,"Byte expected value is not integer typed") end
+		--print("2:Integer wanted",value,type(value))
+		if _Scyndi.SETTINGS.STRICTINT then assert(math.floor(value)~=value,"integer expected value is not integer typed") end
+		--print( "INTEGER value now ",value) -- debug only
 		return math.floor(value)
 	elseif dtype=="BOOLEAN" or dtype=="BOOL" then
 		return value~=nil and value~=false and value~="" and value~=0
@@ -129,6 +133,7 @@ local function index_static_member(cl,key,allowprivate)
 end
 
 local function newindex_static_member(cl,key,value,allowprivate)
+	local cu=cl:upper()
 	key=key:upper()
 	assert(classregister[cu],"Class "..cl.." unknown")
 	assert(classregister[cu].staticmembers[key],"Class "..cl.." has no static member named "..key)
@@ -192,7 +197,7 @@ _Scyndi.CLASSES = setmetatable({},{
 	__index=function(s,key) 
 		key = key:upper()
 		assert(classregister[key],"No class named "..key.." found")
-		return classregister[key]
+		return classregister[key].pub
 	end	})
 
 
@@ -213,6 +218,7 @@ function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 		constant=constant,
 		value=_Scyndi.WANTVALUE(dtype,value or _Scyndi.BASEVALUE(dtype))
 	}
+	--for k,v in pairs(nm) do print(k,v) end
 	if (static) then _class.staticmembers[name]=nm else _class.nonstaticmembers[name]=nm end
 end
 
