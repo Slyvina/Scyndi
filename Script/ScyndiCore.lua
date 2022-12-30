@@ -192,7 +192,7 @@ _Scyndi.CLASSES = setmetatable({},{
 	__index=function(s,key) 
 		key = key:upper()
 		assert(classregister[key],"No class named "..key.." found")
-		return classregstier[key]
+		return classregister[key]
 	end	})
 
 
