@@ -356,6 +356,32 @@ end)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ASSERT",true,true,true,assert)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ROUND",true,true,true,function(a) return math.floor(a+.5) end)
 
+
+-- ***** Incrementor / Decrementor support ***** --
+function _Scyndi.INC(v)
+	local t=type(v)
+	if t=="number" then
+		return v+1
+	else if t=="table" and v[".ClassInstance"] then
+		return v.__INC()
+	else
+		error("Incrementor not possible to type "..t)
+	end
+end
+
+function _Scyndi.DEC(v)
+	local t=type(v)
+	if t=="number" then
+		return v-1
+	else if t=="table" and v[".ClassInstance"] then
+		return v.__DEC()
+	else
+		error("Decrementor not possible to type "..t)
+	end
+end
+	
+
+
 -- ***** Lua basic modules/libraries/whatever copied into Scyndi groups ***** --
 local function Lua2GlobGroup(original,target)
 	local pub,prv = _Scyndi.STARTCLASS(target,true,true,nil)
