@@ -532,7 +532,29 @@ namespace Scyndi {
 					break;
 				} break;
 				case '+':
+					TransAssert(pos < Line.size() - 1, "There can never be a + at the end of a line");
+					if (Line[pos + 1] == '=') {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "+="));
+						pos += 2;
+					} else if (Line[pos + 1] == '+') {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "++"));
+						pos += 2;
+					} else {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "+"));
+					} 
+					break;
 				case '-':
+					TransAssert(pos < Line.size() - 1, "There can never be a - at the end of a line");
+					if (Line[pos + 1] == '=') {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "-="));
+						pos += 2;
+					} else if (Line[pos + 1] == '-') {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "--"));
+						pos += 2;
+					} else {
+						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "-"));
+					}
+					break;
 				case '*':
 					Chat("Plus/Minus/Times");
 					Ret->Words.push_back(_Word::NewWord(WordKind::Operator, ch));
