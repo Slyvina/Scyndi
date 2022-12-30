@@ -151,9 +151,9 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="..\..\Libs\Lunatic\Lua\Lib\Lua.dll">
+    <None Include="..\..\Libs\Lunatic\Lua\Lib\Lua.dll">
       <FileType>Document</FileType>
-    </CopyFileToFolders>
+    </None>
     <CopyFileToFolders Include="..\..\Libs\JCR6\3rdParty\zlib\zlib.dll">
       <FileType>Document</FileType>
     </CopyFileToFolders>

@@ -54,9 +54,6 @@
     <CopyFileToFolders Include="Script\ScyndiCore.lua">
       <Filter>Source Files\Script</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="..\..\Libs\Lunatic\Lua\Lib\Lua.dll">
-      <Filter>Source Files\dlls</Filter>
-    </CopyFileToFolders>
     <CopyFileToFolders Include="..\..\Libs\JCR6\3rdParty\zlib\zlib.dll">
       <Filter>Source Files\dlls</Filter>
     </CopyFileToFolders>
@@ -70,6 +67,9 @@
     </None>
     <None Include="..\..\Libs\Lunatic\Lua\Raw\src\Makefile">
       <Filter>Header Files\Lua</Filter>
+    </None>
+    <None Include="..\..\Libs\Lunatic\Lua\Lib\Lua.dll">
+      <Filter>Source Files\dlls</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
