@@ -1158,6 +1158,7 @@ namespace Scyndi {
 		if (HasInit) {
 			*Trans += "\n\nfor _,ifunc in ipairs(" + InitTag + ") do ifunc() end; " + InitTag + " = nil";
 		}
+		Ret.Trans->Data->Value("Translation", "Origin", "Scyndi");
 		return Ret.Trans;
 	}
 
