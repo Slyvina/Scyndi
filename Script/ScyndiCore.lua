@@ -394,7 +394,7 @@ function _Scyndi.INC(v)
 	local t=type(v)
 	if t=="number" then
 		return v+1
-	else if t=="table" and v[".ClassInstance"] then
+	elseif t=="table" and v[".ClassInstance"] then
 		return v.__INC()
 	else
 		error("Incrementor not possible to type "..t)
@@ -405,7 +405,7 @@ function _Scyndi.DEC(v)
 	local t=type(v)
 	if t=="number" then
 		return v-1
-	else if t=="table" and v[".ClassInstance"] then
+	elseif t=="table" and v[".ClassInstance"] then
 		return v.__DEC()
 	else
 		error("Decrementor not possible to type "..t)
