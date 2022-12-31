@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.30
+// Version: 22.12.31
 // EndLic
 
 #include <Slyvina.hpp>
@@ -55,7 +55,7 @@ namespace Scyndi {
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope, Switch, Case, Default };
 
-	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate };
+	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate, Void };
 
 	
 	class _Declaration {
@@ -82,7 +82,8 @@ namespace Scyndi {
 		{"BOOL",VarType::Boolean},
 		{"PLUA",VarType::pLua},
 		{"DELEGATE",VarType::Delegate},
-		{"BYTE",VarType::Byte}
+		{"BYTE",VarType::Byte},
+		{"VOID",VarType::Void}
 	};
 	typedef std::shared_ptr<_Declaration> Declaration;
 
@@ -781,6 +782,8 @@ namespace Scyndi {
 					if (pos + 2 >= ins->Words.size());
 					if (ins->Words.size() > ins->ForEachExpression + 1 && ins->Words[ins->ForEachExpression + 1]->UpWord == "(") ins->Kind = InsKind::DefineFunction; else ins->Kind = InsKind::Declaration;
 				}
+				if (ins->Kind == InsKind::Declaration) TransAssert(dec->Type != VarType::Void, "Void reserved for functions only");
+
 				if (dec->IsGlobal) {
 					TransAssert(CScope->Kind == ScopeKind::Root, "Global declaration only possible in the root scope");
 				} else if (Ret.GetScope()->Kind == ScopeKind::Root || (Ret.GetScope()->Kind == ScopeKind::Declaration && Ret.GetScope()->Parent->Kind == ScopeKind::Root)) {
