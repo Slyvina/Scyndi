@@ -551,6 +551,7 @@ namespace Scyndi {
 						pos += 2;
 					} else {
 						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "+"));
+						pos++;
 					} 
 					break;
 				case '-':
@@ -563,6 +564,7 @@ namespace Scyndi {
 						pos += 2;
 					} else {
 						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "-"));
+						pos++;
 					}
 					break;
 				case '*':
