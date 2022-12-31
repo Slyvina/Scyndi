@@ -53,11 +53,12 @@ namespace Scyndi {
 
 	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, ElseIfStatement, ElseStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope, StartFor, StartForEach, Declaration, StartDeclarationScope, StartFunction, Switch, Case, Default, FallThrough };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
-	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope, Switch, Case, Default };
+	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope, Switch, Case, Default, FunctionBody };
 
-	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate, Void };
+	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate, Void, Var };
 
-	
+	struct Arg { std::string Name{ "" }, ref{ "" }, BaseValue{ "" }; VarType dType{ VarType::Unknown }; bool HasBaseValue{ false }; };
+
 	class _Declaration {
 	public:
 		static std::map<std::string, VarType> S2E;
@@ -69,7 +70,10 @@ namespace Scyndi {
 			IsGlobal{ false }, // May not be used in classes and groups			
 			IsReadOnly{ false },
 			IsConstant{ false };
-		std::string CustomClass;
+		std::string
+			CustomClass{ "" },
+			BoundToClass{ "" };
+		
 		static std::string E2S(VarType T) {
 			for (auto& K : S2E) if (K.second == T) return K.first;
 			return "";
@@ -83,8 +87,10 @@ namespace Scyndi {
 		{"PLUA",VarType::pLua},
 		{"DELEGATE",VarType::Delegate},
 		{"BYTE",VarType::Byte},
+		{"VAR",VarType::Var},
 		{"VOID",VarType::Void}
 	};
+
 	typedef std::shared_ptr<_Declaration> Declaration;
 
 	//struct _Scope;
@@ -180,8 +186,9 @@ namespace Scyndi {
 		ScopeKind Scope{ ScopeKind::Unknown };
 		size_t ForEachExpression;
 		std::vector < std::string > ForVars{};
-		StringMap ForTrans{ NewStringMap() };
+		StringMap ForTrans{ NewStringMap() };		
 		//std::string ForStart{ "0" }, ForTo{ "0" }, ForStep{ "1" };  // Although only numbers processed, in translation this is the better ride
+		Scyndi::Scope NextScope{ nullptr };
 	};
 	typedef std::shared_ptr<_Instruction> Instruction;
 
@@ -191,6 +198,7 @@ namespace Scyndi {
 		ScopeKind Kind;
 		StringMap LocalVars{ NewStringMap() };
 		std::map<std::string, size_t> LocalDeclaLine{};
+		std::string ScopeLoc{ "" }; // The metatable containing the locals. Empty if not needed.
 		std::string switchID{ "" };
 		bool switchHasDefault{ false };
 		std::shared_ptr<std::vector<VecString>> switchCases{ nullptr };
@@ -730,7 +738,7 @@ namespace Scyndi {
 		}
 
 		// Pre-Processing
-		Verb("=> Pre-processing", srcfile);
+		Verb("Pre-processing", srcfile);
 		std::map<std::string, Word> TransConfig;
 		std::map<std::string, bool> Defs;
 		std::string ScriptName{ "" };
@@ -753,12 +761,14 @@ namespace Scyndi {
 			//*
 			//Chat(ins->Words.size());
 			if (ins->Words.size() &&( ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
+				Chat("Will this be a variable declaration or a function definition? (Line: " << ins->LineNumber << ")");
 				TransAssert(ScriptName.size(), "Header first");
 				DecScope = true;
 				size_t pos{ 0 };
 				auto dec = std::make_shared<_Declaration>();
 				ins->DecData = dec;
 				for (pos = 0; pos < ins->Words.size() && (!Prefixed(ins->Words[pos]->UpWord, "@")) && (!_Declaration::S2E.count(ins->Words[pos]->UpWord)); pos++) {
+					Chat("=> " << ins->Words[0]->UpWord);
 					if (ins->Words[0]->UpWord == "GLOBAL") dec->IsGlobal = true;
 					if (ins->Words[1]->UpWord == "STATIC") dec->IsStatic = true;
 					if (ins->Words[1]->UpWord == "CONST") dec->IsConstant = true;
@@ -772,8 +782,10 @@ namespace Scyndi {
 					TransAssert(_Declaration::S2E.count(ins->Words[pos]->UpWord), "Type error (Intenal error! Please report) ");
 					dec->Type = _Declaration::S2E[ins->Words[pos]->UpWord];
 				}
+				Chat("Type decided " << (int)dec->Type);
 				auto CScope{ Ret.GetScope() };
 				if (CScope->Kind == ScopeKind::Declaration) Ret.Scopes.pop_back();
+				auto PScope{ Ret.GetScope() };
 				//std::cout << "Dec: Line:" << ins->LineNumber << "; Pos:" << pos << "; Words:" << ins->Words.size() << "\n";
 				if (pos == ins->Words.size() - 1) {
 					ins->Kind = InsKind::StartDeclarationScope;
@@ -782,15 +794,21 @@ namespace Scyndi {
 				} else {
 					ins->ForEachExpression = pos + 1;
 					if (pos + 2 >= ins->Words.size());
-					if (ins->Words.size() > ins->ForEachExpression + 1 && ins->Words[ins->ForEachExpression + 1]->UpWord == "(") ins->Kind = InsKind::DefineFunction; else ins->Kind = InsKind::Declaration;
+					if (ins->Words.size() > ins->ForEachExpression + 1 && ins->Words[ins->ForEachExpression + 1]->UpWord == "(") {
+						ins->Kind = InsKind::DefineFunction;
+						//TransError("Defining functions still in preparation");
+						Ret.PushScope(ScopeKind::FunctionBody);
+						Ret.GetScope()->DecData = dec;
+						ins->NextScope = Ret.GetScope();
+					} else ins->Kind = InsKind::Declaration;
 				}
 				if (ins->Kind == InsKind::Declaration) TransAssert(dec->Type != VarType::Void, "Void reserved for functions only");
 
 				if (dec->IsGlobal) {
-					TransAssert(CScope->Kind == ScopeKind::Root, "Global declaration only possible in the root scope");
-				} else if (Ret.GetScope()->Kind == ScopeKind::Root || (Ret.GetScope()->Kind == ScopeKind::Declaration && Ret.GetScope()->Parent->Kind == ScopeKind::Root)) {
+					TransAssert(PScope->Kind == ScopeKind::Root, "Global declaration only possible in the root scope");
+				} else if (PScope->Kind == ScopeKind::Root || (PScope->Kind == ScopeKind::Declaration && PScope->Parent->Kind == ScopeKind::Root)) {
 					dec->IsRoot = true;
-				} else if (Ret.GetScope()->Kind == ScopeKind::Class) {
+				} else if (PScope->Kind == ScopeKind::Class) {
 					TransError("Class declarations not yet supported");
 				}
 
@@ -1107,6 +1125,7 @@ namespace Scyndi {
 		// TODO!
 
 		// Declaration management
+		Verb("Managing", srcfile);
 		for (auto Ins : Ret.Instructions) {
 			auto LineNumber{ Ins->LineNumber };
 			auto Dec{ Ins->DecData };
@@ -1125,7 +1144,36 @@ namespace Scyndi {
 				// Please note, everything not recongized as a variable declaration or function definition should be ignored.
 				switch (Ins->Kind) {
 				case InsKind::DefineFunction:
-					TransError("Function definitions not yet supported");
+					std::cout << "Defining function data: Gl:" << Dec->IsGlobal << "/Rt:" << Dec->IsRoot << std::endl;
+					// Please note! NO CODE should be written yet, or translation later will mess up!
+					if (Dec->IsGlobal) {
+						if (Dec->Type == VarType::pLua) {
+							std::string Prefix{ "" }; if (TransConfig.count("PLUAPREFIX")) Prefix = TransConfig["PLUAPREFIX"]->TheWord;
+							auto ref{ TrSPrintF("%s%s",Prefix.c_str(),PluaName.c_str()) };
+							Ret.Trans->Data->Add("Globals", "-list-", VarName);
+							Ret.Trans->Data->Value("Globals", VarName, ref);
+							(*Ret.Trans->GlobalVar)[VarName] = ref;
+						} else {
+							auto ref{ TrSPrintF("Scyndi.Globals[\"%s\"]",VarName.c_str()) };
+							Ret.Trans->Data->Add("Globals", "-list-", VarName);
+							Ret.Trans->Data->Value("Globals", VarName, ref);
+							(*Ret.Trans->GlobalVar)[VarName] = ref;
+						}
+					} else if (Dec->IsRoot) {
+						//std::cout << "Root function: " << VarName << "\n"; // debug
+						if (Dec->Type == VarType::pLua) {
+							std::string Prefix{ "" }; if (TransConfig.count("PLUAPREFIX")) Prefix = TransConfig["PLUAPREFIX"]->TheWord;
+							auto ref{ TrSPrintF("%s%s",Prefix.c_str(),PluaName.c_str()) };
+							(*Ret.RootScope->LocalVars)[VarName] = ref;
+							*Trans += "local " + ref; // Will prevent trouble later! That's the only code that SHOULD be written.
+						} else {
+							auto ref{ TrSPrintF("Scyndi.Class[\"%s\"][\"%s\"]",ScriptName.c_str(),VarName.c_str()) };
+							(*Ret.RootScope->LocalVars)[VarName] = ref;
+							//Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
+						}
+					}
+					break; 
+					//TransError("Function definitions not yet supported");
 				case InsKind::Declaration:
 					if (Ins->Words.size() == Ins->ForEachExpression + 1) {
 						switch (Dec->Type) {
@@ -1188,6 +1236,7 @@ namespace Scyndi {
 		}
 
 		// Translate
+		Verb("Translating", srcfile);
 		auto InitTag{ TrSPrintF("__Scyndi__Init__%s",md5(srcfile + CurrentDate() + CurrentTime()).c_str()) };
 		if (HasInit) *Trans += "\nlocal " + InitTag + " = {}\n";	
 		for (auto& Ins : Ret.Instructions) {
@@ -1270,15 +1319,121 @@ namespace Scyndi {
 					*Trans += "end\t";
 					*Trans += "::" + *Ins->SwitchName + "_End::\n";
 					break;
+				case ScopeKind::FunctionBody:
+					*Trans += "end";
+					if (Ins->ScopeData->DecData->IsGlobal || Ins->ScopeData->DecData->IsRoot || Ins->ScopeData->DecData->BoundToClass.size())
+						if (Ins->ScopeData->DecData->Type!=VarType::pLua) *Trans += ")";
+					*Trans += "\n";
+					break;
 				default:
 					TransError(TrSPrintF("Unknown scope kind (%03d)! Cannot end it (Internal error! Please report!)",(int)Ins->Scope));
 					//break;
 				}
 				break;
 			case InsKind::Declaration:
-				TransAssert(Ins->DecData, "No DecData in translation (transphase) - This is an internal error! Please report!");
+				TransAssert(Ins->DecData, "No DecData in translation (transphase/variable) - This is an internal error! Please report!");
 				if (Ins->DecData->IsGlobal || Ins->DecData->IsRoot) break;
 				TransError("This kind of declaration not YET supported");
+			case InsKind::DefineFunction: {
+				TransAssert(Ins->DecData, "No DecData in translation (transphase/function) - This is an internal error! Please report!");
+				static size_t count = 0;
+				auto FNamePos{ Ins->ForEachExpression };
+				auto FName{ Ins->Words[FNamePos] };
+				auto Arg1Pos{ FNamePos + 2 };
+				auto Ending{ Ins->Words.size() };
+				auto ScN{ TrSPrintF("ScyndiFuncScope_%08X_%s_%s",count++,FName->TheWord,md5(FName->TheWord + std::to_string(count)).c_str()) };
+				auto VarName{ FName->UpWord };
+				auto PluaName{ FName->TheWord };
+				std::string Prefix{ "" }; if (TransConfig.count("PLUAPREFIX")) Prefix = TransConfig["PLUAPREFIX"]->TheWord;
+
+				std::string ArgLine{ "" };
+				TransAssert(Ins->Words.size() >= Arg1Pos, "? Incomplete function definition ?");
+				std::vector<Arg> Args{};
+				auto Pos{ Arg1Pos };
+				auto oscope{ Ins->ScopeData }, nscope{ Ins->NextScope };
+				while (Pos < Ending && Ins->Words[Pos]->UpWord != ")") {
+					if (Ins->Words[Pos]->Kind == WordKind::Identifier) {
+						Args.push_back(Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",VarType::Var,false });
+						if (ArgLine.size()) ArgLine += ","; ArgLine += TrSPrintF("Arg%d", Args.size());
+						Pos++;
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (variant) argument #%d", Args.size()));
+						Pos++;
+					} else {
+						TransError("Typed Arguments for functions not yet supported");
+					}
+				}
+				switch (oscope->Kind) {
+				case ScopeKind::Root:
+					if (Ins->DecData->IsGlobal) {
+						if (Ins->DecData->Type == VarType::pLua) {
+							auto ref{ TrSPrintF("%s%s",Prefix.c_str(),PluaName.c_str()) };
+							// I need to improve this
+							//Ret.Trans->Data->Add("Globals", "-list-", VarName);
+							//Ret.Trans->Data->Value("Globals", VarName, ref);
+							//(*Ret.Trans->GlobalVar)[VarName] = ref;
+							*Trans += "function " + ref + "(" + ArgLine + ") ";
+						} else {
+							*Trans += TrSPrintF("Scyndi.ADDMBER(\"..GLOBALS..\",\"DELEGATE\",\"%s\",true,true,true,function (%s) ", VarName.c_str(), ArgLine.c_str());
+							//auto ref{ TrSPrintF("Scyndi.Globals[\"%s\"]",VarName.c_str()) };
+							//Ret.Trans->Data->Add("Globals", "-list-", VarName);
+							//Ret.Trans->Data->Value("Globals", VarName, ref);
+							//(*Ret.Trans->GlobalVar)[VarName] = ref;						
+						}
+					} else if (Ins->DecData->IsRoot) {
+						if (Ins->DecData->Type == VarType::pLua) {
+							auto ref{ TrSPrintF("%s%s",Prefix.c_str(),PluaName.c_str()) };
+							//rootfunc
+							//(*Ret.RootScope->LocalVars)[VarName] = ref;
+							*Trans += ref + "= function(" + ArgLine + ") ";
+						} else {
+							*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"DELEGATE\",\"%s\",true,true,true,function (%s) ", ScriptName.c_str(), VarName.c_str(), ArgLine.c_str());
+							//auto ref{ TrSPrintF("Scyndi.Class[\"%s\"][\"%s\"]",ScriptName.c_str(),VarName.c_str()) };
+							//(*Ret.RootScope->LocalVars)[VarName] = ref;
+						}
+					} else {
+						TransError("This kind of function, is not yet supported")
+					}
+					if (Args.size()) {
+						Ins->NextScope->ScopeLoc = ScN + "_Locals";
+						*Trans += "local "+Ins->NextScope->ScopeLoc+" = Scyndi.CreateLocals(); ";
+						for (size_t ap = 0; ap < Args.size(); ap++) {
+							std::string IValue{ "nil" };
+							auto Ag{ &Args[ap] };
+							switch (Ag->dType) {
+							case VarType::Boolean: 
+								if (Ag->HasBaseValue) {
+									if (Upper(Ag->BaseValue) == "TRUE") IValue = "true";
+									else if (Upper(Ag->BaseValue) == "FALSE") IValue = "false";
+									else TransError("Invalid base value for boolean");
+								} else IValue = "false";
+								break;
+							case VarType::Byte:
+							case VarType::Integer:
+							case VarType::Number:
+								if (Ag->HasBaseValue) IValue = Ag->BaseValue; else IValue = "0";
+								break;
+							case VarType::pLua: // this should not be possible as pLua vars are handled differently
+								if (Ag->HasBaseValue) TransError("Plua cannot hold a base value");
+								break;
+							case VarType::String:
+								if (Ag->HasBaseValue) IValue = TrSPrintF("\"%s\"", Ag->BaseValue); else IValue = "\"\"";
+								break;
+							default:
+								if (Ag->HasBaseValue) TransError("Base value not permitted for that type");
+								break;
+							}
+							*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s,\"%s\", false,\"%s\",%s); ", Ins->NextScope->ScopeLoc.c_str(), _Declaration::E2S(Args[ap].dType).c_str(), Args[ap].Name.c_str(), IValue.c_str());
+							(*Ins->NextScope->LocalVars)[Upper(Ag->Name)] = TrSPrintF("%s[\"%s\"]", Ins->NextScope->ScopeLoc.c_str(), Ag->Name.c_str());
+						}
+					}
+					*Trans += "\n";
+					break;
+				default:
+					std::cout << (int)Ret.RootScope->Kind << "\n"; // debug only
+					TransError(TrSPrintF("(SC%d) Local functions not yet implemented", (int)oscope->Kind));
+				}
+				//TransError("Function defs not yet complete"); // security
+			} break;
 			case InsKind::General: {
 				auto Ex{ Expression(Ret.Trans,Ins,0) };
 				if (!Ex) return nullptr;
