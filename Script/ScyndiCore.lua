@@ -341,6 +341,14 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SPAIRS",true,true,true,function(t, ord
 		end
 	end)
 
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","NEWARRAY",true,true,true,function(...)
+	local ret = {}	
+	for i,v in ipairs{...} do
+		ret[i-1]=v
+	end
+	return ret
+end)
+
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LEN",true,true,true,function(value)
 	if type(value)=="string" then
 		return #value
