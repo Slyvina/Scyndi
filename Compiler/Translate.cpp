@@ -53,7 +53,7 @@ namespace Scyndi {
 
 	bool TransVerbose{ false };
 
-	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, ElseIfStatement, ElseStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope, StartFor, StartForEach, Declaration, StartDeclarationScope, StartFunction, Switch, Case, Default, FallThrough };
+	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, ElseIfStatement, ElseStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope, StartFor, StartForEach, Declaration, StartDeclarationScope, StartFunction, Switch, Case, Default, FallThrough, Defer };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope, Switch, Case, Default, FunctionBody, Defer };
 
@@ -196,84 +196,105 @@ namespace Scyndi {
 	typedef std::shared_ptr<_Instruction> Instruction;
 
 	
-	class _Scope {
-	public:
-		bool DidReturn{ false }; // Needed to make sure that nothing could be placed after the return command (Lua doesn't accept that).
-		ScopeKind Kind;
-		StringMap LocalVars{ NewStringMap() };
-		std::map<std::string, size_t> LocalDeclaLine{};
-		std::string ScopeLoc{ "" }; // The metatable containing the locals. Empty if not needed.
-		std::string switchID{ "" };
-		bool switchHasDefault{ false };
-		std::shared_ptr<std::vector<VecString>> switchCases{ nullptr };
-		bool caseFallThrough{ false }; // Only works in case scopes.
-		size_t caseCount{ 0 }; // Only for the translation itself so the labels can be created properly.
-		_Scope* Parent{ nullptr };
-		Declaration DecData{ nullptr };
-		Scope Breed() {
-			auto ret = std::make_shared<_Scope>();
-			ret->Parent = this;
-			return ret;
-		}
+class _Scope {
+public:
+	bool DidReturn{ false }; // Needed to make sure that nothing could be placed after the return command (Lua doesn't accept that).
+	ScopeKind Kind;
+	StringMap LocalVars{ NewStringMap() };
+	std::map<std::string, size_t> LocalDeclaLine{};
+	std::string ScopeLoc{ "" }; // The metatable containing the locals. Empty if not needed.
+	std::string switchID{ "" };
+	bool switchHasDefault{ false };
+	std::shared_ptr<std::vector<VecString>> switchCases{ nullptr };
+	bool caseFallThrough{ false }; // Only works in case scopes.
+	size_t caseCount{ 0 }; // Only for the translation itself so the labels can be created properly.
+	_Scope* Parent{ nullptr };
+	Declaration DecData{ nullptr };
+	std::string DeferID{ "" };
+	Scope Breed() {
+		auto ret = std::make_shared<_Scope>();
+		ret->Parent = this;
+		return ret;
+	}
 
-		std::string Identifier(Translation Trans, size_t lnr, std::string _id, bool ignoreglobals = false) {
-			if (_id[0] == '@') {
-				_id = _id.substr(1);
-				if (Trans->Classes->count(_id)) {
-					auto CL{ Trans->Classes };
-					return (*CL)[_id];
-				}
-				return "";
+	std::string Identifier(Translation Trans, size_t lnr, std::string _id, bool ignoreglobals = false) {
+		if (_id[0] == '@') {
+			_id = _id.substr(1);
+			if (Trans->Classes->count(_id)) {
+				auto CL{ Trans->Classes };
+				return (*CL)[_id];
 			}
-			if (_id[0] == '$') _id = _id.substr(1);
-			Trans2Upper(_id);
-			// Is this a local?
-			for (auto fscope = this; fscope; fscope = fscope->Parent) {
-				if (!LocalDeclaLine.count(_id)) LocalDeclaLine[_id] = 0;
-				// std::cout << "Local check " << _id << " in scope " << (uint64)fscope << "(" << (uint32)fscope->Kind<< "); Found: " << fscope->LocalVars->count(_id) << "; Declared in line: " << LocalDeclaLine[_id] << "; Instruction line: " << lnr << std::endl; // DEBUG ONLY!!!
-				if (fscope->LocalVars->count(_id) && lnr >= LocalDeclaLine[_id]) {
-					auto LV{ fscope->LocalVars };
-					return (*LV)[_id];
-				}
-			}
-			/* Copied from elsewhere, for I have been a stupid idiot!
-		for (size_t i = Scopes.size(); i > 0; --i) {
-			size_t idx{ i - 1 };
-			auto Sc{ GetScope(idx) };
-			if (Sc->LocalVars->count(_id)) {
-				auto LV{ Sc->LocalVars };
+			return "";
+		}
+		if (_id[0] == '$') _id = _id.substr(1);
+		Trans2Upper(_id);
+		// Is this a local?
+		for (auto fscope = this; fscope; fscope = fscope->Parent) {
+			if (!LocalDeclaLine.count(_id)) LocalDeclaLine[_id] = 0;
+			// std::cout << "Local check " << _id << " in scope " << (uint64)fscope << "(" << (uint32)fscope->Kind<< "); Found: " << fscope->LocalVars->count(_id) << "; Declared in line: " << LocalDeclaLine[_id] << "; Instruction line: " << lnr << std::endl; // DEBUG ONLY!!!
+			if (fscope->LocalVars->count(_id) && lnr >= LocalDeclaLine[_id]) {
+				auto LV{ fscope->LocalVars };
 				return (*LV)[_id];
 			}
 		}
-		*/
-			if (ignoreglobals) return "";
-			if (CoreGlobals.count(_id)) return CoreGlobals[_id];
-			if (Trans->GlobalVar->count(_id)) { auto GV{ Trans->GlobalVar }; return (*GV)[_id]; }
-			if (Trans->Classes->count(_id)) { auto CL{ Trans->Classes }; return (*CL)[_id]; }
-			return ""; // Empty string just means unrecognized
+		/* Copied from elsewhere, for I have been a stupid idiot!
+	for (size_t i = Scopes.size(); i > 0; --i) {
+		size_t idx{ i - 1 };
+		auto Sc{ GetScope(idx) };
+		if (Sc->LocalVars->count(_id)) {
+			auto LV{ Sc->LocalVars };
+			return (*LV)[_id];
 		}
+	}
+	*/
+		if (ignoreglobals) return "";
+		if (CoreGlobals.count(_id)) return CoreGlobals[_id];
+		if (Trans->GlobalVar->count(_id)) { auto GV{ Trans->GlobalVar }; return (*GV)[_id]; }
+		if (Trans->Classes->count(_id)) { auto CL{ Trans->Classes }; return (*CL)[_id]; }
+		return ""; // Empty string just means unrecognized
+	}
 
-		VarType FunctionScopeType() {
-			auto Check{ this };
-			do {
-				switch (Check->Kind) {
-				case ScopeKind::Init:
-				case ScopeKind::Root:
-				case ScopeKind::Defer:
-					return VarType::Void;
-				case ScopeKind::FunctionBody:
-				case ScopeKind::Method:
-					return Check->DecData->Type;
-				default:
-					Check = Check->Parent;
-					if (!Check) {
-						QCol->Error("Scope function type error (internal error! Please report to Jeroen P. Broks)");
-						exit(12345);
-					}
+	VarType FunctionScopeType() {
+		auto Check{ this };
+		do {
+			switch (Check->Kind) {
+			case ScopeKind::Init:
+			case ScopeKind::Root:
+			case ScopeKind::Defer:
+				return VarType::Void;
+			case ScopeKind::FunctionBody:
+			case ScopeKind::Method:
+				return Check->DecData->Type;
+			default:
+				Check = Check->Parent;
+				if (!Check) {
+					QCol->Error("Scope function type error (internal error! Please report to Jeroen P. Broks)");
+					exit(12345);
 				}
-			} while (true);
-		}
-	};
+			}
+		} while (true);
+	}
+	std::string DeferLine() {
+		auto Check{ this };
+		do {
+			switch (Check->Kind) {
+			case ScopeKind::Init:
+			case ScopeKind::FunctionBody:
+			case ScopeKind::Method:
+				if (DeferID.size())
+					return "for _,ifunc in ipairs(" + DeferID + ") do ifunc() end;\t";
+				else
+					return "";
+			default:
+				Check = Check->Parent;
+				if (!Check) {
+					QCol->Error("Scope function defer error (internal error! Please report to Jeroen P. Broks)");
+					exit(12345);
+				}
+			}
+		} while (true);
+	}
+};
 	
 
 	class _TransProcess {
@@ -1068,8 +1089,12 @@ namespace Scyndi {
 				std::vector<Word> Nw{ _Word::NewWord(WordKind::Operator,"--") };
 				for (size_t i = 0; i < ins->Words.size() - 1; i++) Nw.push_back(ins->Words[i]);
 				ins->Words = Nw;
-			} else if (ins->Words[0]->UpWord=="RETURN") {
+			} else if (ins->Words[0]->UpWord == "RETURN") {
 				ins->Kind = InsKind::Return;
+			} else if (ins->Words[0]->UpWord == "DEFER") {
+				TransAssert(ins->Scope == ScopeKind::FunctionBody || ins->Scope == ScopeKind::Method || ins->Scope == ScopeKind::Init, "Defer can only be used inside a function/method/init scope");
+				ins->Kind = InsKind::Defer;
+				Ret.PushScope(ScopeKind::Defer);
 			} else if (ins->Words[0]->UpWord == "FOR") {
 				TransAssert(ins->Words.size() > 1, "FOR without stuff");
 				ins->Kind = InsKind::StartFor;
@@ -1340,8 +1365,11 @@ namespace Scyndi {
 				switch (Ins->Scope) {
 				case ScopeKind::Init: 
 				case ScopeKind::Defer:
-					if (debug && (!Ins->ScopeData->DidReturn)) *Trans += " Scyndi.Debug.Pop(); ";
-					*Trans += "end\n";
+					if (!Ins->ScopeData->DidReturn) {
+						if (Ins->Scope != ScopeKind::Defer) *Trans += Ins->ScopeData->DeferLine();
+						if (debug) *Trans += " Scyndi.Debug.Pop(); ";
+						*Trans += "end\n";
+					}
 					break;
 				case ScopeKind::ForLoop:
 				case ScopeKind::IfScope:
@@ -1633,6 +1661,7 @@ namespace Scyndi {
 			} break;
 			case InsKind::Return: {
 				DbgLineCheck;
+				if (Ins->Scope != ScopeKind::Defer) *Trans += Ins->ScopeData->DeferLine();
 				if (debug) *Trans += " Scyndi.Debug.Pop(); ";
 				// TODO: If there are any defers, take care of them first!
 				auto Sc{ Ins->ScopeData };
@@ -1676,6 +1705,14 @@ namespace Scyndi {
 				}
 				Sc->DidReturn = true;
 				*Trans += "\n";
+			} break;
+			case InsKind::Defer: {
+				static size_t DeferCount{ 0 };
+				if (!Ins->ScopeData->DeferID.size()) {
+					Ins->ScopeData->DeferID = TrSPrintF("Scyndi_Defer_%08x_%s", DeferCount++, md5(srcfile + std::to_string(Ins->LineNumber)).c_str());
+					*Trans += "local " + Ins->ScopeData->DeferID + " = {}\t";
+				}
+				*Trans += Ins->ScopeData->DeferID + "[ #" + Ins->ScopeData->DeferID + " + 1 ] = function()\n";
 			} break;
 			default:
 				TransError(TrSPrintF("Unknown instruction kind (%d) (Internal error. Please report!)",(int)Ins->Kind));
