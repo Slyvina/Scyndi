@@ -53,7 +53,7 @@ namespace Scyndi {
 
 	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, ElseIfStatement, ElseStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope, StartFor, StartForEach, Declaration, StartDeclarationScope, StartFunction, Switch, Case, Default, FallThrough };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
-	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope, Switch, Case, Default, FunctionBody };
+	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope, Switch, Case, Default, FunctionBody, Defer };
 
 	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate, Void, Var };
 
@@ -189,6 +189,7 @@ namespace Scyndi {
 		StringMap ForTrans{ NewStringMap() };		
 		//std::string ForStart{ "0" }, ForTo{ "0" }, ForStep{ "1" };  // Although only numbers processed, in translation this is the better ride
 		Scyndi::Scope NextScope{ nullptr };
+		
 	};
 	typedef std::shared_ptr<_Instruction> Instruction;
 
@@ -228,26 +229,47 @@ namespace Scyndi {
 			for (auto fscope = this; fscope; fscope = fscope->Parent) {
 				if (!LocalDeclaLine.count(_id)) LocalDeclaLine[_id] = 0;
 				// std::cout << "Local check " << _id << " in scope " << (uint64)fscope << "(" << (uint32)fscope->Kind<< "); Found: " << fscope->LocalVars->count(_id) << "; Declared in line: " << LocalDeclaLine[_id] << "; Instruction line: " << lnr << std::endl; // DEBUG ONLY!!!
-				if (fscope->LocalVars->count(_id) && lnr>=LocalDeclaLine[_id]) {
+				if (fscope->LocalVars->count(_id) && lnr >= LocalDeclaLine[_id]) {
 					auto LV{ fscope->LocalVars };
 					return (*LV)[_id];
 				}
 			}
-				/* Copied from elsewhere, for I have been a stupid idiot!
-			for (size_t i = Scopes.size(); i > 0; --i) {
-				size_t idx{ i - 1 };
-				auto Sc{ GetScope(idx) };
-				if (Sc->LocalVars->count(_id)) {
-					auto LV{ Sc->LocalVars };
-					return (*LV)[_id];
-				}
+			/* Copied from elsewhere, for I have been a stupid idiot!
+		for (size_t i = Scopes.size(); i > 0; --i) {
+			size_t idx{ i - 1 };
+			auto Sc{ GetScope(idx) };
+			if (Sc->LocalVars->count(_id)) {
+				auto LV{ Sc->LocalVars };
+				return (*LV)[_id];
 			}
-			*/
+		}
+		*/
 			if (ignoreglobals) return "";
 			if (CoreGlobals.count(_id)) return CoreGlobals[_id];
 			if (Trans->GlobalVar->count(_id)) { auto GV{ Trans->GlobalVar }; return (*GV)[_id]; }
 			if (Trans->Classes->count(_id)) { auto CL{ Trans->Classes }; return (*CL)[_id]; }
 			return ""; // Empty string just means unrecognized
+		}
+
+		VarType FunctionScopeType() {
+			auto Check{ this };
+			do {
+				switch (Check->Kind) {
+				case ScopeKind::Init:
+				case ScopeKind::Root:
+				case ScopeKind::Defer:
+					return VarType::Void;
+				case ScopeKind::FunctionBody:
+				case ScopeKind::Method:
+					return Check->DecData->Type;
+				default:
+					Check = Check->Parent;
+					if (!Check) {
+						QCol->Error("Scope function type error (internal error! Please report to Jeroen P. Broks)");
+						exit(12345);
+					}
+				}
+			} while (true);
 		}
 	};
 	
@@ -1044,6 +1066,8 @@ namespace Scyndi {
 				std::vector<Word> Nw{ _Word::NewWord(WordKind::Operator,"--") };
 				for (size_t i = 0; i < ins->Words.size() - 1; i++) Nw.push_back(ins->Words[i]);
 				ins->Words = Nw;
+			} else if (ins->Words[0]->UpWord=="RETURN") {
+				ins->Kind = InsKind::Return;
 			} else if (ins->Words[0]->UpWord == "FOR") {
 				TransAssert(ins->Words.size() > 1, "FOR without stuff");
 				ins->Kind = InsKind::StartFor;
@@ -1577,16 +1601,60 @@ namespace Scyndi {
 				static std::map<std::string, size_t> CaseCount{};
 				if (!CaseCount.count(*Ins->SwitchName)) CaseCount[*Ins->SwitchName] = 0;
 				if (CaseCount[*Ins->SwitchName]) {
-					if (!Ins->ScopeData->caseFallThrough) *Trans += "goto " + *Ins->SwitchName + "_End;\t";
+					if (!(Ins->ScopeData->caseFallThrough || Ins->ScopeData->DidReturn)) *Trans += "goto " + *Ins->SwitchName + "_End;\t";
 					*Trans += "end;\t";
 				}
 				*Trans += TrSPrintF("::%s_Case_%d:: do ", Ins->SwitchName->c_str(), CaseCount[*Ins->SwitchName]++);
 				// std::cout << *Ins->SwitchName << ":\tCase count: " << CaseCount[*Ins->SwitchName] << std::endl; // debug only
 			} break;
 			case InsKind::Default: {
-				if (!Ins->ScopeData->caseFallThrough) *Trans += "goto " + (*Ins->SwitchName) + "_End;\t";
+				if (!(Ins->ScopeData->caseFallThrough || Ins->ScopeData->DidReturn)) *Trans += "goto " + (*Ins->SwitchName) + "_End;\t";
 				*Trans += "end;\t";
 				*Trans += TrSPrintF("::%s_Default:: do ", Ins->SwitchName->c_str());
+			} break;
+			case InsKind::Return: {
+				// TODO: If there are any defers, take care of them first!
+				auto Sc{ Ins->ScopeData };
+				auto fKind{ Sc->FunctionScopeType() };
+				if (fKind == VarType::Void) {
+					TransAssert(Ins->Words.size() == 1, "Void functions (which includes, Init, Defers, Constructors and Destructors) cannot return any values");
+					*Trans += "return;\n";
+					Sc->DidReturn = true;
+					break;
+				}
+				TransAssert(Ins->Words.size() > 1, "Return without data");
+				auto Ex{ Expression(Ret.Trans,Ins,1) };
+				if (!Ex) return nullptr;
+				*Trans += "return ";
+				switch (fKind) {
+				case VarType::CustomClass:
+				case VarType::pLua:
+				case VarType::Var:
+				case VarType::UserData:
+					*Trans += *Ex;
+					break;
+				case VarType::Byte:
+				case VarType::Integer:
+				case VarType::Number:
+					if (!Ex->size()) *Trans += "0"; else *Trans += TrSPrintF("Scyndi.WantValue(\"%s\",%s)", _Declaration::E2S(fKind), Ex->c_str());
+					break;
+				case VarType::String:
+					if (!Ex->size()) *Trans += "\"\""; else *Trans += TrSPrintF("Scyndi.WantValue(\"STRING\",%s)", Ex->c_str());
+					break;
+				case VarType::Boolean:
+					if (!Ex->size()) *Trans += "false"; else *Trans += TrSPrintF("Scyndi.WantValue(\"BOOL\",%s)", Ex->c_str());
+					break;
+				case VarType::Delegate:
+					if (!Ex->size()) *Trans += "nil"; else *Trans += TrSPrintF("Scyndi.WantValue(\"DELEGATE\",%s)", Ex->c_str());
+					break;
+				case VarType::Table:
+					if (!Ex->size()) *Trans += "{}"; else *Trans += TrSPrintF("Scyndi.WantValue(\"TABLE\",%s)", Ex->c_str());
+					break;
+				default:
+					TransError(TrSPrintF("Unknown function return type (%d)", (int)fKind));
+				}
+				Sc->DidReturn = true;
+				*Trans += "\n";
 			} break;
 			default:
 				TransError(TrSPrintF("Unknown instruction kind (%d) (Internal error. Please report!)",(int)Ins->Kind));
