@@ -529,7 +529,7 @@ function _Scyndi.INITDEBUGFUNCTIONS(
 	-- void Line(string State,string source, int linenumber)
 	Line,
 
-	-- bool ReadOnly = treu
+	-- bool ReadOnly = true
 	ReadOnly
 )
 
