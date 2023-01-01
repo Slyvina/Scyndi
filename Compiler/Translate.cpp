@@ -1351,12 +1351,39 @@ namespace Scyndi {
 				std::vector<Arg> Args{};
 				auto Pos{ Arg1Pos };
 				auto oscope{ Ins->ScopeData }, nscope{ Ins->NextScope };
+				std::string pLuaLine{ "" };
 				while (Pos < Ending && Ins->Words[Pos]->UpWord != ")") {
+					//std::cout << VarName << ":\t" << Pos << "\t" << Ins->Words[Pos]->UpWord << "\t" << (Ins->Words[Pos]->UpWord == "PLUA") << "\n"; // debug only!
 					if (Ins->Words[Pos]->Kind == WordKind::Identifier) {
 						Args.push_back(Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",VarType::Var,false });
-						if (ArgLine.size()) ArgLine += ","; ArgLine += TrSPrintF("Arg%d", Args.size());
+						if (ArgLine.size()) ArgLine += ", "; ArgLine += TrSPrintF("Arg%d", Args.size());
 						Pos++;
 						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (variant) argument #%d", Args.size()));
+						Pos++;
+					} else if (Ins->Words[Pos]->UpWord == "PLUA") {
+						Pos++;
+						TransAssert(Ins->Words[Pos]->Kind == WordKind::Identifier, "Identifier for pLua expected");
+						auto ArgName{ Ins->Words[Pos]->UpWord };
+						auto PluaName{ Ins->Words[Pos]->TheWord }; PluaName = Prefix + PluaName;
+						if (ArgLine.size()) ArgLine += ", "; ArgLine += PluaName;
+						Pos++;
+						if (Ins->Words[Pos]->UpWord == "=") {
+							Pos++;
+							switch (Ins->Words[Pos]->Kind) {
+							case WordKind::Number:
+								pLuaLine += TrSPrintF("%s = %s or %s; ", PluaName.c_str(), PluaName.c_str(), Ins->Words[Pos]->UpWord.c_str());
+								break;
+							case WordKind::String:
+								pLuaLine += TrSPrintF("%s = %s or \"%s\"; ", PluaName.c_str(), PluaName.c_str(), Ins->Words[Pos]->UpWord.c_str());
+								break;
+							default:
+								TransError("Only constant lines or strings can be used as base values for pPlua");
+							}
+							Pos++;
+						}
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), "Syntax error in function defintion after (plua) argument");
+						(*Ins->NextScope->LocalVars)[ArgName] = PluaName;
+						// std::cout << ArgName << " local -> " << PluaName << "\n"; // debug only
 						Pos++;
 					} else {
 						TransError("Typed Arguments for functions not yet supported");
@@ -1426,6 +1453,7 @@ namespace Scyndi {
 							(*Ins->NextScope->LocalVars)[Upper(Ag->Name)] = TrSPrintF("%s[\"%s\"]", Ins->NextScope->ScopeLoc.c_str(), Ag->Name.c_str());
 						}
 					}
+					*Trans += pLuaLine;
 					*Trans += "\n";
 					break;
 				default:
