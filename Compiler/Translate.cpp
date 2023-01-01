@@ -195,6 +195,7 @@ namespace Scyndi {
 	
 	class _Scope {
 	public:
+		bool DidReturn{ false }; // Needed to make sure that nothing could be placed after the return command (Lua doesn't accept that).
 		ScopeKind Kind;
 		StringMap LocalVars{ NewStringMap() };
 		std::map<std::string, size_t> LocalDeclaLine{};
