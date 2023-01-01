@@ -4,7 +4,7 @@
 // 
 // 
 // 
-// (c) Jeroen P. Broks, 2022
+// (c) Jeroen P. Broks, 2022, 2023
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.29
+// Version: 23.01.01
 // EndLic
 
 #include <SlyvString.hpp>
@@ -77,6 +77,7 @@ namespace Scyndi {
 		} else {
 			// QCol->LGreen(T->LuaSource + "\n"); // debug only!
 			auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".STB" }; // STB = Scyndi Translated Bundle
+			if (debug) { OutputFile = StripExt(Res->Entry(ScyndiSource)->MainFile) + ".Debug.STB"; }
 			QCol->Doing("Bundling", OutputFile);
 			auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
 			auto JO{ CreateJCR6(OutputFile) };

@@ -44,6 +44,8 @@
 #define Chat(abc)
 #endif
 
+#define DbgLineCheck if (debug && (!Ins->ScopeData->DidReturn)) *Trans += TrSPrintF("Scyndi.Debug(Scyndi.Debug.StateName,\"%s\",%d)\t",srcfile.c_str(),Ins->LineNumber)
+
 using namespace Slyvina;
 using namespace Slyvina::Units;
 
@@ -1281,9 +1283,11 @@ namespace Scyndi {
 				break;
 			case InsKind::StartInit:
 				*Trans += InitTag + "[#" + InitTag + "+1]=function()\n";
+				if (debug) *Trans += ("Scynd.Debug.Push(\"Init Scope\")");
 				break;
 			case InsKind::StartFor:
 			case InsKind::StartForEach: {
+				DbgLineCheck;
 				*Trans += "for ";
 				for (size_t i = 0; i < Ins->ForVars.size(); i++) {
 					if (i) *Trans += ", ";
@@ -1304,6 +1308,7 @@ namespace Scyndi {
 				*Trans += " do\n";
 			} break;
 			case InsKind::WhileStatement: {
+				DbgLineCheck;
 				*Trans += "while ";
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
 				if (!Ex) return nullptr;
@@ -1311,6 +1316,7 @@ namespace Scyndi {
 				*Trans += " do\n";
 			} break;
 			case InsKind::IfStatement: {
+				DbgLineCheck;
 				*Trans += "if ";
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
 				if (!Ex) return nullptr;
@@ -1318,6 +1324,7 @@ namespace Scyndi {
 				*Trans += " then\n";
 			} break;
 			case InsKind::ElseIfStatement: {
+				DbgLineCheck;
 				*Trans += "elseif ";
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
 				if (!Ex) return nullptr;
@@ -1325,11 +1332,15 @@ namespace Scyndi {
 				*Trans += " then\n";
 			} break;
 			case InsKind::ElseStatement:
+				DbgLineCheck;
 				*Trans += "else\n";
 				break;
 			case InsKind::EndScope:
+				DbgLineCheck;
 				switch (Ins->Scope) {
-				case ScopeKind::Init: // I do take this apart. Init can be a bit more sensitive
+				case ScopeKind::Init: 
+				case ScopeKind::Defer:
+					if (debug && (!Ins->ScopeData->DidReturn)) *Trans += " Scyndi.Debug.Pop(); ";
 					*Trans += "end\n";
 					break;
 				case ScopeKind::ForLoop:
@@ -1346,6 +1357,7 @@ namespace Scyndi {
 					break;
 				case ScopeKind::FunctionBody:
 					if (!Ins->ScopeData->DidReturn) {
+						if (debug) *Trans += " Scyndi.Debug.Pop(); ";
 						switch (Ins->ScopeData->DecData->Type) {
 						case VarType::Void:
 						case VarType::Var:
@@ -1386,6 +1398,7 @@ namespace Scyndi {
 			case InsKind::Declaration:
 				TransAssert(Ins->DecData, "No DecData in translation (transphase/variable) - This is an internal error! Please report!");
 				if (Ins->DecData->IsGlobal || Ins->DecData->IsRoot) break;
+				DbgLineCheck;
 				TransError("This kind of declaration not YET supported");
 			case InsKind::DefineFunction: {
 				TransAssert(Ins->DecData, "No DecData in translation (transphase/function) - This is an internal error! Please report!");
@@ -1520,6 +1533,8 @@ namespace Scyndi {
 					std::cout << (int)Ret.RootScope->Kind << "\n"; // debug only
 					TransError(TrSPrintF("(SC%d) Local functions not yet implemented", (int)oscope->Kind));
 				}
+				if (debug) *Trans += TrSPrintF("Scynd.Debug.Push(\"%s\")",VarName.c_str());
+				DbgLineCheck;
 				if (Args.size()) {
 					//std::cout << "Function " << VarName << " has " << Args.size() << " argument(s)\n"; // debug only
 					Ins->NextScope->ScopeLoc = ScN + "_Locals";
@@ -1561,12 +1576,14 @@ namespace Scyndi {
 				//TransError("Function defs not yet complete"); // security
 			} break;
 			case InsKind::General: {
+				DbgLineCheck;
 				auto Ex{ Expression(Ret.Trans,Ins,0) };
 				if (!Ex) return nullptr;
 				*Trans += *Ex;
 				*Trans += '\n';
 			} break;
 			case InsKind::Increment: {			
+				DbgLineCheck;
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
 				if (!Ex) return nullptr;
 				*Trans += *Ex;
@@ -1575,6 +1592,7 @@ namespace Scyndi {
 				*Trans += ")\n";
 			} break;
 			case InsKind::Decrement: {
+				DbgLineCheck;
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
 				if (!Ex) return nullptr;
 				*Trans += *Ex;
@@ -1583,6 +1601,7 @@ namespace Scyndi {
 				*Trans += ")\n";
 			} break;
 			case InsKind::Switch: {
+				DbgLineCheck;
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
 				if (!Ex) return nullptr;
 				auto SwName{ *Ins->SwitchName };
@@ -1613,6 +1632,8 @@ namespace Scyndi {
 				*Trans += TrSPrintF("::%s_Default:: do ", Ins->SwitchName->c_str());
 			} break;
 			case InsKind::Return: {
+				DbgLineCheck;
+				if (debug) *Trans += " Scyndi.Debug.Pop(); ";
 				// TODO: If there are any defers, take care of them first!
 				auto Sc{ Ins->ScopeData };
 				auto fKind{ Sc->FunctionScopeType() };
@@ -1669,7 +1690,7 @@ namespace Scyndi {
 	}
 
 	Translation Translate(std::string source, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
-		return Translate(Split(source, '\n'), srcfile, JD);
+		return Translate(Split(source, '\n'), srcfile, JD, debug);
 	}
 
 }
