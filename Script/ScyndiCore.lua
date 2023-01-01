@@ -534,7 +534,7 @@ function _Scyndi.INITDEBUGFUNCTIONS(
 )
 
 	_ScyndiDebug.SETDEBUG=SetDebug
-	_ScyndiDebug.STATENAME=StateName
+	_ScyndiDebug.STATENAME=StateName or "Nameless State"
 	_ScyndiDebug.PUSH=Push
 	_ScyndiDebug.POP=Pop
 	_ScyndiDebug.LINE=Line
