@@ -1144,7 +1144,7 @@ namespace Scyndi {
 				// Please note, everything not recongized as a variable declaration or function definition should be ignored.
 				switch (Ins->Kind) {
 				case InsKind::DefineFunction:
-					std::cout << "Defining function data: Gl:" << Dec->IsGlobal << "/Rt:" << Dec->IsRoot << std::endl;
+					// std::cout << "Defining function data: Gl:" << Dec->IsGlobal << "/Rt:" << Dec->IsRoot << std::endl;
 					// Please note! NO CODE should be written yet, or translation later will mess up!
 					if (Dec->IsGlobal) {
 						if (Dec->Type == VarType::pLua) {
@@ -1385,8 +1385,50 @@ namespace Scyndi {
 						(*Ins->NextScope->LocalVars)[ArgName] = PluaName;
 						// std::cout << ArgName << " local -> " << PluaName << "\n"; // debug only
 						Pos++;
+					} else if (Ins->Words[Pos]->UpWord == "INT" || Ins->Words[Pos]->UpWord == "NUMBER" || Ins->Words[Pos]->UpWord == "BYTE") {
+						auto DT{ Ins->Words[Pos]->UpWord };
+						Pos++;
+						auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						// std::cout << "Arg type " << (int)A.dType << "(" << DT << ")\n"; // debug
+						if (ArgLine.size()) ArgLine += ", "; ArgLine += TrSPrintF("Arg%d", Args.size());
+						Pos++;
+						if (Ins->Words[Pos]->UpWord == "=") {
+							Pos++;
+							TransAssert(Ins->Words[Pos]->Kind == WordKind::Number, "Constant number expected");
+							A.HasBaseValue = true;
+							A.BaseValue = Ins->Words[Pos]->UpWord;
+							Pos++;
+						} else { A.BaseValue = "error('Numberic value expected for argument " + A.Name + "')"; }
+						Args.push_back(A);
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (numberic) argument #%d", Args.size()));
+						Pos++;
+					} else if (Ins->Words[Pos]->UpWord == "STRING") {
+						auto DT{ Ins->Words[Pos]->UpWord };
+						Pos++;
+						auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						// std::cout << "Arg type " << (int)A.dType << "(" << DT << ")\n"; // debug
+						if (ArgLine.size()) ArgLine += ", "; ArgLine += TrSPrintF("Arg%d", Args.size());
+						Pos++;
+						if (Ins->Words[Pos]->UpWord == "=") {
+							Pos++;
+							TransAssert(Ins->Words[Pos]->Kind == WordKind::String, "Constant string expected");
+							A.HasBaseValue = true;
+							A.BaseValue = Ins->Words[Pos]->TheWord; //TrSPrintF("\"%s\"", Ins->Words[Pos]->TheWord.c_str());
+							Pos++;
+						} else { A.BaseValue = "error('String value expected for argument " + A.Name + "')"; }
+						Args.push_back(A);
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (numberic) argument #%d", Args.size()));
+						Pos++;
+					} else if (Ins->Words[Pos]->TheWord[0] == '@') {
+						TransError("Custom class type as function argument not (yet) supported. Just use an untyped argument or a pLua in stead");
+					} else if (Ins->Words[Pos]->UpWord=="DELEGATE" || Ins->Words[Pos]->UpWord == "TABLE" || Ins->Words[Pos]->UpWord == "BOOL") {
+						auto DT{ Ins->Words[Pos]->UpWord };
+						Pos++;
+						auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (numberic) argument #%d", Args.size()));
+						Pos++;
 					} else {
-						TransError("Typed Arguments for functions not yet supported");
+						TransError("Syntax error");
 					}
 				}
 				switch (oscope->Kind) {
@@ -1420,46 +1462,49 @@ namespace Scyndi {
 					} else {
 						TransError("This kind of function, is not yet supported")
 					}
-					if (Args.size()) {
-						Ins->NextScope->ScopeLoc = ScN + "_Locals";
-						*Trans += "local "+Ins->NextScope->ScopeLoc+" = Scyndi.CreateLocals(); ";
-						for (size_t ap = 0; ap < Args.size(); ap++) {
-							std::string IValue{ "nil" };
-							auto Ag{ &Args[ap] };
-							switch (Ag->dType) {
-							case VarType::Boolean: 
-								if (Ag->HasBaseValue) {
-									if (Upper(Ag->BaseValue) == "TRUE") IValue = "true";
-									else if (Upper(Ag->BaseValue) == "FALSE") IValue = "false";
-									else TransError("Invalid base value for boolean");
-								} else IValue = "false";
-								break;
-							case VarType::Byte:
-							case VarType::Integer:
-							case VarType::Number:
-								if (Ag->HasBaseValue) IValue = Ag->BaseValue; else IValue = "0";
-								break;
-							case VarType::pLua: // this should not be possible as pLua vars are handled differently
-								if (Ag->HasBaseValue) TransError("Plua cannot hold a base value");
-								break;
-							case VarType::String:
-								if (Ag->HasBaseValue) IValue = TrSPrintF("\"%s\"", Ag->BaseValue); else IValue = "\"\"";
-								break;
-							default:
-								if (Ag->HasBaseValue) TransError("Base value not permitted for that type");
-								break;
-							}
-							*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s,\"%s\", false,\"%s\",%s); ", Ins->NextScope->ScopeLoc.c_str(), _Declaration::E2S(Args[ap].dType).c_str(), Args[ap].Name.c_str(), IValue.c_str());
-							(*Ins->NextScope->LocalVars)[Upper(Ag->Name)] = TrSPrintF("%s[\"%s\"]", Ins->NextScope->ScopeLoc.c_str(), Ag->Name.c_str());
-						}
-					}
-					*Trans += pLuaLine;
-					*Trans += "\n";
 					break;
 				default:
 					std::cout << (int)Ret.RootScope->Kind << "\n"; // debug only
 					TransError(TrSPrintF("(SC%d) Local functions not yet implemented", (int)oscope->Kind));
 				}
+				if (Args.size()) {
+					//std::cout << "Function " << VarName << " has " << Args.size() << " argument(s)\n"; // debug only
+					Ins->NextScope->ScopeLoc = ScN + "_Locals";
+					*Trans += "local " + Ins->NextScope->ScopeLoc + " = Scyndi.CreateLocals(); ";
+					for (size_t ap = 0; ap < Args.size(); ap++) {
+						std::string IValue{ "nil" };
+						auto Ag{ &Args[ap] };
+						switch (Ag->dType) {
+						case VarType::Boolean:
+							if (Ag->HasBaseValue) {
+								if (Upper(Ag->BaseValue) == "TRUE") IValue = "true";
+								else if (Upper(Ag->BaseValue) == "FALSE") IValue = "false";
+								else TransError("Invalid base value for boolean");
+							} else IValue = "false";
+							break;
+						case VarType::Byte:
+						case VarType::Integer:
+						case VarType::Number:
+							if (Ag->HasBaseValue) IValue = Ag->BaseValue; else IValue = "error('Numberic value expected for argument \""+Ag->Name+"\"')";
+							//std::cout << VarName << ": num " << Ag->Name << " = " << IValue<<"\n";
+							break;
+						case VarType::pLua: // this should not be possible as pLua vars are handled differently
+							if (Ag->HasBaseValue) TransError("Plua cannot hold a base value");
+							break;
+						case VarType::String:
+							if (Ag->HasBaseValue) IValue = TrSPrintF("\"%s\"", Ag->BaseValue); else IValue="error('String expected for argument \""+Ag->Name+"\"')"; //IValue = "\"\"";
+							break;
+						default:
+							if (Ag->HasBaseValue) TransError("Base value not permitted for that type");
+							IValue = "nil";
+							break;
+						}
+						*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s,\"%s\", false,\"%s\",Arg%d or %s); ", Ins->NextScope->ScopeLoc.c_str(), _Declaration::E2S(Args[ap].dType).c_str(), Args[ap].Name.c_str(), ap, IValue.c_str());
+						(*Ins->NextScope->LocalVars)[Upper(Ag->Name)] = TrSPrintF("%s[\"%s\"]", Ins->NextScope->ScopeLoc.c_str(), Ag->Name.c_str());
+					}
+				}
+				*Trans += pLuaLine;
+				*Trans += "\n";
 				//TransError("Function defs not yet complete"); // security
 			} break;
 			case InsKind::General: {
