@@ -1321,6 +1321,34 @@ namespace Scyndi {
 					*Trans += "::" + *Ins->SwitchName + "_End::\n";
 					break;
 				case ScopeKind::FunctionBody:
+					if (!Ins->ScopeData->DidReturn) {
+						switch (Ins->ScopeData->DecData->Type) {
+						case VarType::Void:
+						case VarType::Var:
+						case VarType::Delegate:
+						case VarType::CustomClass:
+						case VarType::pLua:
+						case VarType::UserData:
+							break; // Base value would be 'nil' anyway!
+						case VarType::String:
+							*Trans += "return \"\"; ";
+							break;
+						case VarType::Number:
+						case VarType::Byte:
+						case VarType::Integer:
+							*Trans += "return 0; ";
+							break;
+						case VarType::Table:
+							*Trans += "return {}; ";
+							break;
+						case VarType::Boolean:
+							*Trans += "return false; ";
+							break;
+						default:
+							TransError("Function with unknown return type ended");
+
+						}
+					}
 					*Trans += "end";
 					if (Ins->ScopeData->DecData->IsGlobal || Ins->ScopeData->DecData->IsRoot || Ins->ScopeData->DecData->BoundToClass.size())
 						if (Ins->ScopeData->DecData->Type!=VarType::pLua) *Trans += ")";
