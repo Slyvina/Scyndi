@@ -259,7 +259,14 @@
     <ClInclude Include="Compiler\ScyndiGlobals.hpp" />
     <ClInclude Include="Compiler\ScyndiProject.hpp" />
     <ClInclude Include="Compiler\Translate.hpp" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="ScyndiVersion.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Scyndi.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
