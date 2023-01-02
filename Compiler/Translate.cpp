@@ -1426,8 +1426,58 @@ public:
 			case InsKind::Declaration:
 				TransAssert(Ins->DecData, "No DecData in translation (transphase/variable) - This is an internal error! Please report!");
 				if (Ins->DecData->IsGlobal || Ins->DecData->IsRoot) break;
-				DbgLineCheck;
-				TransError("This kind of declaration not YET supported");
+				{
+					DbgLineCheck;
+					auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };
+					auto PluaName{ Ins->Words[Ins->ForEachExpression]->TheWord };
+
+					auto p{ Ins->ForEachExpression + 1 };
+					std::string BaseValue;
+					if (p >= Ins->Words.size()) {
+						switch (Ins->DecData->Type) {
+						case VarType::Boolean:
+							BaseValue = "false"; break;
+						case VarType::Byte:
+						case VarType::Integer:
+						case VarType::Number:
+							BaseValue = "0"; break;
+						case VarType::String:
+							BaseValue = "\"\""; break;
+						case VarType::Table:
+							BaseValue = "{}"; break;
+						default:
+							BaseValue = "nil"; break;
+						}
+					} else {
+						TransAssert(Ins->Words[p]->TheWord == "=", "Local declaration syntax error");
+						p++;
+						TransAssert(p < Ins->Words.size(), "Incomplete local declaration");
+						auto Ex{ Expression(Ret.Trans,Ins,p) };
+						if (!Ex) return nullptr;
+						BaseValue = *Ex;
+					}
+					// Static Local
+					if (Ins->DecData->IsStatic) TransError("Static locals not yet supported");
+					// Local
+					if (Ins->DecData->Type == VarType::pLua) {
+						*Trans += "local " + PluaName;
+						if (BaseValue != "nil") *Trans += " = " + BaseValue;		
+						(*Ins->ScopeData->LocalVars)[VarName] = PluaName;
+						Ins->ScopeData->LocalDeclaLine[VarName] = Ins->LineNumber;
+					} else {
+					if (!Ins->ScopeData->ScopeLoc.size()) {
+						static size_t count{ 0 };
+						Ins->ScopeData->ScopeLoc = TrSPrintF("__ScyndiLocals_%08x_%02d_", count++, (int)Ins->ScopeData->Kind);
+						Ins->ScopeData->ScopeLoc += md5(Ins->ScopeData->ScopeLoc + srcfile);
+						*Trans += "local " + Ins->ScopeData->ScopeLoc + " = Scyndi.CreateLocals(); ";
+					}
+						*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s, \"%s\", %s, \"%s\", %s);", Ins->ScopeData->ScopeLoc.c_str(), _Declaration::E2S(Ins->DecData->Type).c_str(), Lower(boolstring(Ins->DecData->IsReadOnly || Ins->DecData->IsConstant)).c_str(), VarName.c_str(), BaseValue.c_str());
+						(*Ins->ScopeData->LocalVars)[VarName] = TrSPrintF("%s[\"%s\"]", Ins->ScopeData->ScopeLoc.c_str(), VarName.c_str());
+						Ins->ScopeData->LocalDeclaLine[VarName] = Ins->LineNumber;
+					}
+					*Trans += "\n";
+				}
+				break;
 			case InsKind::DefineFunction: {
 				TransAssert(Ins->DecData, "No DecData in translation (transphase/function) - This is an internal error! Please report!");
 				static size_t count = 0;
