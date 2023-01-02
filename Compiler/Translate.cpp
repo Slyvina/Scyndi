@@ -1515,12 +1515,16 @@ public:
 						Pos++;
 					} else if (Ins->Words[Pos]->TheWord[0] == '@') {
 						TransError("Custom class type as function argument not (yet) supported. Just use an untyped argument or a pLua in stead");
-					} else if (Ins->Words[Pos]->UpWord=="DELEGATE" || Ins->Words[Pos]->UpWord == "TABLE" || Ins->Words[Pos]->UpWord == "BOOL") {
+					} else if (Ins->Words[Pos]->UpWord == "DELEGATE" || Ins->Words[Pos]->UpWord == "TABLE" || Ins->Words[Pos]->UpWord == "BOOL") {
 						auto DT{ Ins->Words[Pos]->UpWord };
 						Pos++;
 						auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
 						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (numberic) argument #%d", Args.size()));
 						Pos++;
+					} else if (Ins->Words[Pos]->UpWord=="INFINITY") {
+						if (ArgLine.size()) ArgLine += ", "; ArgLine += "...";
+						Pos++;
+						TransAssert(Ins->Words.size() > Pos && Ins->Words[Pos]->UpWord == ")", "Syntax error after infinite parameters");
 					} else {
 						TransError("Syntax error");
 					}
