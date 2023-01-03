@@ -366,6 +366,9 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Libs\Units\Headers\Slyvina.hpp">
+      <Filter>Header Files\Slyvina\Units</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Scyndi.ico">

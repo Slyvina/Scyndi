@@ -250,6 +250,7 @@
     <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvArgParse.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvAsk.hpp" />
+    <ClInclude Include="..\..\Libs\Units\Headers\Slyvina.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvMD5.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvQCol.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvVecSearch.hpp" />
