@@ -1117,6 +1117,23 @@ public:
 				TransAssert(ins->Scope == ScopeKind::FunctionBody || ins->Scope == ScopeKind::Method || ins->Scope == ScopeKind::Init, "Defer can only be used inside a function/method/init scope");
 				ins->Kind = InsKind::Defer;
 				Ret.PushScope(ScopeKind::Defer);
+			} else if (ins->Words[0]->UpWord=="CLASS") {
+				// start class
+				TransAssert(ins->ScopeData->Kind == ScopeKind::Root, "Class can only be created in root scope");
+				ins->Kind = InsKind::StartClass;
+				if (ins->Words.size() < 2) TransError("Incomplete class defintion");
+				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier for class expected");
+				Ret.PushScope(ScopeKind::Class);				
+				auto SC{ Ret.GetScope() };
+				SC->ClassID = ins->Words[1]->TheWord;
+				(*Ret.Trans->GlobalVar)[SC->ClassID] = "SCYNDI.CLASSES[\"" + SC->ClassID + "\"]";
+				Ret.Trans->Data->Add("CLASSES", "CLASS", SC->ClassID);
+				(*SC->LocalVars)["SELF"] = "Scyndi.Class[\"" + SC->ClassID + "\"]"; 
+				if (ins->Words.size() > 2) {
+					TransAssert(ins->Words.size() == 4, "3 or more than 4 terms on a class? What are you doing?");
+					TransAssert(ins->Words[2]->UpWord == "EXTENDS", "EXTENDS expected");
+					TransError("Extended classes not yet supported");
+				}
 			} else if (ins->Words[0]->UpWord == "FOR") {
 				TransAssert(ins->Words.size() > 1, "FOR without stuff");
 				ins->Kind = InsKind::StartFor;
