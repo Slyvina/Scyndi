@@ -293,7 +293,7 @@ function _Scyndi.NEW(ch,...)
 		__newindex=InstaceIndex,
 		__gc=function(self) if (Ret[".Methods"].DESTRUCTOR) then Ret[".Methods"].DESTRUCTOR.func(self) end end
 	})
-	if (Ret[".Methods"].CONSTRUCTOR) Ret[".Methods"].CONSTRUCTOR.func(self,...) end
+	if (Ret[".Methods"].CONSTRUCTOR) then Ret[".Methods"].CONSTRUCTOR.func(self,...) end
 	Ret[".sealed"]=true
 	return Ret
 end
