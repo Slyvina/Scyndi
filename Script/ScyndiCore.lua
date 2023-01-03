@@ -1,7 +1,7 @@
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
--- version: 23.01.01
+-- version: 23.01.03
 -- Copyright (C) 2022, 2023 Jeroen P. Broks
 -- This software is provided 'as-is', without any express or implied
 -- warranty.  In no event will the authors be held liable for any damages
@@ -155,6 +155,7 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 		sealable=sealable,
 		staticmembers={},
 		nonstaticmembers={},
+		methods={},
 		pub={},
 		priv={}
 	}	
@@ -220,6 +221,16 @@ function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 	}
 	--for k,v in pairs(nm) do print(k,v) end
 	if (static) then _class.staticmembers[name]=nm else _class.nonstaticmembers[name]=nm end
+end
+
+function _Scyndi.ADDMETHOD(ch,name,IsFinal,func)
+local cu=ch:upper()
+	name=name:upper()	
+	assert(classregister[cu],"Class "..cu.." unknown (member addition)")
+	local _class=classregister[cu]
+	assert(type(func)=="function","That is not a function, so it cannot be turned into a method")
+	assert( not ( _class.methods[ch] and _class.methods[ch].IsFinal ), "Final method cannot be overridden")
+	_class.methods[ch] = { IsAbstract=false, IsFinal=False, Meth = func }
 end
 
 function _Scyndi.SEAL(ch)
