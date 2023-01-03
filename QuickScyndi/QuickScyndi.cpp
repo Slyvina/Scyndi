@@ -23,6 +23,7 @@
 // 
 // Version: 23.01.03
 // EndLic
+
 #include "../ScyndiVersion.hpp"
 
 #include <Lunatic.hpp>
@@ -52,5 +53,8 @@ namespace Scyndi {
 
 int main(int c, char** args) {
 	using namespace Scyndi;
-	if (c < 2) Header(args[0]);
+	if (c < 2) {
+		Header(args[0]);
+		return 0;
+	}
 }

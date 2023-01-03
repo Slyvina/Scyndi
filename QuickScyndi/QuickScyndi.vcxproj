@@ -141,6 +141,39 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lapi.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lauxlib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lbaselib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lcode.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lcorolib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lctype.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ldblib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ldebug.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ldo.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ldump.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lfunc.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lgc.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\linit.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\liolib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\llex.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lmathlib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lmem.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\loadlib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lobject.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lopcodes.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\loslib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lparser.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lstate.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lstring.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lstrlib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ltable.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ltablib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ltm.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lundump.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lutf8lib.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lvm.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lzio.c" />
+    <ClCompile Include="..\..\..\Libs\Lunatic\Lunatic.cpp" />
     <ClCompile Include="..\..\..\Libs\Units\Source\SlyvQCol.cpp" />
     <ClCompile Include="..\..\..\Libs\Units\Source\SlyvSTOI.cpp" />
     <ClCompile Include="..\..\..\Libs\Units\Source\SlyvStream.cpp" />
@@ -148,6 +181,39 @@
     <ClCompile Include="..\..\..\Libs\Units\Source\SlyvTime.cpp" />
     <ClCompile Include="..\..\..\Libs\Units\Source\SlyvVolumes.cpp" />
     <ClCompile Include="QuickScyndi.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lapi.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lauxlib.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lcode.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lctype.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ldebug.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ldo.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lfunc.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lgc.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ljumptab.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\llex.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\llimits.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lmem.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lobject.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lopcodes.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lopnames.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lparser.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lprefix.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lstate.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lstring.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ltable.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\ltm.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lua.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lua.hpp" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\luaconf.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lualib.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lundump.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lvm.h" />
+    <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lzio.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Libs\Lunatic\Lua\Raw\src\Makefile" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
