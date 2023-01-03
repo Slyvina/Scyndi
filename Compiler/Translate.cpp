@@ -719,11 +719,12 @@ public:
 			switch (kw_new) {
 			case 2:
 				TransAssert(W->Kind == WordKind::Identifier, "NEW syntax error");
-				Ret += TrSPrintF("Scyndi.New(\"%s\", ", W->UpWord.c_str());
+				Ret += TrSPrintF("Scyndi.New(\"%s\" ", W->UpWord.c_str());
 				kw_new--;
 				break;
 			case 1:
 				TransAssert(W->TheWord == "(","( expected for constructor parameters");
+				if (pos + 1 < Ins->Words.size() && Ins->Words[pos + 1]->UpWord != ")") Ret += ",";
 				kw_new--;
 				break;
 			default:
@@ -758,6 +759,8 @@ public:
 						Ret += " ... ";
 					else if (W->UpWord == "DIV")
 						Ret += " // ";
+					else if (W->UpWord == "NEW")
+						kw_new = 2;
 					else
 						TransError(TrSPrintF("Unexpected %s (W%03d) '%s'", GetWordKind(W->Kind).c_str(), pos + 1, W->TheWord.c_str()));
 				}
