@@ -1214,9 +1214,14 @@ public:
 		*Trans += TrSPrintF("local %s = Scyndi.STARTCLASS(\"%s\",true,true,nil)\n", ScriptName.c_str(), ScriptName.c_str());
 		*Trans += TrSPrintF("local %s = {}\n", StaticRegister.c_str());
 
+#pragma region "Class and group startups"
 		// Class management
 		// TODO!
 
+		}
+#pragma endregion
+
+#pragma region "Declare non-locals"
 		// Declaration management
 		Verb("Managing", srcfile);
 		for (auto Ins : Ret.Instructions) {
@@ -1327,7 +1332,9 @@ public:
 				}
 			}
 		}
+#pragma endregion
 
+#pragma region "Actual Translation"
 		// Translate
 		Verb("Translating", srcfile);
 		auto InitTag{ TrSPrintF("__Scyndi__Init__%s",md5(srcfile + CurrentDate() + CurrentTime()).c_str()) };
@@ -1836,6 +1843,7 @@ public:
 			*Trans += "\n\nfor _,ifunc in ipairs(" + InitTag + ") do ifunc() end; " + InitTag + " = nil";
 		}
 		Ret.Trans->Data->Value("Translation", "Origin", "Scyndi");
+#pragma endregion
 		return Ret.Trans;
 	}
 
