@@ -53,7 +53,16 @@ namespace Scyndi {
 
 	bool TransVerbose{ false };
 
-	enum class InsKind { Unknown, HeaderDefintion, General, QuickMeta, IfStatement, ElseIfStatement, ElseStatement, WhileStatement, Increment, Decrement, DeclareVariable, DefineFunction, CompilerDirective, WhiteLine, Return, MutedByIfDef, StartInit, EndScope, StartFor, StartForEach, Declaration, StartDeclarationScope, StartFunction, Switch, Case, Default, FallThrough, Defer };
+	enum class InsKind { 
+		Unknown, HeaderDefintion, General, 
+		QuickMeta, IfStatement, ElseIfStatement, ElseStatement, 
+		WhileStatement, Increment, Decrement, DeclareVariable,
+		DefineFunction, CompilerDirective, WhiteLine, 
+		Return, MutedByIfDef, StartInit, EndScope,
+		StartFor, StartForEach, Declaration, 
+		StartDeclarationScope, StartFunction, Switch, 
+		Case, Default, FallThrough, 
+		Defer, StartClass, StartGroup };
 	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope, Switch, Case, Default, FunctionBody, Defer };
 
