@@ -1218,6 +1218,21 @@ public:
 		// Class management
 		// TODO!
 		std::vector<std::string> ToSeal;
+		for (auto Ins : Ret.Instructions) {
+			auto LineNumber{ Ins->LineNumber };
+			switch (Ins->Kind) {
+			case InsKind::StartClass:
+				ToSeal.push_back(Ins->Words[1]->UpWord);
+				*Trans += "Scyndi.StartClass(\"";
+				*Trans += Ins->Words[1]->UpWord + "\", ";
+				*Trans += "true, true";
+				// ,extends )
+				if (Ins->Words.size() > 2) TransError("Extended classes not yet supported");
+				*Trans += ")\n";
+				break;
+			case InsKind::StartGroup:
+				TransError("Groups not yet supported");
+			}
 
 		}
 #pragma endregion
