@@ -250,7 +250,7 @@ local function InstanceIndex(self,key)
 	if self[".Methods"][key] then return function(...) self[".Methods"][key].func(self,...) end end
 	local TTC = self[".TiedToClass"]
 	if self[".TiedToClass"].CR.staticmembers[key] then return index_static_member(self[".TiedToClass"].CH,key) end
-	if self[".TiedToClass"].CR.nonstaticmembers[key] then return return self[".InstanceValues"] end
+	if self[".TiedToClass"].CR.nonstaticmembers[key] then return self[".InstanceValues"] end
 	-- TODO: Properties
 	error("R:Class "..TTC.CH.." does not have a member named "..key)
 end
