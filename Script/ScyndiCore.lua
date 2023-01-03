@@ -278,8 +278,8 @@ function _Scyndi.NEW(ch,...)
 		--[".TrueInstance"]={}, 
 		[".InstanceValues"]={},
 		[".Methods"]={},
-		[".TiedToClass"]={ CL=_Scyndi.CLASS[ch],CR=classregister[ch],CH=ch } 
-		[".sealed"] = false;
+		[".TiedToClass"]={ CL=_Scyndi.CLASS[ch],CR=classregister[ch],CH=ch },
+		[".sealed"] = false
 	}
 	for MK,MF in pairs(_class.methods) do
 		if MF.IsAbstract then error("Class "..ch.." contains abstracts")
