@@ -214,6 +214,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\Libs\Lunatic\Lua\Raw\src\Makefile" />
+    <CopyFileToFolders Include="..\Script\ScyndiCore.lua">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <None Include="..\Script\ScyndiCoreDump.lua" />
+    <None Include="..\Script\ScyndiCoreTest.lua" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

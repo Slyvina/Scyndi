@@ -25,6 +25,9 @@
     <Filter Include="Source Files\Slyvina\Lunatic">
       <UniqueIdentifier>{38cd4957-eaf9-4202-9c5c-c8dfbf4477db}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Script">
+      <UniqueIdentifier>{de2838e6-239b-4d1c-a0aa-ff60cebf1001}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QuickScyndi.cpp">
@@ -238,5 +241,16 @@
     <None Include="..\..\..\Libs\Lunatic\Lua\Raw\src\Makefile">
       <Filter>Source Files\Lua</Filter>
     </None>
+    <None Include="..\Script\ScyndiCoreDump.lua">
+      <Filter>Source Files\Script</Filter>
+    </None>
+    <None Include="..\Script\ScyndiCoreTest.lua">
+      <Filter>Source Files\Script</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\Script\ScyndiCore.lua">
+      <Filter>Source Files\Script</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

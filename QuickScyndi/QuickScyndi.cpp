@@ -26,14 +26,22 @@
 
 #include "../ScyndiVersion.hpp"
 
+#include <zlib.h>
+
 #include <Lunatic.hpp>
 
 #include <SlyvQCol.hpp>
 #include <SlyvString.hpp>
+#include <SlyvStream.hpp>
+
+#include <JCR6_Core.hpp>
+#include <JCR6_zlib.hpp>
+
 
 using namespace Slyvina;
 using namespace Slyvina::Units;
 using namespace Slyvina::Lunatic;
+using namespace Slyvina::JCR6;
 
 namespace Scyndi {
 	void Header(std::string MyExe) {
@@ -56,5 +64,17 @@ int main(int c, char** args) {
 	if (c < 2) {
 		Header(args[0]);
 		return 0;
+	}
+	init_zlib();
+	auto d{ ExtractDir(args[0]) };
+	auto ScyndiCoreFile{ d + "/ScyndiCore.lua" }; if (!FileExists(ScyndiCoreFile)) { QCol->Error(ScyndiCoreFile + " not found"); return 404; }
+	auto ScyndiCore{ FLoadString(ScyndiCoreFile) };
+	for (int i = 1; i < c; i++) {
+		auto L{ LunaticBySource(ScyndiCore) };
+		auto J{ JCR6_Dir(args[i]) };
+		if (!J) { QCol->Error("Could not read " + std::string(args[i]) + ". " + Last()->ErrorMessage); return 500; }
+		auto src = J->GetString("Translation.lua"); // Easiest way to go. It's only a test tool after all!
+		if (Last()->Error) { QCol->Error(Last()->ErrorMessage); return 100; }
+		L->QDoString(src);
 	}
 }
