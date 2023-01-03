@@ -227,6 +227,7 @@ function _Scyndi.ADDMETHOD(ch,name,IsFinal,func)
 local cu=ch:upper()
 	name=name:upper()	
 	assert(classregister[cu],"Class "..cu.." unknown (member addition)")
+	assert(not classregister[cu].sealed,"Class "..cu.." is sealed. No methods can be added anymore")
 	local _class=classregister[cu]
 	assert(type(func)=="function","That is not a function, so it cannot be turned into a method")
 	assert( not ( _class.methods[ch] and _class.methods[ch].IsFinal ), "Final method cannot be overridden")
@@ -239,6 +240,62 @@ function _Scyndi.SEAL(ch)
 	assert(classregister[cu].sealable,"Class "..cu.." is NOT sealable")
 	classregister[cu].sealed=true
 	_Scyndi.ADDMBER("..GLOBALS..","TABLE",cu,true,true,true,classregister[cu].pub)
+end
+
+local function InstanceIndex(self,key)
+	key=key:upper()
+	assert(key~="CONSTRUCTOR","Illegal constructor call")
+	assert(key~="DESTRUCTOR","Illegal destructor call")
+	if key==".CLASSINSTANCE" then return true end
+	if self[".Methods"][key] then return function(...) self[".Methods"][key].func(self,...) end
+	local TTC = self[".TiedToClass"]
+	if self[".TiedToClass"].CR.staticmembers[key] then return index_static_member(self[".TiedToClass"].CH,key) end
+	if self[".TiedToClass"].CR.nonstaticmembers[key] then return return self[".InstanceValues"] end
+	-- TODO: Properties
+	error("R:Class "..TTC.CH.." does not have a member named "..key)
+end
+
+local function InstanceNewIndex(self,key,value)
+	key=key:upper()
+	local TTC = self[".TiedToClass"]
+	if self[".Methods"][key] then error("Cannot overwrite methods") end
+	if TTC.staticmembers[key] then newindex_static_member(self[".TiedToClass"].CH,key,value); return; end
+	if TTC.CR.nonstaticmembers[key] then
+		local NSM=TTC.CR.nonstaticmembers[key]
+		assert(not NSM.constant,"Constants cannot be overwritten")
+		if self[".sealed"] then assert(not NSM.constant,"Read-only members cannot be overwritten") end
+		self[".InstanceValues"] = _Scyndi.WANTVALUE(NSM.dtype,value)
+	end
+	-- TODO: Properties
+	error("W:Class "..TTC.CH.." does not have a member named "..key)
+end
+
+function _Scyndi.NEW(ch,...)
+	ch=ch::upper()
+	assert(classregister[ch],"Class "..ch.." unknown (new object)")
+	local _class = classregister[ch]
+	local Ret = {
+		--[".TrueInstance"]={}, 
+		[".InstanceValues"]={},
+		[".Methods"]={},
+		[".TiedToClass"]={ CL=_Scyndi.CLASS[ch],CR=classregister[ch],CH=ch } 
+		[".sealed"] = false;
+	}
+	for MK,MF in pairs(_class.methods) do
+		if MF.IsAbstract then error("Class "..ch.." contains abstracts")
+		Ret[".Methods"][MK] = MF.Meth
+	end
+	for FK,FV in pairs(_class.nonstaticmembers) do
+		Ret[".InstanceValues"][FK]=FV.value
+	end
+	setmetatable(Ret,{
+		__index=InstanceIndex,
+		__newindex=InstaceIndex,
+		__gc=function(self) if (Ret[".Methods"].DESTRUCTOR) Ret[".Methods"].DESTRUCTOR.func() end
+	})
+	if (Ret[".Methods"].CONSTRUCTOR) Ret[".Methods"].CONSTRUCTOR.func(...) end
+	Ret[".sealed"]=true
+	return Ret
 end
 
 -- ***** Locals Definition Functions ***** --
