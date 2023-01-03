@@ -859,6 +859,7 @@ public:
 					if (pos + 2 >= ins->Words.size());
 					if (ins->Words.size() > ins->ForEachExpression + 1 && ins->Words[ins->ForEachExpression + 1]->UpWord == "(") {
 						ins->Kind = InsKind::DefineFunction;
+						if (PScope->Kind == ScopeKind::Class) ins->Kind = InsKind::StartMethod;
 						//TransError("Defining functions still in preparation");
 						Ret.PushScope(ScopeKind::FunctionBody);
 						Ret.GetScope()->DecData = dec;
