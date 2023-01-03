@@ -1301,7 +1301,15 @@ public:
 						if (!EX) return nullptr;
 						Value = *EX;
 					}
-					if (Dec->IsGlobal) {
+					// std::cout << "Dec In Class '" << Dec->BoundToClass << "';\n"; //debug
+					if (Dec->BoundToClass.size()) {
+						auto ref{ TrSPrintF("Scyndi.Class[\"%s\"][\"%s\"]",Dec->BoundToClass.c_str(),VarName.c_str()) };
+						*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"%s\",\"%s\",true,%s,%s,%s)\n", Dec->BoundToClass, DType.c_str(), VarName.c_str(), lboolstring(Dec->IsStatic), lboolstring(Dec->IsReadOnly).c_str(), Lower(boolstring(Dec->IsConstant)).c_str(), Value.c_str());
+						if (Dec->IsStatic) {
+							(*Ins->ScopeData->DecScope()->LocalVars)[VarName] = ref;
+						}
+						if (Dec->IsGlobal) TransError("GLOBAL not allowed for class members");
+					} else if (Dec->IsGlobal) {
 						if (Dec->Type == VarType::pLua) {
 							std::string Prefix{ "" }; if (TransConfig.count("PLUAPREFIX")) Prefix = TransConfig["PLUAPREFIX"]->TheWord;
 							auto ref{ TrSPrintF("%s%s",Prefix.c_str(),PluaName.c_str()) };
