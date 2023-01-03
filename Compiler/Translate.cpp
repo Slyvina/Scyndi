@@ -1840,6 +1840,9 @@ public:
 				//break;
 			}
 		}
+#pragma endregion
+
+#pragma region "Last closure stuff added to the translation"
 		*Trans += "\n\n";
 		for (auto& Seal : ToSeal) *Trans += "Scyndi.Seal(\"" + Seal + "\");\n";
 		if (HasInit) {
