@@ -1362,6 +1362,8 @@ public:
 			case InsKind::CompilerDirective: // Not needed anymore! This has already been taken care of, remember?
 			case InsKind::HeaderDefintion:
 			case InsKind::StartDeclarationScope: // The declaration scoping is already taken care of while pre-processing.
+			case InsKind::StartClass: // Classes have already been taken care of
+			case InsKind::StartGroup: // Groups too
 				break;
 			case InsKind::StartInit:
 				*Trans += InitTag + "[#" + InitTag + "+1]=function()\n";
