@@ -1524,7 +1524,7 @@ public:
 				break;
 			case InsKind::Declaration:
 				TransAssert(Ins->DecData, "No DecData in translation (transphase/variable) - This is an internal error! Please report!");
-				if (Ins->DecData->IsGlobal || Ins->DecData->IsRoot) break;
+				if (Ins->DecData->IsGlobal || Ins->DecData->IsRoot || Ins->DecData->BoundToClass.size()) break;
 				{
 					DbgLineCheck;
 					auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };
