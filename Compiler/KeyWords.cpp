@@ -4,7 +4,7 @@
 // 
 // 
 // 
-// (c) Jeroen P. Broks, 2022
+// (c) Jeroen P. Broks, 2022, 2023
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.30
+// Version: 23.01.03
 // EndLic
 
 #include <string>
@@ -37,6 +37,7 @@ namespace Scyndi {
 		// Class
 		"CLASS",
 		"GROUP",
+		"NEW",
 
 		"CONSTRUCTOR",
 		"DESTRUCTOR",
