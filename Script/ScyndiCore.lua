@@ -282,7 +282,7 @@ function _Scyndi.NEW(ch,...)
 		[".sealed"] = false
 	}
 	for MK,MF in pairs(_class.methods) do
-		if MF.IsAbstract then error("Class "..ch.." contains abstracts")
+		if MF.IsAbstract then error("Class "..ch.." contains abstracts") end
 		Ret[".Methods"][MK] = MF.Meth
 	end
 	for FK,FV in pairs(_class.nonstaticmembers) do
