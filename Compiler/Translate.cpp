@@ -1249,7 +1249,7 @@ public:
 				std::string Value{ "" };
 				std::string DType{ "" };
 				if (Dec->Type == VarType::CustomClass)
-					DType == Dec->CustomClass;
+					DType = Dec->CustomClass;
 				else {
 					TransAssert(_Declaration::E2S(Dec->Type).size(), "Internal error type unknown (Dec stage)");
 					DType = _Declaration::E2S(Dec->Type);
