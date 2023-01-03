@@ -712,44 +712,64 @@ public:
 		std::string Ret{ "" };
 		auto srcfile{ Ins->SourceFile };
 		auto LineNumber{ Ins->LineNumber };
-		for (size_t pos=start; pos < Ins->Words.size(); pos++) {
+		auto kw_new{ 0u };
+		for (size_t pos = start; pos < Ins->Words.size(); pos++) {
 			if (Ret.size()) Ret += " ";
 			auto W{ Ins->Words[pos] };
-			switch (W->Kind) {
-			case WordKind::Identifier: {
-				auto WT{ Ins->ScopeData->Identifier(T,Ins->LineNumber,W->UpWord,ignoreglobals) };
-				TransAssert(WT.size(), "Unknown identifier " + W->TheWord);
-				Ret += WT;
-			} break;
-			case WordKind::HaakjeOpenen:
-			case WordKind::HaakjeSluiten:
-				Ret += W->TheWord;
+			switch (kw_new) {
+			case 2:
+				TransAssert(W->Kind == WordKind::Identifier, "NEW syntax error");
+				Ret += TrSPrintF("Scyndi.New(\"%s\", ", W->UpWord.c_str());
+				kw_new--;
 				break;
-			case WordKind::String:
-				Ret += '"';
-				Ret += W->TheWord;
-				Ret += '"';
-				break;
-			case WordKind::Number:
-			case WordKind::Comma:
-			case WordKind::Operator:
-				Ret += W->TheWord;
+			case 1:
+				TransAssert(W->TheWord == "(","( expected for constructor parameters");
+				kw_new--;
 				break;
 			default:
-				if (W->UpWord == "TRUE")
-					Ret += "true";
-				else if (W->UpWord == "FALSE")
-					Ret += "false";
-				else if (W->UpWord == "NIL")
-					Ret += "nil";
-				else if (W->UpWord == "INFINITY")
-					Ret += " ... ";
-				else if (W->UpWord == "DIV")
-					Ret += " // ";
-				else
-					TransError(TrSPrintF("Unexpected %s (W%03d) '%s'", GetWordKind(W->Kind).c_str(), pos + 1, W->TheWord.c_str()));
+				switch (W->Kind) {
+				case WordKind::Identifier: {
+					auto WT{ Ins->ScopeData->Identifier(T,Ins->LineNumber,W->UpWord,ignoreglobals) };
+					TransAssert(WT.size(), "Unknown identifier " + W->TheWord);
+					Ret += WT;
+				} break;
+				case WordKind::HaakjeOpenen:
+				case WordKind::HaakjeSluiten:
+					Ret += W->TheWord;
+					break;
+				case WordKind::String:
+					Ret += '"';
+					Ret += W->TheWord;
+					Ret += '"';
+					break;
+				case WordKind::Number:
+				case WordKind::Comma:
+				case WordKind::Operator:
+					Ret += W->TheWord;
+					break;
+				default:
+					if (W->UpWord == "TRUE")
+						Ret += "true";
+					else if (W->UpWord == "FALSE")
+						Ret += "false";
+					else if (W->UpWord == "NIL")
+						Ret += "nil";
+					else if (W->UpWord == "INFINITY")
+						Ret += " ... ";
+					else if (W->UpWord == "DIV")
+						Ret += " // ";
+					else
+						TransError(TrSPrintF("Unexpected %s (W%03d) '%s'", GetWordKind(W->Kind).c_str(), pos + 1, W->TheWord.c_str()));
+				}
+				break;
 			}
 		}
+		switch(kw_new){
+		case 2: TransError("Class expected after NEW"); 
+		case 1: Ret += ")"; break;
+		case 0: break;
+		default: TransError(TrSPrintF("Internal error! (kw_new=%d) Please report!", kw_new));
+
 		return std::unique_ptr<std::string>(new std::string(Ret));
 	}
 
