@@ -764,12 +764,12 @@ public:
 				break;
 			}
 		}
-		switch(kw_new){
-		case 2: TransError("Class expected after NEW"); 
+		switch (kw_new) {
+		case 2: TransError("Class expected after NEW");
 		case 1: Ret += ")"; break;
 		case 0: break;
 		default: TransError(TrSPrintF("Internal error! (kw_new=%d) Please report!", kw_new));
-
+		}
 		return std::unique_ptr<std::string>(new std::string(Ret));
 	}
 
