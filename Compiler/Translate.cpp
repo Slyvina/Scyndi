@@ -872,8 +872,12 @@ public:
 					TransAssert(PScope->Kind == ScopeKind::Root, "Global declaration only possible in the root scope");
 				} else if (PScope->Kind == ScopeKind::Root || (PScope->Kind == ScopeKind::Declaration && PScope->Parent->Kind == ScopeKind::Root)) {
 					dec->IsRoot = true;
-				} else if (PScope->Kind == ScopeKind::Class) {
-					TransError("Class declarations not yet supported");
+				} else if (PScope->Kind == ScopeKind::Class) {					
+					dec->BoundToClass = ins->ScopeData->ClassID;
+					//TransError("Class declarations not yet supported");
+				
+				} else if (PScope->Kind == ScopeKind::Group) {
+					TransError("Group declarations not yet supported");
 				}
 
 				if (dec->Type == VarType::pLua) {
