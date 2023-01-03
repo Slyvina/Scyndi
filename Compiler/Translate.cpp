@@ -1217,6 +1217,7 @@ public:
 #pragma region "Class and group startups"
 		// Class management
 		// TODO!
+		std::vector<std::string> ToSeal;
 
 		}
 #pragma endregion
@@ -1839,6 +1840,8 @@ public:
 				//break;
 			}
 		}
+		*Trans += "\n\n";
+		for (auto& Seal : ToSeal) *Trans += "Scyndi.Seal(\"" + Seal + "\");\n";
 		if (HasInit) {
 			*Trans += "\n\nfor _,ifunc in ipairs(" + InitTag + ") do ifunc() end; " + InitTag + " = nil";
 		}
