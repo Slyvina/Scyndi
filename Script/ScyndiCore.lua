@@ -271,7 +271,7 @@ local function InstanceNewIndex(self,key,value)
 end
 
 function _Scyndi.NEW(ch,...)
-	ch=ch::upper()
+	ch=ch:upper()
 	assert(classregister[ch],"Class "..ch.." unknown (new object)")
 	local _class = classregister[ch]
 	local Ret = {
