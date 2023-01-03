@@ -1447,6 +1447,9 @@ public:
 						*Trans += "end\n";
 					}
 					break;
+				case ScopeKind::Class:
+				case ScopeKind::Group:
+					break; // Will be taken care of at the close of the entire script
 				case ScopeKind::ForLoop:
 				case ScopeKind::IfScope:
 				case ScopeKind::ElIf:
