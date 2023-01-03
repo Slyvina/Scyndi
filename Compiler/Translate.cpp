@@ -1260,7 +1260,9 @@ public:
 				case InsKind::DefineFunction:
 					// std::cout << "Defining function data: Gl:" << Dec->IsGlobal << "/Rt:" << Dec->IsRoot << std::endl;
 					// Please note! NO CODE should be written yet, or translation later will mess up!
-					if (Dec->IsGlobal) {
+					if (Dec->BoundToClass.size()) {
+						TransError("Methods and static functions not yet supported!");
+					} else if (Dec->IsGlobal) {
 						if (Dec->Type == VarType::pLua) {
 							std::string Prefix{ "" }; if (TransConfig.count("PLUAPREFIX")) Prefix = TransConfig["PLUAPREFIX"]->TheWord;
 							auto ref{ TrSPrintF("%s%s",Prefix.c_str(),PluaName.c_str()) };
