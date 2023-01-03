@@ -291,9 +291,9 @@ function _Scyndi.NEW(ch,...)
 	setmetatable(Ret,{
 		__index=InstanceIndex,
 		__newindex=InstaceIndex,
-		__gc=function(self) if (Ret[".Methods"].DESTRUCTOR) Ret[".Methods"].DESTRUCTOR.func() end
+		__gc=function(self) if (Ret[".Methods"].DESTRUCTOR) Ret[".Methods"].DESTRUCTOR.func(self) end
 	})
-	if (Ret[".Methods"].CONSTRUCTOR) Ret[".Methods"].CONSTRUCTOR.func(...) end
+	if (Ret[".Methods"].CONSTRUCTOR) Ret[".Methods"].CONSTRUCTOR.func(self,...) end
 	Ret[".sealed"]=true
 	return Ret
 end
