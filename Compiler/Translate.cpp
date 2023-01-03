@@ -221,6 +221,12 @@ public:
 	_Scope* Parent{ nullptr };
 	Declaration DecData{ nullptr };
 	std::string DeferID{ "" };
+	std::string ClassID{ "" };
+
+	_Scope* DecScope() {
+		if (Kind == ScopeKind::Declaration) return Parent; else return this;
+	}
+
 	Scope Breed() {
 		auto ret = std::make_shared<_Scope>();
 		ret->Parent = this;
