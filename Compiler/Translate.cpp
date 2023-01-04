@@ -860,7 +860,32 @@ public:
 			auto DecScope{ false }; // needed this way to end declaration scopes abruptly
 			//*
 			//Chat(ins->Words.size());
-			if (ins->Words.size() &&( ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
+			if (ins->Words.size() && ins->Words[0]->UpWord == "CONSTRUCTOR") {
+				Chat("Constructor!");
+				TransAssert(ins->Scope == ScopeKind::Class, "Constructors can only be created in classes");
+				auto dec = std::make_shared<_Declaration>();
+				DecScope = true;
+				if (ins->Words.size() == 1) {
+					ins->Words.push_back(_Word::NewWord("("));
+					ins->Words.push_back(_Word::NewWord(")"));
+				}
+				TransAssert(ins->Words[1]->TheWord == "(", "Constructor syntax error");
+				dec->BoundToClass = ins->ScopeData->ClassID;
+				dec->IsConstant = true;
+				dec->IsFinal = false;
+				dec->IsGet = false;
+				dec->IsGlobal = false;
+				dec->IsReadOnly = true;
+				dec->IsRoot = false;
+				dec->IsStatic = false;
+				dec->Type = VarType::Void;
+				ins->DecData = dec;
+				ins->ForEachExpression = 0;
+				ins->Kind = InsKind::StartMethod;
+				Ret.PushScope(ScopeKind::FunctionBody);
+				ins->NextScope = Ret.GetScope();
+				ins->NextScope->DecData = dec;
+			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
 				Chat("Will this be a variable declaration or a function definition? (Line: " << ins->LineNumber << ")");
 				TransAssert(ScriptName.size(), "Header first");
 				DecScope = true;
@@ -1276,7 +1301,7 @@ public:
 		}
 #pragma endregion
 
-#pragma region "Declare non-locals"
+#pragma region "eclare non-locals"
 		// Declaration management
 		Verb("Managing", srcfile);
 		for (auto Ins : Ret.Instructions) {
@@ -1290,7 +1315,7 @@ public:
 				if (Dec->Type == VarType::CustomClass)
 					DType = Dec->CustomClass;
 				else {
-					TransAssert(_Declaration::E2S(Dec->Type).size(), "Internal error type unknown (Dec stage)");
+					TransAssert(_Declaration::E2S(Dec->Type).size(), TrSPrintF("%03d:Internal error type unknown (Dec stage)", (int)Dec->Type));
 					DType = _Declaration::E2S(Dec->Type);
 				}
 				if (VarName[0] == '$') VarName = VarName.substr(1);
@@ -1507,6 +1532,7 @@ public:
 					if (!Ins->ScopeData->DidReturn) {
 						if (debug) *Trans += " Scyndi.Debug.Pop(); ";
 						if (Ins->Scope != ScopeKind::Defer) *Trans += Ins->ScopeData->DeferLine();
+						TransAssert(Ins->ScopeData->DecData,"Function body check. Dec data is null (internal error. Please report)")
 						switch (Ins->ScopeData->DecData->Type) {
 						case VarType::Void:
 						case VarType::Var:

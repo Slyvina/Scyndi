@@ -291,7 +291,7 @@ function _Scyndi.NEW(ch,...)
 	}
 	for MK,MF in pairs(_class.methods) do
 		if MF.IsAbstract then error("Class "..ch.." contains abstracts") end
-		for MFK,MFV in pairs(MF) do io.write(type(MFV)," ",MK,".",MFK," -> ",tostring(MFV),"\n") end -- debug
+		-- for MFK,MFV in pairs(MF) do io.write(type(MFV)," ",MK,".",MFK," -> ",tostring(MFV),"\n") end -- debug
 		Ret[".Methods"][MK] = MF.Meth
 	end
 	for FK,FV in pairs(_class.nonstaticmembers) do
@@ -301,9 +301,9 @@ function _Scyndi.NEW(ch,...)
 	setmetatable(Ret,{
 		__index=InstanceIndex,
 		__newindex=InstanceNewIndex,
-		__gc=function(self) if (Ret[".Methods"].DESTRUCTOR) then Ret[".Methods"].DESTRUCTOR.func(self) end end
+		__gc=function(self) if (Ret[".Methods"].DESTRUCTOR) then Ret[".Methods"].DESTRUCTOR(self) end end
 	})
-	if (Ret[".Methods"].CONSTRUCTOR) then Ret[".Methods"].CONSTRUCTOR.func(self,...) end
+	if (Ret[".Methods"].CONSTRUCTOR) then Ret[".Methods"].CONSTRUCTOR(Ret,...) end
 	Ret[".sealed"]=true
 	return Ret
 end
