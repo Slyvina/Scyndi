@@ -569,13 +569,15 @@ public:
 					TransAssert(pos < Line.size() - 1 && Line[pos + 1] != ';', "No instruction can end with a period/dot");
 					auto next{ Line[pos + 1] };
 					if (next >= '0' && next <= '1') {
-						FormWord = "0." + next;
+						FormWord = "0."; FormWord += next;
 						FormNumber = true;
 						FormNumberHex = false;
 						pos += 2;
 					} else if (next == '_' || (next >= 'A' && next <= 'Z') || (next >= 'a' && next <= 'z')) {
-						FormingWord = "." + next;
+						FormingWord = true;
+						FormWord = "."; FormWord += next;
 						pos += 2;
+						//std::cout << "INDEX! " << FormWord << "\n"; // debug
 					}
 				} break;
 				case ',':
