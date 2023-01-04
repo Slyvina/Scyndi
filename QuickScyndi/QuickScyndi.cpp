@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 23.01.03
+// Version: 23.01.04
 // EndLic
 
 #include "../ScyndiVersion.hpp"
@@ -56,6 +56,34 @@ namespace Scyndi {
 		QCol->Yellow(StripAll(MyExe));		
 		QCol->LCyan(" <STB Bundle>\n\n");
 	}
+
+	int Paniek(lua_State* L) {
+		QCol->Error("Lua Error");
+		//std::string Trace{};
+		//Error("Lua Error!");
+		QCol->Doing("Lua#", lua_gettop(L));
+		for (int i = 1; i <= lua_gettop(L); i++) {
+			QCol->Magenta(TrSPrintF("Arg #%03d\t", i));
+			switch (lua_type(L, i)) {
+			case LUA_TSTRING:
+				QCol->Doing("String", "\"" + std::string(luaL_checkstring(L, i)) + "\"");
+				//Trace += luaL_checkstring(L, i); Trace += "\n";
+				break;
+			case LUA_TNUMBER:
+				QCol->Doing("Number ", std::to_string(luaL_checknumber(L, i)));
+			case LUA_TFUNCTION:
+				QCol->Doing("Function", "<>");
+			default:
+				QCol->Doing("Unknown: ", lua_type(L, i));
+				break;
+			}
+			///cout << "\n";
+		}
+		//Error("", false, true);
+		QCol->Reset();
+		exit(11);		
+		return 0;
+	}
 }
 
 
@@ -69,6 +97,7 @@ int main(int c, char** args) {
 	auto d{ ExtractDir(args[0]) };
 	auto ScyndiCoreFile{ d + "/ScyndiCore.lua" }; if (!FileExists(ScyndiCoreFile)) { QCol->Error(ScyndiCoreFile + " not found"); return 404; }
 	auto ScyndiCore{ FLoadString(ScyndiCoreFile) };
+	_Lunatic::Panick = Paniek;
 	for (int i = 1; i < c; i++) {
 		auto L{ LunaticBySource(ScyndiCore) };
 		auto J{ JCR6_Dir(args[i]) };
@@ -76,5 +105,8 @@ int main(int c, char** args) {
 		auto src = J->GetString("Translation.lua"); // Easiest way to go. It's only a test tool after all!
 		if (Last()->Error) { QCol->Error(Last()->ErrorMessage); return 100; }
 		L->QDoString(src);
+		std::cout << "\n\n";
 	}
+	QCol->Reset();
+	return 0;
 }
