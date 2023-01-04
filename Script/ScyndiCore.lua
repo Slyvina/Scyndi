@@ -222,6 +222,7 @@ function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 		value=_Scyndi.WANTVALUE(dtype,value or _Scyndi.BASEVALUE(dtype))
 	}
 	--for k,v in pairs(nm) do print(k,v) end
+	-- print("Member for ",cu,">",name," Static:",static)
 	if (static) then _class.staticmembers[name]=nm else _class.nonstaticmembers[name]=nm end
 end
 
@@ -253,7 +254,7 @@ local function InstanceIndex(self,key)
 	if self[".Methods"][key] then return function(...) self[".Methods"][key].func(self,...) end end
 	local TTC = self[".TiedToClass"]
 	if self[".TiedToClass"].CR.staticmembers[key] then return index_static_member(self[".TiedToClass"].CH,key) end
-	if self[".TiedToClass"].CR.nonstaticmembers[key] then return self[".InstanceValues"] end
+	if self[".TiedToClass"].CR.nonstaticmembers[key] then return self[".InstanceValues"][key] end
 	-- TODO: Properties
 	print(debug.traceback()) -- ?
 	error("R:Class "..TTC.CH.." does not have a member named "..key)
@@ -270,7 +271,8 @@ local function InstanceNewIndex(self,key,value)
 		local NSM=TTC.CR.nonstaticmembers[key]
 		assert(not NSM.constant,"Constants cannot be overwritten")
 		if self[".sealed"] then assert(not NSM.constant,"Read-only members cannot be overwritten") end
-		self[".InstanceValues"] = _Scyndi.WANTVALUE(NSM.dtype,value)
+		self[".InstanceValues"][key] = _Scyndi.WANTVALUE(NSM.dtype,value)
+		return
 	end
 	-- TODO: Properties
 	error("W:Class "..TTC.CH.." does not have a member named "..key)
@@ -292,6 +294,7 @@ function _Scyndi.NEW(ch,...)
 		Ret[".Methods"][MK] = MF.Meth
 	end
 	for FK,FV in pairs(_class.nonstaticmembers) do
+		-- print("Non-Static",FK,FV) -- debug
 		Ret[".InstanceValues"][FK]=FV.value
 	end
 	setmetatable(Ret,{
