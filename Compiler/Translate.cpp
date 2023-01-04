@@ -885,6 +885,28 @@ public:
 				Ret.PushScope(ScopeKind::FunctionBody);
 				ins->NextScope = Ret.GetScope();
 				ins->NextScope->DecData = dec;
+			} else if (ins->Words.size() && ins->Words[0]->UpWord == "DESTRUCTOR") {
+				TransAssert(ins->Words.size() == 1, "DESTRUCTOR accepts no kind of paramters at all!");
+				auto dec = std::make_shared<_Declaration>();
+				ins->Words.push_back(_Word::NewWord("("));
+				ins->Words.push_back(_Word::NewWord(")"));
+				dec->BoundToClass = ins->ScopeData->ClassID;
+				dec->IsConstant = true;
+				dec->IsFinal = false;
+				dec->IsGet = false;
+				dec->IsGlobal = false;
+				dec->IsReadOnly = true;
+				dec->IsRoot = false;
+				dec->IsStatic = false;
+				dec->Type = VarType::Void;
+				ins->DecData = dec;
+				ins->ForEachExpression = 0;
+				ins->Kind = InsKind::StartMethod;
+				Ret.PushScope(ScopeKind::FunctionBody);
+				ins->NextScope = Ret.GetScope();
+				ins->NextScope->DecData = dec;
+				DecScope = true;
+				//std::cout << " ???? DESTRUCTOR IGNORED ???\n";
 			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
 				Chat("Will this be a variable declaration or a function definition? (Line: " << ins->LineNumber << ")");
 				TransAssert(ScriptName.size(), "Header first");
