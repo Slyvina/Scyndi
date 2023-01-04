@@ -709,6 +709,7 @@ public:
 			{WordKind::Number,"Number"},
 			{WordKind::Comma,"Comma"},
 			{WordKind::Operator,"Operator"},
+			{WordKind::Field,"Field"}
 		};
 		if (GWK.count(K)) return GWK[K];
 		return "WK" + std::to_string((int)K);
@@ -748,6 +749,9 @@ public:
 					Ret += '"';
 					Ret += W->TheWord;
 					Ret += '"';
+					break;
+				case WordKind::Field:
+					Ret += W->TheWord;
 					break;
 				case WordKind::Number:
 				case WordKind::Comma:
