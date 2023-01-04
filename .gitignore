@@ -24,3 +24,5 @@ MKL_*
 
 # Only for testing, and will likely be deleted after I'm done anyway
 Test/*
+QuickScyndi/QuickScyndi/ScyndiCore.lua
+QuickScyndi/QuickScyndi/ScyndiCore.lua
