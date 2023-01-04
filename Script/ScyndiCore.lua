@@ -1,7 +1,7 @@
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
--- version: 23.01.03
+-- version: 23.01.04
 -- Copyright (C) 2022, 2023 Jeroen P. Broks
 -- This software is provided 'as-is', without any express or implied
 -- warranty.  In no event will the authors be held liable for any damages
@@ -201,6 +201,7 @@ _Scyndi.CLASSES = setmetatable({},{
 		return classregister[key].pub
 	end	})
 
+_Scyndi.CLASS = _Scyndi.CLASSES -- Laziness, but it should fix (read: void) countless issues!
 
 
 function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
