@@ -28,6 +28,12 @@
     <Filter Include="Source Files\Script">
       <UniqueIdentifier>{de2838e6-239b-4d1c-a0aa-ff60cebf1001}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Slyvina\JCR6">
+      <UniqueIdentifier>{4af32486-ba74-46e6-9e96-ab57f7955957}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\dll">
+      <UniqueIdentifier>{f00dac9e-c22f-438d-ba69-74f236ef38cb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QuickScyndi.cpp">
@@ -150,6 +156,15 @@
     <ClCompile Include="..\..\..\Libs\Lunatic\Lunatic.cpp">
       <Filter>Source Files\Slyvina\Lunatic</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Libs\JCR6\Source\JCR6_Core.cpp">
+      <Filter>Source Files\Slyvina\JCR6</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Libs\JCR6\Source\JCR6_zlib.cpp">
+      <Filter>Source Files\Slyvina\JCR6</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Libs\Units\Source\SlyvBank.cpp">
+      <Filter>Source Files\Slyvina\Units</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lapi.h">
@@ -251,6 +266,9 @@
   <ItemGroup>
     <CopyFileToFolders Include="..\Script\ScyndiCore.lua">
       <Filter>Source Files\Script</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\..\Libs\JCR6\3rdParty\zlib\zlib.dll">
+      <Filter>Source Files\dll</Filter>
     </CopyFileToFolders>
   </ItemGroup>
 </Project>

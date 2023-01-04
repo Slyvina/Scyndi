@@ -82,7 +82,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>QuickScyndi</OutDir>
-    <IncludePath>E:\Projects\Applications\Slyvina\Libs\Lunatic;E:\Projects\Applications\Slyvina\Libs\Units\Headers;E:\Projects\Applications\Slyvina\Libs\Lunatic\Lua\Raw\src;E:\Projects\Applications\Slyvina\Libs\JCR6\Headers;$(IncludePath)</IncludePath>
+    <IncludePath>E:\Projects\Applications\Slyvina\Libs\JCR6\3rdParty\zlib;E:\Projects\Applications\Slyvina\Libs\Lunatic;E:\Projects\Applications\Slyvina\Libs\Units\Headers;E:\Projects\Applications\Slyvina\Libs\Lunatic\Lua\Raw\src;E:\Projects\Applications\Slyvina\Libs\JCR6\Headers;$(IncludePath)</IncludePath>
+    <LibraryPath>E:\Projects\Applications\Slyvina\Libs\JCR6\3rdParty\zlib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -138,9 +139,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>zlib.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Libs\JCR6\Source\JCR6_Core.cpp" />
+    <ClCompile Include="..\..\..\Libs\JCR6\Source\JCR6_zlib.cpp" />
     <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lapi.c" />
     <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lauxlib.c" />
     <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lbaselib.c" />
@@ -174,6 +178,7 @@
     <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lvm.c" />
     <ClCompile Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lzio.c" />
     <ClCompile Include="..\..\..\Libs\Lunatic\Lunatic.cpp" />
+    <ClCompile Include="..\..\..\Libs\Units\Source\SlyvBank.cpp" />
     <ClCompile Include="..\..\..\Libs\Units\Source\SlyvQCol.cpp" />
     <ClCompile Include="..\..\..\Libs\Units\Source\SlyvSTOI.cpp" />
     <ClCompile Include="..\..\..\Libs\Units\Source\SlyvStream.cpp" />
@@ -213,6 +218,9 @@
     <ClInclude Include="..\..\..\Libs\Lunatic\Lua\Raw\src\lzio.h" />
   </ItemGroup>
   <ItemGroup>
+    <CopyFileToFolders Include="..\..\..\Libs\JCR6\3rdParty\zlib\zlib.dll">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
     <None Include="..\..\..\Libs\Lunatic\Lua\Raw\src\Makefile" />
     <CopyFileToFolders Include="..\Script\ScyndiCore.lua">
       <FileType>Document</FileType>
