@@ -233,8 +233,8 @@ local cu=ch:upper()
 	assert(not classregister[cu].sealed,"Class "..cu.." is sealed. No methods can be added anymore")
 	local _class=classregister[cu]
 	assert(type(func)=="function","That is not a function, so it cannot be turned into a method")
-	assert( not ( _class.methods[ch] and _class.methods[ch].IsFinal ), "Final method cannot be overridden")
-	_class.methods[ch] = { IsAbstract=false, IsFinal=False, Meth = func }
+	assert( not ( _class.methods[name] and _class.methods[name].IsFinal ), "Final method cannot be overridden")
+	_class.methods[name] = { IsAbstract=false, IsFinal=False, Meth = func }
 end
 
 function _Scyndi.SEAL(ch)
@@ -251,7 +251,7 @@ local function InstanceIndex(self,key)
 	assert(key~="CONSTRUCTOR","Illegal constructor call")
 	assert(key~="DESTRUCTOR","Illegal destructor call")
 	if key==".CLASSINSTANCE" then return true end
-	if self[".Methods"][key] then return function(...) self[".Methods"][key].func(self,...) end end
+	if self[".Methods"][key] then return function(...) self[".Methods"][key](self,...) end end
 	local TTC = self[".TiedToClass"]
 	if self[".TiedToClass"].CR.staticmembers[key] then return index_static_member(self[".TiedToClass"].CH,key) end
 	if self[".TiedToClass"].CR.nonstaticmembers[key] then return self[".InstanceValues"][key] end
@@ -291,6 +291,7 @@ function _Scyndi.NEW(ch,...)
 	}
 	for MK,MF in pairs(_class.methods) do
 		if MF.IsAbstract then error("Class "..ch.." contains abstracts") end
+		for MFK,MFV in pairs(MF) do io.write(type(MFV)," ",MK,".",MFK," -> ",tostring(MFV),"\n") end -- debug
 		Ret[".Methods"][MK] = MF.Meth
 	end
 	for FK,FV in pairs(_class.nonstaticmembers) do

@@ -87,6 +87,7 @@ namespace Scyndi {
 			IsStatic{ false },
 			IsGlobal{ false }, // May not be used in classes and groups			
 			IsReadOnly{ false },
+			IsFinal{ false },
 			IsConstant{ false };
 		std::string
 			CustomClass{ "" },
@@ -325,6 +326,7 @@ public:
 		std::vector < Instruction > Instructions;
 		Translation Trans{};
 		std::vector<Scope> Scopes;
+		std::map<std::string, std::vector<std::string>> Fields{};
 		Scope RootScope;
 		Scope GetScope() {
 			auto lvl{ ScopeLevel() };
@@ -834,7 +836,7 @@ public:
 				}
 			}
 		}
-
+#pragma region "Pre-processing"
 		// Pre-Processing
 		Verb("Pre-processing", srcfile);
 		std::map<std::string, Word> TransConfig;
@@ -1248,6 +1250,7 @@ public:
 		if (debug) *Trans += "--[[ DEBUG TRANSLATION ]]--\n\n";
 		*Trans += TrSPrintF("local %s = Scyndi.STARTCLASS(\"%s\",true,true,nil)\n", ScriptName.c_str(), ScriptName.c_str());
 		*Trans += TrSPrintF("local %s = {}\n", StaticRegister.c_str());
+#pragma endregion
 
 #pragma region "Class and group startups"
 		// Class management
@@ -1360,6 +1363,8 @@ public:
 						*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"%s\",\"%s\",%s,%s,%s,%s)\n", Dec->BoundToClass, DType.c_str(), VarName.c_str(), lboolstring(Dec->IsStatic), lboolstring(Dec->IsReadOnly).c_str(), Lower(boolstring(Dec->IsConstant)).c_str(), Value.c_str());
 						if (Dec->IsStatic) {
 							(*Ins->ScopeData->DecScope()->LocalVars)[VarName] = ref;
+						} else {
+							Ret.Fields[Upper(Dec->BoundToClass)].push_back(VarName);
 						}
 						if (Dec->IsGlobal) TransError("GLOBAL not allowed for class members");
 					} else if (Dec->IsGlobal) {
@@ -1612,6 +1617,7 @@ public:
 					*Trans += "\n";
 				}
 				break;
+			case InsKind::StartMethod:
 			case InsKind::DefineFunction: {
 				TransAssert(Ins->DecData, "No DecData in translation (transphase/function) - This is an internal error! Please report!");
 				static size_t count = 0;
@@ -1640,6 +1646,7 @@ public:
 						Pos++;
 					} else if (Ins->Words[Pos]->UpWord == "PLUA") {
 						Pos++;
+						TransAssert(Ins->DecData->BoundToClass == "", "Plua cannot be bound to classes");
 						TransAssert(Ins->Words[Pos]->Kind == WordKind::Identifier, "Identifier for pLua expected");
 						auto ArgName{ Ins->Words[Pos]->UpWord };
 						auto PluaName{ Ins->Words[Pos]->TheWord }; PluaName = Prefix + PluaName;
@@ -1714,6 +1721,15 @@ public:
 					}
 				}
 				switch (oscope->Kind) {
+				case ScopeKind::Class:
+					if (Ins->DecData->IsStatic)
+						*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"DELEGATE\",\"%s\",true,true,true,function (%s) ", Ins->DecData->BoundToClass.c_str(), VarName.c_str(), ArgLine.c_str());
+					else if (ArgLine.size())
+						*Trans += TrSPrintF("Scyndi.ADDMETHOD(\"%s\", \"%s\", %s, function(self,%s)", Ins->DecData->BoundToClass.c_str(), VarName.c_str(), lboolstring(Ins->DecData->IsFinal).c_str(), ArgLine.c_str());
+					else {
+						*Trans += TrSPrintF("Scyndi.ADDMETHOD(\"%s\", \"%s\", %s, function(self)", Ins->DecData->BoundToClass.c_str(), VarName.c_str(), lboolstring(Ins->DecData->IsFinal).c_str());
+					}
+					break;
 				case ScopeKind::Root:
 					if (Ins->DecData->IsGlobal) {
 						if (Ins->DecData->Type == VarType::pLua) {
@@ -1723,6 +1739,7 @@ public:
 							//Ret.Trans->Data->Value("Globals", VarName, ref);
 							//(*Ret.Trans->GlobalVar)[VarName] = ref;
 							*Trans += "function " + ref + "(" + ArgLine + ") ";
+
 						} else {
 							*Trans += TrSPrintF("Scyndi.ADDMBER(\"..GLOBALS..\",\"DELEGATE\",\"%s\",true,true,true,function (%s) ", VarName.c_str(), ArgLine.c_str());
 							//auto ref{ TrSPrintF("Scyndi.Globals[\"%s\"]",VarName.c_str()) };
@@ -1789,6 +1806,13 @@ public:
 				}
 				*Trans += pLuaLine;
 				*Trans += "\n";
+				if (Ins->Kind == InsKind::StartMethod) {
+					(*Ins->NextScope->LocalVars)["SELF"] = "self";
+					//std::cout << "Fields for "<< Upper(Ins->DecData->BoundToClass)<<"\n";
+					for (auto& FLD : Ret.Fields[Upper(Ins->DecData->BoundToClass)]) {						
+						(*Ins->NextScope->LocalVars)[FLD] = TrSPrintF("self.%s", FLD.c_str());
+					}
+				}
 				//TransError("Function defs not yet complete"); // security
 			} break;
 			case InsKind::General: {
