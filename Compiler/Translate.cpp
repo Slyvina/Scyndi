@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 23.01.03
+// Version: 23.01.04
 // EndLic
 
 #include <Slyvina.hpp>
@@ -1488,6 +1488,7 @@ public:
 				case ScopeKind::FunctionBody:
 					if (!Ins->ScopeData->DidReturn) {
 						if (debug) *Trans += " Scyndi.Debug.Pop(); ";
+						if (Ins->Scope != ScopeKind::Defer) *Trans += Ins->ScopeData->DeferLine();
 						switch (Ins->ScopeData->DecData->Type) {
 						case VarType::Void:
 						case VarType::Var:
