@@ -64,7 +64,13 @@ namespace Scyndi {
 		Switch, Case, Default, 
 		FallThrough, Defer, StartClass, 
 		StartGroup };
-	enum class WordKind { Unknown, String, Number, KeyWord, Identifier, IdentifierClass, Operator, Macro, Comma, Field, CompilerDirective, HaakjeOpenen, HaakjeSluiten };
+	enum class WordKind { 
+		Unknown, String, Number, 
+		KeyWord, Identifier, IdentifierClass,
+		Operator, Macro, Comma, 
+		Field, CompilerDirective, HaakjeOpenen,
+		HaakjeSluiten 
+	};
 	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope, Switch, Case, Default, FunctionBody, Defer };
 
 	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate, Void, Var };
