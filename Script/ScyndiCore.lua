@@ -133,6 +133,7 @@ local function index_static_member(cl,key,allowprivate)
 end
 
 local function newindex_static_member(cl,key,value,allowprivate)
+	-- print("Static define:",cl,key,value) -- StaticNewIndex
 	local cu=cl:upper()
 	key=key:upper()
 	assert(classregister[cu],"Class "..cl.." unknown")
@@ -244,6 +245,7 @@ function _Scyndi.SEAL(ch)
 end
 
 local function InstanceIndex(self,key)
+	--print("Want: ",key,v)
 	key=key:upper()
 	assert(key~="CONSTRUCTOR","Illegal constructor call")
 	assert(key~="DESTRUCTOR","Illegal destructor call")
@@ -253,14 +255,17 @@ local function InstanceIndex(self,key)
 	if self[".TiedToClass"].CR.staticmembers[key] then return index_static_member(self[".TiedToClass"].CH,key) end
 	if self[".TiedToClass"].CR.nonstaticmembers[key] then return self[".InstanceValues"] end
 	-- TODO: Properties
+	print(debug.traceback()) -- ?
 	error("R:Class "..TTC.CH.." does not have a member named "..key)
 end
 
 local function InstanceNewIndex(self,key,value)
+	-- print("InstanceNewIndex",self,key,value) -- ???
 	key=key:upper()
 	local TTC = self[".TiedToClass"]
+	-- print(TTC.CH,"Mem:"..key,"Static:",TTC.CR.staticmembers[key],"NonStatic:",TTC.CR.nonstaticmembers[key]) -- InstanceNewIndex Debug
 	if self[".Methods"][key] then error("Cannot overwrite methods") end
-	if TTC.staticmembers[key] then newindex_static_member(self[".TiedToClass"].CH,key,value); return; end
+	if TTC.CR.staticmembers[key] then newindex_static_member(self[".TiedToClass"].CH,key,value); return; end
 	if TTC.CR.nonstaticmembers[key] then
 		local NSM=TTC.CR.nonstaticmembers[key]
 		assert(not NSM.constant,"Constants cannot be overwritten")
@@ -291,7 +296,7 @@ function _Scyndi.NEW(ch,...)
 	end
 	setmetatable(Ret,{
 		__index=InstanceIndex,
-		__newindex=InstaceIndex,
+		__newindex=InstanceNewIndex,
 		__gc=function(self) if (Ret[".Methods"].DESTRUCTOR) then Ret[".Methods"].DESTRUCTOR.func(self) end end
 	})
 	if (Ret[".Methods"].CONSTRUCTOR) then Ret[".Methods"].CONSTRUCTOR.func(self,...) end
@@ -323,9 +328,9 @@ end
 
 function _Scyndi.DECLARELOCAL(tab,dtype,readonly,key,value)
 	key=key:upper()
-	assert(not s.truelocals[key],"Dupe local: "..key)
-	s.truelocals[key] = {
-		value = _Scyndi.WANTVALUE(value or _Scyndi.BASEVALUE(dtype)),
+	assert(not tab.truelocals[key],"Dupe local: "..key)
+	tab.truelocals[key] = {
+		value = _Scyndi.WANTVALUE(dtype,value or _Scyndi.BASEVALUE(dtype)),
 		dtype = dtype:upper(),
 		readonly = readonly,		
 	}

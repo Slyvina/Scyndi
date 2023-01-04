@@ -1264,6 +1264,7 @@ public:
 				// ,extends )
 				if (Ins->Words.size() > 2) TransError("Extended classes not yet supported");
 				*Trans += ")\n";
+				(*Ret.Trans->GlobalVar)[Ins->Words[1]->UpWord] = "Scyndi.Classes." + Ins->Words[1]->UpWord;
 				break;
 			case InsKind::StartGroup:
 				TransError("Groups not yet supported");
