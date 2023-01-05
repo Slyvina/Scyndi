@@ -21,11 +21,12 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 23.01.03
+// Version: 23.01.05
 // EndLic
 
 #include <string>
 #include <vector>
+#include <map>
 
 namespace Scyndi {
 	std::vector < std::string > KeyWords{
@@ -123,5 +124,14 @@ namespace Scyndi {
 		"%",
 		"<",">",
 		"<=",">="
+	};
+
+	// Please note that I did only put in a few metamethods here.
+	// This is only for quick operations after all
+	std::map < std::string, std::vector < std::string > > MetaMethods{
+		{"NEWINDEX",{"KEY","VALUE"}},
+		{"INDEX",{"KEY"}},
+		{"GC",{}},
+		{"TOSTRING",{}}
 	};
 }

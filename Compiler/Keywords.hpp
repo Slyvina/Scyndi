@@ -4,7 +4,7 @@
 // 
 // 
 // 
-// (c) Jeroen P. Broks, 2022
+// (c) Jeroen P. Broks, 2022, 2023
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,14 +21,17 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 22.12.24
+// Version: 23.01.05
 // EndLic
 
 
 #pragma once
 #include <vector>
 #include <string>
+#include <map>
+
 namespace Scyndi {
 	extern std::vector < std::string > KeyWords;
 	extern std::vector < std::string > Operators;
+	extern std::map < std::string, std::vector < std::string > > MetaMethods;
 }

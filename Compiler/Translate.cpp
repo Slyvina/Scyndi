@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 23.01.04
+// Version: 23.01.05
 // EndLic
 
 #include <Slyvina.hpp>
@@ -64,7 +64,7 @@ namespace Scyndi {
 		Switch, Case, Default,
 		FallThrough, Defer, StartClass,
 		StartGroup, Repeat, Until,
-		Forever, LoopWhile
+		Forever, LoopWhile, StartMetaMethod
 	};
 	enum class WordKind { 
 		Unknown, String, Number, 
@@ -73,7 +73,15 @@ namespace Scyndi {
 		Field, CompilerDirective, HaakjeOpenen,
 		HaakjeSluiten 
 	};
-	enum class ScopeKind { Unknown, General, Root, Repeat, Method, Class, Group, Init, QuickMeta, ForLoop, IfScope, ElIf, ElseScope, Declaration, WhileScope, Switch, Case, Default, FunctionBody, Defer };
+	enum class ScopeKind {
+		Unknown, General, Root,
+		Repeat, Method, Class,
+		Group, Init, QuickMeta,
+		ForLoop, IfScope, ElIf,
+		ElseScope, Declaration, WhileScope,
+		Switch, Case, Default,
+		FunctionBody, Defer, QuickMeta
+	};
 
 	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate, Void, Var };
 
