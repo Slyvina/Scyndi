@@ -64,7 +64,8 @@ namespace Scyndi {
 		Switch, Case, Default,
 		FallThrough, Defer, StartClass,
 		StartGroup, Repeat, Until,
-		Forever, LoopWhile, StartMetaMethod
+		Forever, LoopWhile, StartMetaMethod,
+		StartQuickMeta
 	};
 	enum class WordKind { 
 		Unknown, String, Number, 
@@ -80,7 +81,7 @@ namespace Scyndi {
 		ForLoop, IfScope, ElIf,
 		ElseScope, Declaration, WhileScope,
 		Switch, Case, Default,
-		FunctionBody, Defer, QuickMeta
+		FunctionBody, Defer 
 	};
 
 	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate, Void, Var };
@@ -1103,6 +1104,24 @@ public:
 				}
 			} else if (MuteByIfDef) {
 				ins->Kind = InsKind::MutedByIfDef;
+			} else if (ins->Scope==ScopeKind::QuickMeta) {
+				ins->Kind = InsKind::StartMetaMethod;
+				if (ins->Words[0]->UpWord == "DESTRUCTOR") {
+					ins->Words[0]->UpWord = "GC";
+					ins->Words[0]->TheWord = "GC";
+				} 
+				if (ins->Words[0]->UpWord == "END") {
+					ins->Kind = InsKind::EndScope;
+					Ret.Scopes.pop_back();
+				} else {
+					TransAssert(MetaMethods.count(ins->Words[0]->UpWord), ins->Words[0]->UpWord + " is not a known metamethod for QUICKMETA");
+					Ret.PushScope(ScopeKind::FunctionBody);
+					ins->NextScope = Ret.GetScope();
+					for (auto& K : MetaMethods[ins->Words[0]->UpWord]) {
+						(*ins->NextScope->LocalVars)[K] = K;
+					}
+					(*ins->NextScope->LocalVars)["SELF"] = "self";
+				}
 			} else if (ins->Words[0]->UpWord == "INIT") {
 				TransAssert(Ret.ScopeLevel() == 0, "INIT scopes can only be started from the root scope");
 				TransAssert(ins->Words.size() == 1, "INIT does not take any parameters or anything");
@@ -1228,6 +1247,13 @@ public:
 					TransAssert(ins->Words[2]->UpWord == "EXTENDS", "EXTENDS expected");
 					TransError("Extended classes not yet supported");
 				}
+			} else if (ins->Words[0]->UpWord == "QUICKMETA") {
+				TransAssert(ins->Words.size() == 2, "QUICKMETA only needs an identifier name");
+				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected to name QUICKMETA");
+				auto QMName{ ins->Words[1]->UpWord };
+				(*Ret.Trans->GlobalVar)[QMName] = "Scyndi.Globals[\""+QMName+"\"]";
+				Ret.PushScope(ScopeKind::QuickMeta);
+				ins->Kind = InsKind::StartQuickMeta;
 			} else if (ins->Words[0]->UpWord == "REPEAT") {
 				TransAssert(ins->Words.size() == 1, "REPEAT doesn't accept any parameters");
 				ins->Kind = InsKind::Repeat;
@@ -1350,7 +1376,7 @@ public:
 		}
 #pragma endregion
 
-#pragma region "eclare non-locals"
+#pragma region "Declare non-locals"
 		// Declaration management
 		Verb("Managing", srcfile);
 		for (auto Ins : Ret.Instructions) {
@@ -1554,7 +1580,7 @@ public:
 			case InsKind::EndScope:
 				DbgLineCheck;
 				switch (Ins->Scope) {
-				case ScopeKind::Init: 
+				case ScopeKind::Init:
 				case ScopeKind::Defer:
 					if (!Ins->ScopeData->DidReturn) {
 						if (Ins->Scope != ScopeKind::Defer) *Trans += Ins->ScopeData->DeferLine();
@@ -1581,38 +1607,44 @@ public:
 					if (!Ins->ScopeData->DidReturn) {
 						if (debug) *Trans += " Scyndi.Debug.Pop(); ";
 						if (Ins->Scope != ScopeKind::Defer) *Trans += Ins->ScopeData->DeferLine();
-						TransAssert(Ins->ScopeData->DecData,"Function body check. Dec data is null (internal error. Please report)")
-						switch (Ins->ScopeData->DecData->Type) {
-						case VarType::Void:
-						case VarType::Var:
-						case VarType::Delegate:
-						case VarType::CustomClass:
-						case VarType::pLua:
-						case VarType::UserData:
-							break; // Base value would be 'nil' anyway!
-						case VarType::String:
-							*Trans += "return \"\"; ";
-							break;
-						case VarType::Number:
-						case VarType::Byte:
-						case VarType::Integer:
-							*Trans += "return 0; ";
-							break;
-						case VarType::Table:
-							*Trans += "return {}; ";
-							break;
-						case VarType::Boolean:
-							*Trans += "return false; ";
-							break;
-						default:
-							TransError("Function with unknown return type ended");
+						TransAssert(Ins->ScopeData->DecData, "Function body check. Dec data is null (internal error. Please report)")
+							switch (Ins->ScopeData->DecData->Type) {
+							case VarType::Void:
+							case VarType::Var:
+							case VarType::Delegate:
+							case VarType::CustomClass:
+							case VarType::pLua:
+							case VarType::UserData:
+								break; // Base value would be 'nil' anyway!
+							case VarType::String:
+								*Trans += "return \"\"; ";
+								break;
+							case VarType::Number:
+							case VarType::Byte:
+							case VarType::Integer:
+								*Trans += "return 0; ";
+								break;
+							case VarType::Table:
+								*Trans += "return {}; ";
+								break;
+							case VarType::Boolean:
+								*Trans += "return false; ";
+								break;
+							default:
+								TransError("Function with unknown return type ended");
 
-						}
+							}
 					}
 					*Trans += "end";
-					if (Ins->ScopeData->DecData->IsGlobal || Ins->ScopeData->DecData->IsRoot || Ins->ScopeData->DecData->BoundToClass.size())
-						if (Ins->ScopeData->DecData->Type!=VarType::pLua) *Trans += ")";
+					if (Ins->ScopeData->DecData->IsGlobal || Ins->ScopeData->DecData->IsRoot || Ins->ScopeData->DecData->BoundToClass.size()) {
+						if (Ins->ScopeData->DecData->Type != VarType::pLua) *Trans += ")";
+					} else if (Ins->ScopeData->Parent && Ins->ScopeData->Parent->Kind == ScopeKind::QuickMeta) {
+						*Trans += ",";
+					}
 					*Trans += "\n";
+					break;
+				case ScopeKind::QuickMeta:
+					*Trans += "})) -- End QuickMeta!\n\n";
 					break;
 				default:
 					TransError(TrSPrintF("Unknown scope kind (%03d)! Cannot end it (Internal error! Please report!)",(int)Ins->Scope));
@@ -1691,6 +1723,22 @@ public:
 					}
 					*Trans += "\n";
 				}
+				break;
+			case InsKind::QuickMeta:
+			case InsKind::StartQuickMeta:
+				*Trans += TrSPrintF("Scyndi.ADDMBER(\"..GLOBALS..\", \"TABLE\", \"%s\", true, true, true, setmetatable({},{\n", Ins->Words[1]->UpWord.c_str());
+				break;
+			case InsKind::StartMetaMethod:
+				// Start Meta Method
+				*Trans += TrSPrintF("__%s = function(self", Lower(Ins->Words[0]->UpWord).c_str());
+				for (auto& MMName : MetaMethods[Ins->Words[0]->UpWord]) *Trans += ", " + MMName;
+				Ins->NextScope->DecData = std::make_shared<_Declaration>();
+				Ins->DecData = Ins->NextScope->DecData;
+				if (Ins->Words[0]->UpWord == "NEWINDEX")
+					Ins->NextScope->DecData->Type = VarType::Void;
+				else
+					Ins->NextScope->DecData->Type = VarType::Var;
+				*Trans += ")\n";
 				break;
 			case InsKind::StartMethod:
 			case InsKind::DefineFunction: {

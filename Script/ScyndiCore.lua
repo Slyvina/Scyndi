@@ -353,6 +353,7 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SOUT",true,true,true,function(...)
 	return ret
 end)
 
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SETMETATABLE",true,true,true,setmetatable)
 _Scyndi.ADDMBER("..GLOBALS..","NUMBER","PI",true,true,true,math.pi)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","TOSTRING",true,true,true,_Scyndi.TOSTRING)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","COUT",true,true,true,function(...) io.write(_Glob.SOUT(...)) end)
