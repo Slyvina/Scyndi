@@ -281,7 +281,8 @@ local function InstanceIndex(self,key)
 	local TTC = self[".TiedToClass"]
 	if self[".TiedToClass"].CR.staticmembers[key] then return index_static_member(self[".TiedToClass"].CH,key) end
 	if self[".TiedToClass"].CR.nonstaticmembers[key] then return self[".InstanceValues"][key] end
-	-- TODO: Properties
+	if self[".TiedToClass"].CR.methprop.pget[key] then return TTC.CR.pget[key](self) end	
+	if self[".TiedToClass"].CR.staticprop.pget[key] then return TTC.CR.pget[key](self) end	
 	print(debug.traceback()) -- ?
 	error("R:Class "..TTC.CH.." does not have a member named "..key)
 end
@@ -300,7 +301,8 @@ local function InstanceNewIndex(self,key,value)
 		self[".InstanceValues"][key] = _Scyndi.WANTVALUE(NSM.dtype,value)
 		return
 	end
-	-- TODO: Properties
+	if TTC.CR.methprop.pset[key] then TTC.CR.methprop.pset[key](self,value) end
+	if TTC.CR.staticprop.pset[key] then TTC.CR.staticprop.pset[key](self,value) end
 	error("W:Class "..TTC.CH.." does not have a member named "..key)
 end
 
