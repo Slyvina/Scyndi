@@ -1252,6 +1252,8 @@ public:
 				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected to name QUICKMETA");
 				auto QMName{ ins->Words[1]->UpWord };
 				(*Ret.Trans->GlobalVar)[QMName] = "Scyndi.Globals[\""+QMName+"\"]";
+				Ret.Trans->Data->Value("Globals", QMName, (*Ret.Trans->GlobalVar)[QMName]);
+				Ret.Trans->Data->Add("Globals", "-list-", QMName);
 				Ret.PushScope(ScopeKind::QuickMeta);
 				ins->Kind = InsKind::StartQuickMeta;
 			} else if (ins->Words[0]->UpWord == "REPEAT") {
