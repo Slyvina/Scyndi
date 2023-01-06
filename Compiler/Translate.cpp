@@ -65,7 +65,7 @@ namespace Scyndi {
 		FallThrough, Defer, StartClass,
 		StartGroup, Repeat, Until,
 		Forever, LoopWhile, StartMetaMethod,
-		StartQuickMeta
+		StartQuickMeta,PropertyGet,PropertySet
 	};
 	enum class WordKind { 
 		Unknown, String, Number, 
@@ -338,6 +338,8 @@ public:
 		Translation Trans{};
 		std::vector<Scope> Scopes;
 		std::map<std::string, std::vector<std::string>> Fields{};
+		std::map<std::string, Property> RootProperties{};
+		std::map<std::string, std::map<std::string, Property>> ClassProperty{};
 		Scope RootScope;
 		Scope GetScope() {
 			auto lvl{ ScopeLevel() };
@@ -918,7 +920,7 @@ public:
 				ins->NextScope->DecData = dec;
 				DecScope = true;
 				//std::cout << " ???? DESTRUCTOR IGNORED ???\n";
-			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
+			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY"|| ins->Words[0]->UpWord == "GET" || ins->Words[0]->UpWord == "SET" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
 				Chat("Will this be a variable declaration or a function definition? (Line: " << ins->LineNumber << ")");
 				TransAssert(ScriptName.size(), "Header first");
 				DecScope = true;
@@ -931,6 +933,8 @@ public:
 					if (ins->Words[pos]->UpWord == "STATIC") dec->IsStatic = true;
 					if (ins->Words[pos]->UpWord == "CONST") dec->IsConstant = true;
 					if (ins->Words[pos]->UpWord == "READONLY") dec->IsReadOnly = true;
+					if (ins->Words[pos]->UpWord == "GET") dec->IsGet = true;
+					if (ins->Words[pos]->UpWord == "SET") dec->IsSet = true;
 				}
 				TransAssert(pos < ins->Words.size(), "Incomplete declaration");
 				if (Prefixed(ins->Words[pos]->UpWord, "@")) {
@@ -959,7 +963,22 @@ public:
 						Ret.PushScope(ScopeKind::FunctionBody);
 						Ret.GetScope()->DecData = dec;
 						ins->NextScope = Ret.GetScope();
-					} else ins->Kind = InsKind::Declaration;
+						TransAssert(!dec->IsGet, "GET is not allowed in function definition");
+						TransAssert(!dec->IsSet, "SET is not allowed in function definition");
+					} else if (dec->IsGet && dec->IsSet) {
+						TransError("GET and SET conflict");
+					} else  if (dec->IsGet) {
+						ins->Kind = InsKind::PropertyGet;
+						Ret.PushScope(ScopeKind::FunctionBody);
+						Ret.GetScope()->DecData = dec;
+						ins->NextScope = Ret.GetScope();						
+					} else if (dec->IsSet) {
+						ins->Kind = InsKind::PropertySet;
+						Ret.PushScope(ScopeKind::FunctionBody);
+						Ret.GetScope()->DecData = dec;
+						ins->NextScope = Ret.GetScope();
+					} else
+						ins->Kind = InsKind::Declaration;
 				}
 				if (ins->Kind == InsKind::Declaration) TransAssert(dec->Type != VarType::Void, "Void reserved for functions only");
 
@@ -1431,6 +1450,36 @@ public:
 					}
 					break; 
 					//TransError("Function definitions not yet supported");
+				case InsKind::PropertySet:
+				case InsKind::PropertyGet: {
+					auto FClass{ Dec->BoundToClass };
+					auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };					
+					if (Dec->IsGlobal) FClass = "..GLOBALS..";
+					if (Dec->IsRoot) FClass = ScriptName;
+					if (Ins->Kind == InsKind::PropertyGet) {
+						TransAssert(!Ret.ClassProperty[FClass][VarName].hasget, "Dupe property-get ");
+					} else {
+						TransAssert(!Ret.ClassProperty[FClass][VarName].hasset, "Dupe property-set ");
+					}
+					Ret.ClassProperty[FClass][VarName].hasget = true;
+					if (Dec->IsGlobal) {
+						auto ref{ TrSPrintF("Scyndi.Globals[\"%s\"]",VarName.c_str()) };
+						Ret.Trans->Data->Add("Globals", "-list-", VarName);
+						Ret.Trans->Data->Value("Globals", VarName, ref);
+						(*Ret.Trans->GlobalVar)[VarName] = ref;
+					} else if (Dec->IsRoot) {
+						auto ref{ TrSPrintF("Scyndi.Class[\"%s\"][\"%s\"]",ScriptName.c_str(),VarName.c_str()) };
+						(*Ret.RootScope->LocalVars)[VarName] = ref;
+					} else if (Dec->BoundToClass.size()) {
+						auto ref{ TrSPrintF("Scyndi.Class[\"%s\"][\"%s\"]",Dec->BoundToClass.c_str(),VarName.c_str()) };
+						if (Dec->IsStatic) {
+							(*Ins->ScopeData->DecScope()->LocalVars)[VarName] = ref;
+						} else {
+							Ret.Fields[Upper(Dec->BoundToClass)].push_back(VarName);							
+						}
+					}
+				} break;
+
 				case InsKind::Declaration:
 					if (Ins->Words.size() == Ins->ForEachExpression + 1) {
 						switch (Dec->Type) {
@@ -1742,6 +1791,41 @@ public:
 					Ins->NextScope->DecData->Type = VarType::Var;
 				*Trans += ")\n";
 				break;
+			case InsKind::PropertyGet: {
+				auto dec{ Ins->DecData }; 
+				auto fclass{ dec->BoundToClass };
+				auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };
+				TransAssert(dec->Type != VarType::pLua, "PLUA cannot be used for properties!");
+				if (dec->IsGlobal) fclass = "..GLOBALS..";
+				if (dec->IsRoot) fclass = ScriptName;
+				TransAssert(fclass.size(), "GET property not possible as a local");
+				*Trans += TrSPrintF("Scyndi.ADDPROPERTY(\"%s\", \"%s\", %s, \"get\", function(self) \n", fclass.c_str(),VarName.c_str(),lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal));
+				if (Ins->DecData->BoundToClass.size() && (!Ins->DecData->IsStatic)) {
+					for (auto& FLD : Ret.Fields[Upper(Ins->DecData->BoundToClass)]) {
+						(*Ins->NextScope->LocalVars)[FLD] = TrSPrintF("self.%s", FLD.c_str());
+					}
+				}
+			} break;
+			case InsKind::PropertySet: {
+				static size_t count{ 0 };
+				auto dec{ Ins->DecData };
+				auto fclass{ dec->BoundToClass };
+				auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };
+				TransAssert(dec->Type != VarType::pLua, "PLUA cannot be used for properties!");
+				if (dec->IsGlobal) fclass = "..GLOBALS..";
+				if (dec->IsRoot) fclass = ScriptName;
+				TransAssert(fclass.size(), "GET property not possible as a local");
+				Ins->NextScope->ScopeLoc = TrSPrintF("Scyndi_Set_Property_%08x_%s", count++, md5(VarName).c_str());
+				*Trans += TrSPrintF("Scyndi.ADDPROPERTY(\"%s\", \"%s\", %s, \"set\", function(self,_value) \n", fclass.c_str(), VarName.c_str(), lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal));
+				*Trans += Ins->NextScope->ScopeLoc; *Trans += " = Scyndi.CreateLocals()\n";
+				*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s,\"%s\", false,\"Value\",_value); ", Ins->NextScope->ScopeLoc.c_str(), _Declaration::E2S(Ins->DecData->Type).c_str());
+				(*Ins->NextScope->LocalVars)["VALUE"] = TrSPrintF("%s[\"VALUE\"]", Ins->NextScope->ScopeLoc.c_str());
+				if (Ins->DecData->BoundToClass.size() && (!Ins->DecData->IsStatic)) {
+					for (auto& FLD : Ret.Fields[Upper(Ins->DecData->BoundToClass)]) {
+						(*Ins->NextScope->LocalVars)[FLD] = TrSPrintF("self.%s", FLD.c_str());
+					}
+				}
+			} break;
 			case InsKind::StartMethod:
 			case InsKind::DefineFunction: {
 				TransAssert(Ins->DecData, "No DecData in translation (transphase/function) - This is an internal error! Please report!");
