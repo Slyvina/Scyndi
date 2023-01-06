@@ -121,6 +121,10 @@ local function index_static_member(cl,key,allowprivate)
 	local cu=cl:upper()
 	key=key:upper()
 	assert(classregister[cu],"Class "..cl.." unknown (index)")
+		if classregister[cu].staticprop.pset[key] then
+		return classregister[cu].staticprop.pget[key](classregister[cu].pub)
+	end
+
 	assert(classregister[cu].staticmembers[key],"Class "..cl.." has no static member named "..key)
 	local member=classregister[cu].staticmembers[key]
 	if (not allowprivate) then assert(not member.private,"Class "..cl.." does have a static member named "..key..", however it's private and cannot be called this way.") end
@@ -137,13 +141,18 @@ local function newindex_static_member(cl,key,value,allowprivate)
 	local cu=cl:upper()
 	key=key:upper()
 	assert(classregister[cu],"Class "..cl.." unknown")
+	if classregister[cu].staticprop.pset[key] then
+		classregister[cu].staticprop.pset[key](classregister[cu].pub,value)
+		return
+	end
+
 	assert(classregister[cu].staticmembers[key],"Class "..cl.." has no static member named "..key)
 	local member=classregister[cu].staticmembers[key]
 	if (not allowprivate) then assert(not member.private,"Class "..cl.." does have a static member named "..key..", however it's private and cannot be called this way.") end
-	if member.kind=="PROPERTY" then
-		assert(member.propset,"Property "..key.." in class "..cl.." does not have a 'Set' function")
-		member.propset(classregister[cu].priv,value)
-	end
+	--if member.kind=="PROPERTY" then
+	--	assert(member.propset,"Property "..key.." in class "..cl.." does not have a 'Set' function")
+	--	member.propset(classregister[cu].priv,value)
+	--end
 	member.value = _Scyndi.WANTVALUE(member.dtype,value)
 end
 
@@ -157,6 +166,8 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 		staticmembers={},
 		nonstaticmembers={},
 		methods={},
+		staticprop={pget={},pset={}},
+		methprop={pget={},pset={}},
 		pub={},
 		priv={}
 	}	
@@ -204,6 +215,21 @@ _Scyndi.CLASSES = setmetatable({},{
 
 _Scyndi.CLASS = _Scyndi.CLASSES -- Laziness, but it should fix (read: void) countless issues!
 
+function _Scyndi.ADDPROPERTY(ch,name,static,getset,func)
+	local cu=ch:upper()
+	name=name:upper()	
+	assert(classregister[cu],"Class "..cu.." unknown (member addition)")
+	local _class=classregister[cu]
+	assert(not _class.sealed,"Class "..cu.." is already sealed. No new members allowed!")
+	local _prop
+	if static then _prop=_class.staticprop else _prop=_class.methprop end
+	local gs = ("p"..getset):lower()
+	assert(not _class.staticprop[gs][name],"There already is a '"..name.."' function for static property "..name)
+	assert(not _class.methprop[gs][name],"There already is a '"..name.."' function for property "..name)
+	assert(not _class.staticmembers[gs],"Property duplicates static member "..name)
+	assert(not _class.nonstaticmembers[gs],"Property duplicate member "..name)
+	_prop[gs][name]=func
+end
 
 function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 	local cu=ch:upper()
