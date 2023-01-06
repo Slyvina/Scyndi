@@ -2083,6 +2083,7 @@ public:
 		if (HasInit) {
 			*Trans += "\n\nfor _,ifunc in ipairs(" + InitTag + ") do ifunc() end; " + InitTag + " = nil";
 		}
+		Ret.Trans->Data->Value("Translation", "Target", "Lua");
 		Ret.Trans->Data->Value("Translation", "Origin", "Scyndi");
 		Ret.Trans->Data->Value("Translation", "Debug", boolstring(debug));
 #pragma endregion
