@@ -36,6 +36,12 @@ namespace Scyndi {
 
 	enum class ScriptKind { Unknown, Script, Module };
 
+	struct Property {
+		bool
+			hasget{ false },
+			hasset{ false };
+	};
+
 	struct _Translation {
 		std::string
 			ScriptName{ "" }, // Used to store the name set up with the SCRIPT or MODULE top line
@@ -46,6 +52,8 @@ namespace Scyndi {
 		Slyvina::StringMap
 			Classes{ Slyvina::NewStringMap() },
 			GlobalVar{ Slyvina::NewStringMap() };
+		std::map<std::string, Property>
+			Properties{};
 		Slyvina::VecString
 			RealIncludes{ Slyvina::NewVecString() },
 			JCRIncludes{ Slyvina::NewVecString() };
