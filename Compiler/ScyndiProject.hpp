@@ -31,8 +31,8 @@
 namespace Scyndi {
 
 	enum class CompileResult{Fail,Success,Skip};
-	struct _Compilation { CompileResult Result; Slyvina::Units::GINIE Data };
-	typedef std::shared_ptr<_Compilation> Compilation
+	struct _Compilation { CompileResult Result; Slyvina::Units::GINIE Data; };
+	typedef std::shared_ptr<_Compilation> Compilation;
 
 	bool Modified(std::string File, bool debug = false, bool force = false);
 	Compilation Compile(Slyvina::Units::GINIE PrjData, Slyvina::JCR6::JT_Dir Res, std::string ScyndiSource, bool debug=false, bool force=false);

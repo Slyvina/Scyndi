@@ -2215,7 +2215,7 @@ public:
 	}
 
 	Translation Translate(std::string source, std::string srcfile, Slyvina::JCR6::JT_Dir JD, GINIE Dat,bool debug, bool force) {
-		return Translate(Split(source, '\n'), srcfile, JD, debug);
+		return Translate(Split(source, '\n'), srcfile, JD, Dat, debug);
 	}
 
 }

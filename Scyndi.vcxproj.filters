@@ -246,9 +246,6 @@
     <ClInclude Include="..\..\Libs\Lunatic\Lunatic.hpp">
       <Filter>Header Files\Slyvina\Lunatic</Filter>
     </ClInclude>
-    <ClInclude Include="Compiler\Translate.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Compiler\Keywords.hpp">
       <Filter>Header Files\Compiler</Filter>
     </ClInclude>
@@ -370,6 +367,12 @@
       <Filter>Header Files\Slyvina\Units</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvStream.hpp">
+      <Filter>Header Files\Slyvina\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="Compiler\Translate.hpp">
+      <Filter>Header Files\Compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvGINIE.hpp">
       <Filter>Header Files\Slyvina\Units</Filter>
     </ClInclude>
   </ItemGroup>

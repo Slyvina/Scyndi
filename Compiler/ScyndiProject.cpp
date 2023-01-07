@@ -167,7 +167,7 @@ namespace Scyndi {
 				QCol->Error("Pure Lua code not (yet) supported");
 			} else if (E == "SCYNDI") {
 
-				auto Result{ Compile(PrjData, Res, SD->Name(), debug, force)) };
+				auto Result{ Compile(PrjData, Res, SD->Name(), debug, force) };
 				switch (Result->Result) {
 				case CompileResult::Success:
 					Success++; break;
@@ -176,7 +176,7 @@ namespace Scyndi {
 				case CompileResult::Skip:
 					Skipped++; break;
 				default:
-					QCol->Error(TrSPrintF("Unknown compiler result (Internal error! Please report) (%03d)", (int)Result));
+					QCol->Error(TrSPrintF("Unknown compiler result (Internal error! Please report) (%03d)", (int)Result->Result));
 					break;
 				}
 			}
