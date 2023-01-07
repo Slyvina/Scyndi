@@ -69,15 +69,28 @@ namespace Scyndi {
 		} while (true);
 	}
 
-	CompileResult Compile(GINIE PrjData,Slyvina::JCR6::JT_Dir Res,std::string ScyndiSource,bool debug,bool force) {
+	inline Compilation CReturn(CompileResult R, GINIE Data = nullptr) {
+		auto ret{ new _Compilation{R,Data} };
+		return Compilation{ ret };
+	}
+
+	Compilation Compile(GINIE PrjData,Slyvina::JCR6::JT_Dir Res,std::string ScyndiSource,bool debug,bool force) {
 		// TODO: Skip if compilation if up-to-date, unless forced!
-		if (IsDone(Res->Entry(ScyndiSource)->MainFile)) return CompileResult::Skip;
+		if (IsDone(Res->Entry(ScyndiSource)->MainFile)) {
+			auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".STB" };
+			auto GDat{ ParseGINIE(Res->GetString("Configuration.ini")) };
+			if (!GDat) {
+				QCol->Error("Error in configuration! Delete " + OutputFile + " and try running Scyndi again");
+				return CReturn(CompileResult::Fail);
+			}
+			return CReturn(CompileResult::Skip,GDat);
+		}
 		QCol->Doing("Reading", ScyndiSource);
 		auto src{ Res->GetString(ScyndiSource) };
-		auto T{ Translate(src,ScyndiSource,Res,debug) };
+		auto T{ Translate(src,ScyndiSource,Res,PrjData,debug,force) };
 		if (!T) {
 			QCol->Error(TranslationError());
-			return CompileResult::Fail;
+			return CReturn(CompileResult::Fail);
 		} else {
 			// QCol->LGreen(T->LuaSource + "\n"); // debug only!
 			auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".STB" }; // STB = Scyndi Translated Bundle
@@ -89,7 +102,7 @@ namespace Scyndi {
 			JO->Close();
 			QCol->Doing("Completed", ScyndiSource);
 			std::cout << "\n\n";
-			return CompileResult::Success;
+			return CReturn(CompileResult::Success,T->Data);
 		}
 
 	}
@@ -155,7 +168,7 @@ namespace Scyndi {
 			} else if (E == "SCYNDI") {
 
 				auto Result{ Compile(PrjData, Res, SD->Name(), debug, force)) };
-				switch (Result) {
+				switch (Result->Result) {
 				case CompileResult::Success:
 					Success++; break;
 				case CompileResult::Fail:

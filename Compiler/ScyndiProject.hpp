@@ -24,14 +24,18 @@
 // Version: 23.01.07
 // EndLic
 #pragma once
+#include <SlyvGINIE.hpp>
 #include <string>
+#include <memory>
 
 namespace Scyndi {
 
 	enum class CompileResult{Fail,Success,Skip};
+	struct _Compilation { CompileResult Result; Slyvina::Units::GINIE Data };
+	typedef std::shared_ptr<_Compilation> Compilation
 
 	bool Modified(std::string File, bool debug = false, bool force = false);
-	CompileResult Compile(GINIE PrjData, Slyvina::JCR6::JT_Dir Res, std::string ScyndiSource, bool debug=false, bool force=false);
+	Compilation Compile(Slyvina::Units::GINIE PrjData, Slyvina::JCR6::JT_Dir Res, std::string ScyndiSource, bool debug=false, bool force=false);
 	void ProcessProject(std::string prj, bool force = false, bool debug = false);
 
 }

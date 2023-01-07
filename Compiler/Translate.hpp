@@ -69,8 +69,8 @@ namespace Scyndi {
 	std::string TranslationError();
 
 
-	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile = "", Slyvina::JCR6::JT_Dir JD = nullptr, bool debug = false, bool force=false);
-	Translation Translate(std::string source, std::string srcfile = "", Slyvina::JCR6::JT_Dir JD = nullptr, bool debug = false, bool force=false);
+	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile = "", Slyvina::JCR6::JT_Dir JD = nullptr, GINIE D = nullptr, bool debug = false, bool force = false);
+	Translation Translate(std::string source, std::string srcfile = "", Slyvina::JCR6::JT_Dir JD = nullptr, GINIE D=nullptr, bool debug = false, bool force=false);
 	
 
 }
