@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 23.01.06
+// Version: 23.01.07
 // EndLic
 
 #include <Slyvina.hpp>
@@ -803,7 +803,7 @@ public:
 		return std::unique_ptr<std::string>(new std::string(Ret));
 	}
 
-	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
+	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug, bool force) {
 		std::string StaticRegister = "ScyndiStaticRegister_" + md5(srcfile) + md5(CurrentDate()) + md5(CurrentTime());
 		Verb("Compiling", srcfile);
 		_TLError = "";
@@ -2174,7 +2174,7 @@ public:
 		return Ret.Trans;
 	}
 
-	Translation Translate(std::string source, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
+	Translation Translate(std::string source, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug, bool force) {
 		return Translate(Split(source, '\n'), srcfile, JD, debug);
 	}
 

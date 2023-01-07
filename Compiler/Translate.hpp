@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 23.01.06
+// Version: 23.01.07
 // EndLic
 
 #pragma once
@@ -69,8 +69,8 @@ namespace Scyndi {
 	std::string TranslationError();
 
 
-	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile = "", Slyvina::JCR6::JT_Dir JD = nullptr, bool debug = false);
-	Translation Translate(std::string source, std::string srcfile = "", Slyvina::JCR6::JT_Dir JD = nullptr, bool debug = false);
+	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile = "", Slyvina::JCR6::JT_Dir JD = nullptr, bool debug = false, bool force=false);
+	Translation Translate(std::string source, std::string srcfile = "", Slyvina::JCR6::JT_Dir JD = nullptr, bool debug = false, bool force=false);
 	
 
 }
