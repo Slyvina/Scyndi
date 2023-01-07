@@ -1084,32 +1084,43 @@ public:
 					TransAssert(ins->Words.size() == 3, "#USE syntax error");
 					TransAssert(ins->Words[2]->Kind == WordKind::String, "String expected to determine the dependency to load with #USE");
 					Verb("Use request", Para);
+					Ret.Trans->Data->AddNew("Dependencies", "List", Para);
 					auto bcFile{ Para }; if (debug) bcFile += ".debug"; bcFile += ".stb";
 					auto srFile{ Para }; 
 					auto skip{ false };
-					auto cfFile{ bcFile + "/Configuration.ini" };
+					
+					//auto cfFile{ bcFile + "/Configuration.ini" };
 					if (JD->EntryExists(Para + ".Scyndi")) {
 						srFile += ".Scyndi";
 					} else if (JD->EntryExists(Para + ".lua")) {						
 						TransError("No support yet for the inclusion of lua files through #USE yet!");
-					} else if (JD->EntryExists(cfFile)) {
-						auto g{ ParseGINIE(JD->GetString(cfFile)) };
+					} else if (JD->EntryExists(bcFile)) {
+						skip = true;
+					} else TransError("No way found to get any data about #USE request for " + Para);
+					if (skip) {
+						auto bcj{ JCR6::JCR6_Dir(JD->Entry(bcFile)->MainFile) };
+						auto g{ ParseGINIE(bcj->GetString("Configuration.ini")) };
 						TransAssert(g, "Parsing GINIE failed! Delete the STB file and try again! ");
 						TransAssert(Upper(g->Value("Translation", "Target"))=="LUA", "Target error");
 						TransAssert(g->Value("Lua", "Version") == Slyvina::Lunatic::_Lunatic::Lua_Version(), TrSPrintF("This translation is for Lua version %s. However this version of Scyndi works with Lua version %s", g->Value("Lua", "Version").c_str(), Lunatic::_Lunatic::Lua_Version().c_str()));
 						for (auto& glob : *g->List("Globals", "-List-")) {
-							auto sub{ g->Value("Globaks",glob) };
+							auto sub{ g->Value("Globals",glob) };
 							TransAssert(sub.size(), TrSPrintF("No substitute found for global %s", glob.c_str()));
 							(*Ret.Trans->GlobalVar)[glob] = sub;
 						}
-						skip = true;
-					} else TransError("No way found to get any data about #USE request for " + Para);
-					if (!skip) {
+					} else {
 						auto CR{ Compile(dat,JD,srFile,debug,force) };
 						TransAssert(CR, "Compilation returned NULL (internal error. Please report!)");
 						TransAssert(CR->Result != CompileResult::Fail, TrSPrintF("#USE request for '%s' failed", Para.c_str()));
+						if (CR->Result == CompileResult::Skip) {
+							Verb("Status", "Up-to-date");
+							auto bcj{ JCR6::JCR6_Dir(JD->Entry(bcFile)->MainFile) };							
+							CR->Data = ParseGINIE(bcj->GetString("Configuration.ini"));
+						} else {
+							if (force) Verb("Status", "Forced"); else Verb("Status", "Outdated");
+						}
 						for (auto& glob : *CR->Data->List("Globals", "-List-")) {
-							auto sub{ CR->Data->Value("Globaks",glob) };
+							auto sub{ CR->Data->Value("Globals",glob) };
 							TransAssert(sub.size(), TrSPrintF("No substitute found for global %s", glob.c_str()));
 							(*Ret.Trans->GlobalVar)[glob] = sub;
 						}

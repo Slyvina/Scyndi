@@ -74,17 +74,69 @@ namespace Scyndi {
 		return Compilation{ ret };
 	}
 
-	Compilation Compile(GINIE PrjData,Slyvina::JCR6::JT_Dir Res,std::string ScyndiSource,bool debug,bool force) {
-		// TODO: Skip if compilation if up-to-date, unless forced!
+	bool Modified(std::string File, bool debug, bool force) {
+		if (Done.count(File) && Done[File]) return false; // Even with force, you do not want dupe compilations!
+		if (force) {
+			return true;
+		}
+		auto
+			bcfile{ StripExt(File) + ".stb" }; if (debug) bcfile = StripExt(File) + ".debug.stb";
+		if (!FileExists(bcfile)) return true;
+		auto
+			sourcestamp{ FileTimeStamp(File) },
+			compstamp{ FileTimeStamp(bcfile) };
+		auto
+			ret{ (sourcestamp >= compstamp) };
+		//std::cout << "Src: " << sourcestamp << "; Compiled: " << compstamp << ";  modified: " << ret << "\t" << File << "\n";
+		//std::vector < std::string > Dependencies;
+		return ret;
+	}
+
+	bool Modified(JT_Dir JD, std::string file, bool debug, bool Force) {
+		auto ret{ Modified(JD->Entry(file)->MainFile, debug, Force) };
+		//std::cout << file << " (" << JD->Entry(file)->MainFile << ")\t " << ret << "\n";
+		return ret;
+	}
+
+	Compilation Compile(GINIE PrjData, Slyvina::JCR6::JT_Dir Res, std::string ScyndiSource, bool debug, bool force) {
+
+		auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".STB" };
+		if (debug) OutputFile = StripExt(Res->Entry(ScyndiSource)->MainFile) + ".Debug.STB";
 		if (IsDone(Res->Entry(ScyndiSource)->MainFile)) {
-			auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".STB" };
-			auto GDat{ ParseGINIE(Res->GetString("Configuration.ini")) };
+			auto HRes{ JCR6_Dir(OutputFile) };
+			auto GDat{ ParseGINIE(HRes->GetString("Configuration.ini")) };
 			if (!GDat) {
 				QCol->Error("Error in configuration! Delete " + OutputFile + " and try running Scyndi again");
 				return CReturn(CompileResult::Fail);
 			}
-			return CReturn(CompileResult::Skip,GDat);
+			return CReturn(CompileResult::Skip, GDat);
 		}
+		if (!force) {
+			auto CanSkip{ true };
+			auto GDat{ ParseGINIE("[NOTHING]\nNothing=Nothing")};
+			//std::cout << OutputFile << " E"<< FileExists(OutputFile)<< " M" << Modified(Res, ScyndiSource, debug, force) << "\n";
+			if (FileExists(OutputFile) && (!Modified(Res,ScyndiSource,debug,force))) {				
+				auto HRes{ JCR6_Dir(OutputFile) };
+				GDat = ParseGINIE(HRes->GetString("Configuration.ini"));
+				//QCol->Doing("Unmodified", ScyndiSource); // debug
+				auto Depn{ GDat->List("DEPENDENCIES","List") };
+				//QCol->Doing("Dependencies", Depn->size());
+				if (!Modified(Res, ScyndiSource, debug, force)) {
+					for (auto& D : *Depn) {
+						// QCol->Doing("Checking", D); // debug
+						if (Res->EntryExists(D + ".Scyndi")) {
+							auto C{ Compile(PrjData, Res, D + ".Scyndi", debug, force) };
+							CanSkip = CanSkip && C->Result == CompileResult::Skip;
+							CanSkip = CanSkip && (!IsDone(Res->Entry(D + ".Scyndi")->MainFile));
+							if (C->Result == CompileResult::Fail) return CReturn(CompileResult::Fail);
+						}
+					}
+				}				
+			} else { CanSkip = false; }
+			if (CanSkip) return CReturn(CompileResult::Skip, GDat);
+		} //else CanSkip = false;
+	
+		
 		QCol->Doing("Reading", ScyndiSource);
 		auto src{ Res->GetString(ScyndiSource) };
 		auto T{ Translate(src,ScyndiSource,Res,PrjData,debug,force) };
@@ -102,26 +154,13 @@ namespace Scyndi {
 			JO->Close();
 			QCol->Doing("Completed", ScyndiSource);
 			std::cout << "\n\n";
+			Done[Res->Entry(ScyndiSource)->MainFile] = true;
 			return CReturn(CompileResult::Success,T->Data);
 		}
 
 	}
 
-	bool Modified(std::string File, bool debug, bool force) {
-		if (Done.count(File) && Done[File]) return true; // Even with force, you do not want dupe compilations!
-		if (force) {
-			return false;
-		}	
-		auto
-			bcfile{ StripExt(File) + ".stb" }; if (debug) bcfile = StripExt(File) + ".debug.stb";
-		if (!FileExists(bcfile)) return true;
-		auto
-			sourcestamp{ FileTimeStamp(File) },
-			compstamp{ FileTimeStamp(bcfile) };
-		//std::cout << "Src: " << sourcestamp << "; Compiled: " << compstamp << ";  modified: " << (sourcestamp > compstamp) << "\n";
-		//std::vector < std::string > Dependencies;
-		return sourcestamp >= compstamp;
-	}
+
 
 	void ProcessProject(std::string prj, bool force, bool debug) {
 		Slyvina::uint32
@@ -161,12 +200,12 @@ namespace Scyndi {
 		}
 		//auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
 		auto Entries{ Res->Entries() };
+		//for (auto& E : *Entries) std::cout << "Entry: " << E->Name() << std::endl; // debug only!
 		for (auto SD : *Entries) {
 			auto E{ Upper(ExtractExt(SD->Name())) };
 			if (E == "LUA") {
 				QCol->Error("Pure Lua code not (yet) supported");
 			} else if (E == "SCYNDI") {
-
 				auto Result{ Compile(PrjData, Res, SD->Name(), debug, force) };
 				switch (Result->Result) {
 				case CompileResult::Success:
