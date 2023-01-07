@@ -44,6 +44,10 @@ using namespace Slyvina::JCR6;
 
 namespace Scyndi {
 
+	static std::map<std::string, bool> Done;
+	static bool IsDone(std::string E) { return Done.count(E) && Done[E]; }
+
+
 	bool QuickYes(std::string Question) {
 		do {
 			QCol->Yellow(Question);
@@ -65,15 +69,15 @@ namespace Scyndi {
 		} while (true);
 	}
 
-	bool Compile(GINIE PrjData,Slyvina::JCR6::JT_Dir Res,std::string ScyndiSource,bool debug,bool force) {
+	CompileResult Compile(GINIE PrjData,Slyvina::JCR6::JT_Dir Res,std::string ScyndiSource,bool debug,bool force) {
 		// TODO: Skip if compilation if up-to-date, unless forced!
+		if (IsDone(Res->Entry(ScyndiSource)->MainFile)) return CompileResult::Skip;
 		QCol->Doing("Reading", ScyndiSource);
 		auto src{ Res->GetString(ScyndiSource) };
-
 		auto T{ Translate(src,ScyndiSource,Res,debug) };
 		if (!T) {
 			QCol->Error(TranslationError());
-			return false;
+			return CompileResult::Fail;
 		} else {
 			// QCol->LGreen(T->LuaSource + "\n"); // debug only!
 			auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".STB" }; // STB = Scyndi Translated Bundle
@@ -85,9 +89,25 @@ namespace Scyndi {
 			JO->Close();
 			QCol->Doing("Completed", ScyndiSource);
 			std::cout << "\n\n";
-			return ret;
+			return CompileResult::Success;
 		}
 
+	}
+
+	bool Modified(std::string File, bool debug, bool force) {
+		if (Done.count(File) && Done[File]) return true; // Even with force, you do not want dupe compilations!
+		if (force) {
+			return false;
+		}	
+		auto
+			bcfile{ StripExt(File) + ".stb" }; if (debug) bcfile = StripExt(File) + ".debug.stb";
+		if (!FileExists(bcfile)) return true;
+		auto
+			sourcestamp{ FileTimeStamp(File) },
+			compstamp{ FileTimeStamp(bcfile) };
+		//std::cout << "Src: " << sourcestamp << "; Compiled: " << compstamp << ";  modified: " << (sourcestamp > compstamp) << "\n";
+		//std::vector < std::string > Dependencies;
+		return sourcestamp >= compstamp;
 	}
 
 	void ProcessProject(std::string prj, bool force, bool debug) {
@@ -133,10 +153,19 @@ namespace Scyndi {
 			if (E == "LUA") {
 				QCol->Error("Pure Lua code not (yet) supported");
 			} else if (E == "SCYNDI") {
-				if (Compile(PrjData, Res, SD->Name(), debug, force))
-					Success++;
-				else
-					Failed++;
+
+				auto Result{ Compile(PrjData, Res, SD->Name(), debug, force)) };
+				switch (Result) {
+				case CompileResult::Success:
+					Success++; break;
+				case CompileResult::Fail:
+					Failed++; break;
+				case CompileResult::Skip:
+					Skipped++; break;
+				default:
+					QCol->Error(TrSPrintF("Unknown compiler result (Internal error! Please report) (%03d)", (int)Result));
+					break;
+				}
 			}
 		}
 		QCol->Green("Project complete\n");

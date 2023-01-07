@@ -253,6 +253,7 @@
     <ClInclude Include="..\..\Libs\Units\Headers\Slyvina.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvMD5.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvQCol.hpp" />
+    <ClInclude Include="..\..\Libs\Units\Headers\SlyvStream.hpp" />
     <ClInclude Include="..\..\Libs\Units\Headers\SlyvVecSearch.hpp" />
     <ClInclude Include="Compiler\Config.hpp" />
     <ClInclude Include="Compiler\Keywords.hpp" />

@@ -28,6 +28,9 @@
 
 namespace Scyndi {
 
+	enum class CompileResult{Fail,Success,Skip};
+
+	bool Modified(std::string File, bool debug = false, bool force = false);
 	void ProcessProject(std::string prj, bool force = false, bool debug = false);
 
 }
