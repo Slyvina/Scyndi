@@ -601,8 +601,8 @@ Lua2GlobGroup(_G,"PrLua") -- Difference between this and "Lua" is that "Lua" lin
 -- ***** Scyndi Use ***** --
 local function DefaultUse(file)
 	local f = assert(io.open(file, "rb"),"File "..file.." could not be opened")
-    local src = f:read("*all")
-    f:close()
+	local src = f:read("*all")
+	f:close()
 	local func = (loadstring or load)(src) -- In older versions of Lua you need loadstring() and in newer versions you need load.
 	func()
 end
@@ -619,7 +619,7 @@ function _Scyndi.SetUseFunction(f)
 	assert(f==nil or type(f)=="function","Function expected but got "..type(f).." for SetUseFunction")
 	UseFuncion = f
 end
-    
+	
 
 
 -- ***** C++ Generator for base globals so the compiler will know them ***** --
