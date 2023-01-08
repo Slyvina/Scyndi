@@ -1,7 +1,7 @@
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
--- version: 23.01.06
+-- version: 23.01.08
 -- Copyright (C) 2022, 2023 Jeroen P. Broks
 -- This software is provided 'as-is', without any express or implied
 -- warranty.  In no event will the authors be held liable for any damages
@@ -598,6 +598,29 @@ Lua2GlobGroup(_G,"PrLua") -- Difference between this and "Lua" is that "Lua" lin
 
 
 
+-- ***** Scyndi Use ***** --
+local function DefaultUse(file)
+	local f = assert(io.open(file, "rb"),"File "..file.." could not be opened")
+    local src = f:read("*all")
+    f:close()
+	local func = (loadstring or load)(src) -- In older versions of Lua you need loadstring() and in newer versions you need load.
+	func()
+end
+
+local FilesUsed = {}
+local UseFunction = DefaultUse
+function _Scyndi.Use(file)
+	if FilesUsed(file) then return end
+	UseFunction = UseFuncion or DefaultUse
+	UseFunction(file)
+end
+
+function _Scyndi.SetUseFunction(f)
+	assert(f==nil or type(f)=="function","Function expected but got "..type(f).." for SetUseFunction")
+	UseFuncion = f
+end
+    
+
 
 -- ***** C++ Generator for base globals so the compiler will know them ***** --
 function _Scyndi.GLOBALSFORCPLUSPLUS()
@@ -613,6 +636,7 @@ function _Scyndi.GLOBALSFORCPLUSPLUS()
 	end
 	print("\n\t};\n}\n")
 end
+
 
 
 -- ***** DEBUG linkups ***** --
