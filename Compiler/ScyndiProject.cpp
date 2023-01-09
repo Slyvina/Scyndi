@@ -162,8 +162,8 @@ namespace Scyndi {
 
 
 
-	void ProcessProject(std::string prj, bool force, bool debug) {
-		Slyvina::uint32
+	Slyvina::uint64 ProcessProject(std::string prj, bool force, bool debug) {
+		Slyvina::uint64
 			Success{ 0 },
 			Skipped{ 0 },
 			Failed{ 0 };
@@ -171,9 +171,9 @@ namespace Scyndi {
 		TransVerbose = true;
 		if (!FileExists(prj)) {
 			if (!QuickYes("Project '" + prj + "' does not yet exist. Create it"))
-				return;
+				return 1;
 			if (!DirectoryExists(ExtractDir(prj))) {
-				if (!QuickYes("Create directory '" + ExtractDir(prj) + "'")) return;
+				if (!QuickYes("Create directory '" + ExtractDir(prj) + "'")) return 1;
 				MakeDir(ExtractDir(prj));
 			}
 			SaveString(prj,"[Project]\nCreated=" + CurrentDate() + "; " + CurrentTime()+"\n");
@@ -187,15 +187,15 @@ namespace Scyndi {
 		auto Libs{ AskList(PrjData,"DIRECTORY","Libraries","Name the directories where I can find the libraries:",0) };
 		auto Res{ std::make_shared<Slyvina::JCR6::_JT_Dir>() };
 		for (auto& D : *Dirs) {
-			if (!DirectoryExists(D)) { QCol->Error("Source directory '" + D + "' does not exist."); return; }
+			if (!DirectoryExists(D)) { QCol->Error("Source directory '" + D + "' does not exist."); return 1; }
 			auto DRes{ Slyvina::JCR6::GetDirAsJCR(D) };
-			if (!DRes) { QCol->Error("Source directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return; }
+			if (!DRes) { QCol->Error("Source directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return 1; }
 			Res->Patch(DRes, "Script/");
 		}
 		for (auto& D : *Libs) {
-			if (!DirectoryExists(D)) { QCol->Error("Library directory '" + D + "' does not exist."); return; }
+			if (!DirectoryExists(D)) { QCol->Error("Library directory '" + D + "' does not exist."); return 1; }
 			auto DRes{ Slyvina::JCR6::GetDirAsJCR(D) };
-			if (!DRes) { QCol->Error("Library directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return; }
+			if (!DRes) { QCol->Error("Library directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return 1; }
 			Res->Patch(DRes, "Libs/");
 		}
 		//auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
@@ -224,5 +224,6 @@ namespace Scyndi {
 		if (Success) QCol->Doing("Success", Success);
 		if (Failed) QCol->Doing("Failed", Failed);
 		if (Skipped) QCol->Doing("Skipped", Skipped);
+		return Failed;
 	}
 }

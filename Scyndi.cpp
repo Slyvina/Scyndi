@@ -70,13 +70,15 @@ int main(int nargs, char** args) {
 		std::cout << "\n\n\n";
 		return 1;
 	} else if (WantProject()) {
+		uint64 NietGoed{ 0 };
 		auto F{ Files() };
 		for (size_t i = 0; i < NumFiles(); i++) {
 			auto Prj = (*F)[i];
 			if (!Suffixed(Lower(Prj), ".scyndiproject")) Prj += ".ScyndiProject";
 			QCol->Doing(TrSPrintF("Project %d/%d", i+1, NumFiles()), Prj);
-			ProcessProject(Prj, WantForce(), WantDebug());
+			NietGoed+=ProcessProject(Prj, WantForce(), WantDebug());
 		}
+		return NietGoed;
 	}
 	return 0;
 }

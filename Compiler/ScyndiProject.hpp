@@ -36,6 +36,6 @@ namespace Scyndi {
 
 	bool Modified(std::string File, bool debug = false, bool force = false);
 	Compilation Compile(Slyvina::Units::GINIE PrjData, Slyvina::JCR6::JT_Dir Res, std::string ScyndiSource, bool debug=false, bool force=false);
-	void ProcessProject(std::string prj, bool force = false, bool debug = false);
+	Slyvina::uint64 ProcessProject(std::string prj, bool force = false, bool debug = false);
 
 }
