@@ -74,7 +74,7 @@ int main(int nargs, char** args) {
 		auto F{ Files() };
 		for (size_t i = 0; i < NumFiles(); i++) {
 			auto Prj = (*F)[i];
-			if (!Suffixed(Lower(Prj), ".scyndiproject")) Prj += ".ScyndiProject";
+			if ((!Suffixed(Lower(Prj), ".scyndiproject")) && (!Suffixed(Lower(Prj), ".ini"))) Prj += ".ScyndiProject";
 			QCol->Doing(TrSPrintF("Project %d/%d", i+1, NumFiles()), Prj);
 			NietGoed+=ProcessProject(Prj, WantForce(), WantDebug());
 		}
