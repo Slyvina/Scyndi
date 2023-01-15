@@ -121,7 +121,8 @@ local function index_static_member(cl,key,allowprivate)
 	local cu=cl:upper()
 	key=key:upper()
 	assert(classregister[cu],"Class "..cl.." unknown (index)")
-		if classregister[cu].staticprop.pset[key] then
+		--for k,v in pairs(classregister[cu].staticprop.pget) do print(cl,k,type(v)) end -- debug only!
+		if classregister[cu].staticprop.pget[key] then
 		return classregister[cu].staticprop.pget[key](classregister[cu].pub)
 	end
 
@@ -229,6 +230,7 @@ function _Scyndi.ADDPROPERTY(ch,name,static,getset,func)
 	assert(not _class.staticmembers[gs],"Property duplicates static member "..name)
 	assert(not _class.nonstaticmembers[gs],"Property duplicate member "..name)
 	_prop[gs][name]=func
+	--print("Property "..name.." added to class "..ch) -- debug
 end
 
 function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
@@ -361,6 +363,7 @@ end
 function _Scyndi.DECLARELOCAL(tab,dtype,readonly,key,value)
 	key=key:upper()
 	assert(not tab.truelocals[key],"Dupe local: "..key)
+	--print("Local: ",tab," dtype:",dtype," readonly:",readonly," key:",key," value:",value) -- debug
 	tab.truelocals[key] = {
 		value = _Scyndi.WANTVALUE(dtype,value or _Scyndi.BASEVALUE(dtype)),
 		dtype = dtype:upper(),
@@ -380,6 +383,31 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SOUT",true,true,true,function(...)
 	for _,v in ipairs{...} do ret = ret .. _Glob.TOSTRING(v) end
 	return ret
 end)
+
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ERROR",true,true,true,error)
+
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LEFT",true,true,true, function(s, l) 
+			if not assert(type(s)=="string","String exected as first argument for 'left'") then return end
+			l = l or 1
+			assert(type(l)=="number","Number expected for second argument in 'left'")
+			return substr(s,1,l)
+		end)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","RIGHT",true,true,true,function(s,l)
+			local ln
+			local st
+			ln = l or 1
+			st = s or "nostring"
+			return substr(st,-ln,-1)
+		end)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","MID",true,true,true,function(s,o,l)
+			local ln
+			local of
+			local st
+			ln=l or 1
+			of=o or 1
+			st=s or ""
+			return substr(st,of,(of+ln)-1)
+		end)
 
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SETMETATABLE",true,true,true,setmetatable)
 _Scyndi.ADDMBER("..GLOBALS..","NUMBER","PI",true,true,true,math.pi)
@@ -409,6 +437,20 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","EXPAND",true,true,true,function (t,p)
 	end
 	return nil                                 
 end)
+
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","EACH",true,true,true,function(tab)
+	-- Please note, where Lua starts at index #1, Scyndi will use #0 as the first index, like nearly all other self-respecting programming language.
+	assert(type(tab)=="table","Table expected for ipairs, but got "..type(tab))
+	local i=0
+	local function ret()
+		v = tab[i]
+		if (v==nil) then return nil end
+		i = i + 1
+		return v
+	end
+	return ret
+end)
+
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","IPAIRS",true,true,true,function(tab)
 	-- Please note, where Lua starts at index #1, Scyndi will use #0 as the first index, like nearly all other self-respecting programming language.
 	assert(type(tab)=="table","Table expected for ipairs, but got "..type(tab))
@@ -609,16 +651,22 @@ end
 
 local FilesUsed = {}
 local UseFunction = DefaultUse
-function _Scyndi.Use(file)
-	if FilesUsed(file) then return end
+local UseCaseSensitive = true -- Taking Unix file systems as standard here.
+function _Scyndi.USE(file)
+	local ufile = file
+	if not UseCaseSensitive then ufile = file:upper() end
+	if FilesUsed[ufile] then return end
 	UseFunction = UseFuncion or DefaultUse
 	UseFunction(file)
+	FilesUsed[ufile]=true
 end
 
-function _Scyndi.SetUseFunction(f)
+function _Scyndi.SETUSEFUNCTION(f)
 	assert(f==nil or type(f)=="function","Function expected but got "..type(f).." for SetUseFunction")
 	UseFuncion = f
 end
+
+function _Scyndi.SETUSECASESENSITIVE(b) UseCaseSensitive = b end
 	
 
 

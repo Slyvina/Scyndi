@@ -47,7 +47,7 @@
 #define Chat(abc)
 #endif
 
-#define DbgLineCheck if (debug && (!Ins->ScopeData->DidReturn)) *Trans += TrSPrintF("Scyndi.Debug(Scyndi.Debug.StateName,\"%s\",%d)\t",srcfile.c_str(),Ins->LineNumber)
+#define DbgLineCheck if (debug && (!Ins->ScopeData->DidReturn)) *Trans += TrSPrintF("Scyndi.Debug.Line(Scyndi.Debug.StateName,\"%s\",%d)\t",srcfile.c_str(),Ins->LineNumber)
 
 using namespace Slyvina;
 using namespace Slyvina::Units;
@@ -268,7 +268,7 @@ public:
 		// Is this a local?
 		for (auto fscope = this; fscope; fscope = fscope->Parent) {
 			if (!LocalDeclaLine.count(_id)) LocalDeclaLine[_id] = 0;
-			// std::cout << "Local check " << _id << " in scope " << (uint64)fscope << "(" << (uint32)fscope->Kind<< "); Found: " << fscope->LocalVars->count(_id) << "; Declared in line: " << LocalDeclaLine[_id] << "; Instruction line: " << lnr << std::endl; // DEBUG ONLY!!!
+			//std::cout << "Local check " << _id << " in scope " << (uint64)fscope << "(" << (uint32)fscope->Kind<< "); Found: " << fscope->LocalVars->count(_id) << "; Declared in line: " << LocalDeclaLine[_id] << "; Instruction line: " << lnr << std::endl; // DEBUG ONLY!!!
 			if (fscope->LocalVars->count(_id) && lnr >= LocalDeclaLine[_id]) {
 				auto LV{ fscope->LocalVars };
 				return (*LV)[_id];
@@ -325,6 +325,8 @@ public:
 			default:
 				Check = Check->Parent;
 				if (!Check) {
+					QCol->Doing("Debug", (int)this->Kind);
+					QCol->Doing("Debug", this->ClassID);
 					QCol->Error("Scope function defer error (internal error! Please report to Jeroen P. Broks)");
 					exit(12345);
 				}
@@ -544,8 +546,9 @@ public:
 					(ch >= 'A' && ch <= 'Z') ||
 					(ch >= 'a' && ch <= 'z') ||
 					(ch >= '0' && ch <= '9') ||
-					(ch >= '_')
+					(ch == '_')
 				};
+				//std::cout << "Forming Word: " << ch << ">>" << GoOn << "\n"; // debug
 				Chat("==> Char '" << ch << "' on pos " << pos << " leaves GoOn >" << GoOn);
 				if (GoOn) {
 					FormWord += ch;
@@ -596,8 +599,20 @@ public:
 						FormWord = "."; FormWord += next;
 						pos += 2;
 						//std::cout << "INDEX! " << FormWord << "\n"; // debug
+					} else if (next == '.') {
+						Ret->Words.push_back(_Word::NewWord(".."));
+						pos += 2;
 					}
 				} break;
+				case '!':
+					TransAssert(pos < Line.size() - 1, "! cannot be at the end of a line");
+					if (Line[pos + 1] == '=') {
+						Ret->Words.push_back(_Word::NewWord("!="));
+						pos += 2;
+					} else {
+						Ret->Words.push_back(_Word::NewWord("!"));
+						pos++;
+					} break;
 				case ',':
 					Ret->Words.push_back(_Word::NewWord(","));
 					pos++;
@@ -663,10 +678,38 @@ public:
 						pos++;
 					}
 					break;
+				case '^':
 				case '*':
-					Chat("Plus/Minus/Times");
+				case '/':
+				case '%':
+				case '[':
+				case ']':
+				case '{':
+				case '}':
+					//Chat("Plus/Minus/Times");
+					if (FormingWord) {
+						Ret->Words.push_back(_Word::NewWord(FormWord));
+						FormWord = "";
+						FormingWord = false;
+					}
 					Ret->Words.push_back(_Word::NewWord(WordKind::Operator, ch));
 					pos++;
+					break;
+				case ':':
+					TransAssert(pos < Line.size() - 1, ": cannot be at the end of the line");
+					FormingWord = true;
+					FormWord = "."; FormWord += Line[pos+1];
+					pos += 2;
+					break;
+				case '&':
+					TransAssert(pos < Line.size() - 1 && Line[pos + 1] == '&', "& is not an operator. && is");
+					Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "&&"));
+					pos += 2;
+					break;
+				case '|':
+					TransAssert(pos < Line.size() - 1 && Line[pos + 1] == '|', "| is not an operator. || is");
+					Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "||"));
+					pos += 2;
 					break;
 				default:
 					if (ch >= '0' && ch <= '9') {
@@ -758,6 +801,7 @@ public:
 				switch (W->Kind) {
 				case WordKind::Identifier: {
 					auto WT{ Ins->ScopeData->Identifier(T,Ins->LineNumber,W->UpWord,ignoreglobals) };
+					//if (!WT.size()) for (size_t pos = start; pos < Ins->Words.size(); pos++) { std::cout << "Word #" << pos << ": " << Ins->Words[pos]->TheWord << "\n"; } // debug only
 					TransAssert(WT.size(), "Unknown identifier " + W->TheWord);
 					Ret += WT;
 				} break;
@@ -776,7 +820,16 @@ public:
 				case WordKind::Number:
 				case WordKind::Comma:
 				case WordKind::Operator:
-					Ret += W->TheWord;
+					if (W->TheWord == "!")
+						Ret += " not ";
+					else if (W->TheWord == "!=")
+						Ret += " ~= ";
+					else if (W->TheWord == "||")
+						Ret += " or ";
+					else if (W->TheWord == "&&")
+						Ret += " and ";
+					else
+						Ret += W->TheWord;
 					break;
 				default:
 					if (W->UpWord == "TRUE")
@@ -879,7 +932,7 @@ public:
 			//Chat(ins->Words.size());
 			if (ins->Words.size() && ins->Words[0]->UpWord == "CONSTRUCTOR") {
 				Chat("Constructor!");
-				TransAssert(ins->Scope == ScopeKind::Class, "Constructors can only be created in classes");
+				TransAssert(ins->Scope == ScopeKind::Class, TrSPrintF("(%d) Constructors can only be created in classes",(int)ins->Scope));
 				auto dec = std::make_shared<_Declaration>();
 				DecScope = true;
 				if (ins->Words.size() == 1) {
@@ -1141,7 +1194,7 @@ public:
 							_id = ins->Words[1]->UpWord;
 							TransAssert(Ret.Identifier(_id) == "", "Script header creates duplicate identifier");
 						}
-						(*Ret.Trans->GlobalVar)[_id] = "SCYNDI.CLASSES[\"" + _id + "\"]";
+						(*Ret.Trans->GlobalVar)[_id] = "Scyndi.CLASSES[\"" + _id + "\"]";
 						ScriptName = _id;
 					} else if (ins->Words[0]->UpWord == "MODULE") {
 						Ret.Trans->Kind = ScriptKind::Script;
@@ -1165,7 +1218,9 @@ public:
 									TransError("Cannot generate valid identifier name from "+_sid);
 							}
 						}
-						(*Ret.Trans->GlobalVar)[_id] = "SCYNDI.CLASS[\"" + _id + "\"]";
+						(*Ret.Trans->GlobalVar)[_id] = "Scyndi.CLASS[\"" + _id + "\"]";
+						Ret.Trans->Data->Value("Globals", _id, (*Ret.Trans->GlobalVar)[_id]);
+						Ret.Trans->Data->Add("Globals", "-list-", _id);
 						ScriptName = _id;
 					} else {
 						TransError("Script header expected");
@@ -1391,7 +1446,7 @@ public:
 				Ret.Scopes.pop_back();
 				Ret.PushScope(ScopeKind::ElseScope);
 				ins->Kind = InsKind::ElseStatement;
-			} else if (ins->Words[0]->Kind==WordKind::Identifier) {
+			} else if (ins->Words[0]->Kind == WordKind::Identifier || ins->Words[0]->UpWord == "NEW") {
 				switch (Ret.ScopeK()) {
 				case ScopeKind::Root:
 					TransError("General instruction not possible in root scope");
@@ -1492,7 +1547,8 @@ public:
 							std::string Prefix{ "" }; if (TransConfig.count("PLUAPREFIX")) Prefix = TransConfig["PLUAPREFIX"]->TheWord;
 							auto ref{ TrSPrintF("%s%s",Prefix.c_str(),PluaName.c_str()) };
 							(*Ret.RootScope->LocalVars)[VarName] = ref;
-							*Trans += "local " + ref; // Will prevent trouble later! That's the only code that SHOULD be written.
+							*Trans += "local " + ref+"\n"; // Will prevent trouble later! That's the only code that SHOULD be written.
+							//std::cout << "Registered local plua " << VarName << " as " << ref << "\n"; // debug only
 						} else {
 							auto ref{ TrSPrintF("Scyndi.Class[\"%s\"][\"%s\"]",ScriptName.c_str(),VarName.c_str()) };
 							(*Ret.RootScope->LocalVars)[VarName] = ref;
@@ -1627,7 +1683,7 @@ public:
 				break;
 			case InsKind::StartInit:
 				*Trans += InitTag + "[#" + InitTag + "+1]=function()\n";
-				if (debug) *Trans += ("Scynd.Debug.Push(\"Init Scope\")");
+				if (debug) *Trans += ("Scyndi.Debug.Push(\"Init Scope\")");
 				break;
 			case InsKind::StartFor:
 			case InsKind::StartForEach: {
@@ -1899,8 +1955,9 @@ public:
 				while (Pos < Ending && Ins->Words[Pos]->UpWord != ")") {
 					//std::cout << VarName << ":\t" << Pos << "\t" << Ins->Words[Pos]->UpWord << "\t" << (Ins->Words[Pos]->UpWord == "PLUA") << "\n"; // debug only!
 					if (Ins->Words[Pos]->Kind == WordKind::Identifier) {
-						Args.push_back(Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",VarType::Var,false });
+						
 						if (ArgLine.size()) ArgLine += ", "; ArgLine += TrSPrintF("Arg%d", Args.size());
+						Args.push_back(Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",VarType::Var,false });
 						Pos++;
 						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (variant) argument #%d", Args.size()));
 						Pos++;
@@ -2026,7 +2083,7 @@ public:
 					std::cout << (int)Ret.RootScope->Kind << "\n"; // debug only
 					TransError(TrSPrintF("(SC%d) Local functions not yet implemented", (int)oscope->Kind));
 				}
-				if (debug) *Trans += TrSPrintF("Scynd.Debug.Push(\"%s\")",VarName.c_str());
+				if (debug) *Trans += TrSPrintF("Scyndi.Debug.Push(\"%s\")",VarName.c_str());
 				DbgLineCheck;
 				if (Args.size()) {
 					//std::cout << "Function " << VarName << " has " << Args.size() << " argument(s)\n"; // debug only

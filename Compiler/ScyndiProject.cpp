@@ -188,13 +188,13 @@ namespace Scyndi {
 		auto Res{ std::make_shared<Slyvina::JCR6::_JT_Dir>() };
 		for (auto& D : *Dirs) {
 			if (!DirectoryExists(D)) { QCol->Error("Source directory '" + D + "' does not exist."); return 1; }
-			auto DRes{ Slyvina::JCR6::GetDirAsJCR(D) };
+			auto DRes{ Slyvina::JCR6::GetDirAsJCR(D,false) };
 			if (!DRes) { QCol->Error("Source directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return 1; }
 			Res->Patch(DRes, "Script/");
 		}
 		for (auto& D : *Libs) {
 			if (!DirectoryExists(D)) { QCol->Error("Library directory '" + D + "' does not exist."); return 1; }
-			auto DRes{ Slyvina::JCR6::GetDirAsJCR(D) };
+			auto DRes{ Slyvina::JCR6::GetDirAsJCR(D,false) };
 			if (!DRes) { QCol->Error("Library directory '" + D + "' could not be analyzed\n" + Last()->ErrorMessage); return 1; }
 			Res->Patch(DRes, "Libs/");
 		}
@@ -205,6 +205,7 @@ namespace Scyndi {
 			auto E{ Upper(ExtractExt(SD->Name())) };
 			if (E == "LUA") {
 				QCol->Error("Pure Lua code not (yet) supported");
+				QCol->Doing("File", SD->Name());
 			} else if (E == "SCYNDI") {
 				auto Result{ Compile(PrjData, Res, SD->Name(), debug, force) };
 				switch (Result->Result) {
