@@ -408,6 +408,8 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","MID",true,true,true,function(s,o,l)
 			st=s or ""
 			return substr(st,of,(of+ln)-1)
 		end)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","UPPER",true,true,true,string.upper)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LOWER",true,true,true,string.lower)
 
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SETMETATABLE",true,true,true,setmetatable)
 _Scyndi.ADDMBER("..GLOBALS..","NUMBER","PI",true,true,true,math.pi)
