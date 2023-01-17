@@ -376,6 +376,22 @@ local _Glob,_GlobPriv = _Scyndi.STARTCLASS("..GLOBALS..",true,false,nil)
 assert(_Glob,"SCYNDI CORE SCRIPT INTERNAL ERROR: Globals not properly initiated!\nPlease report to Jeroen P. Broks!")
 _Scyndi.GLOBALS = _Glob
 
+_Scyndi.ADDMBER("..GLOBALS..","Delegate","Range",true,true,true,function(start,einde,stap)
+	if einde<start then 
+		stap = -math.abs(stap or 1)
+	else
+		stap = math.abs(stap or 1)
+	end
+	local i = start
+	return function()
+		local r = i
+		i = i + stap
+		if     einde<start and i<=einde then return nil
+		elseif i>=einde then return nil
+		else return r end
+	end
+end)
+
 _Scyndi.ADDMBER("..GLOBALS..","Delegate","PRINT",true,true,true,print)
 
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SOUT",true,true,true,function(...) 
