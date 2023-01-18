@@ -1755,7 +1755,7 @@ public:
 				case ScopeKind::ElseScope:
 				case ScopeKind::WhileScope:
 					*Trans += "end\n";
-					break;
+					break;					
 				case ScopeKind::Case:
 				case ScopeKind::Default:
 					*Trans += "end\t";
@@ -1983,7 +1983,7 @@ public:
 							}
 							Pos++;
 						}
-						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), "Syntax error in function defintion after (plua) argument");
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), "Syntax error in function definition after (plua) argument");
 						(*Ins->NextScope->LocalVars)[ArgName] = PluaName;
 						// std::cout << ArgName << " local -> " << PluaName << "\n"; // debug only
 						Pos++;
@@ -2002,7 +2002,7 @@ public:
 							Pos++;
 						} else { A.BaseValue = "error('Numberic value expected for argument " + A.Name + "')"; }
 						Args.push_back(A);
-						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (numberic) argument #%d", Args.size()));
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function definition after (numberic) argument #%d", Args.size()));
 						Pos++;
 					} else if (Ins->Words[Pos]->UpWord == "STRING") {
 						auto DT{ Ins->Words[Pos]->UpWord };
@@ -2019,7 +2019,27 @@ public:
 							Pos++;
 						} else { A.BaseValue = "error('String value expected for argument " + A.Name + "')"; }
 						Args.push_back(A);
-						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (numberic) argument #%d", Args.size()));
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (string) argument #%d", Args.size()));
+						Pos++;
+					} else if (Ins->Words[Pos]->UpWord=="BOOL"){
+						auto DT{ Ins->Words[Pos]->UpWord };
+						Pos++;
+						auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						// std::cout << "Arg type " << (int)A.dType << "(" << DT << ")\n"; // debug
+						if (ArgLine.size()) ArgLine += ", "; ArgLine += TrSPrintF("Arg%d", Args.size());
+						Pos++;
+						if (Ins->Words[Pos]->UpWord == "=") {
+							/*
+							Pos++;
+							TransAssert(Ins->Words[Pos]->Kind == WordKind::String, "Constant string expected");
+							A.HasBaseValue = true;
+							A.BaseValue = Ins->Words[Pos]->TheWord; //TrSPrintF("\"%s\"", Ins->Words[Pos]->TheWord.c_str());
+							Pos++;
+							*/
+							TransError("Default values not possible for boolean arguments");
+						} else { A.BaseValue = "false"; }
+						Args.push_back(A);
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (boolean) argument #%d", Args.size()));
 						Pos++;
 					} else if (Ins->Words[Pos]->TheWord[0] == '@') {
 						TransError("Custom class type as function argument not (yet) supported. Just use an untyped argument or a pLua in stead");
@@ -2173,6 +2193,8 @@ public:
 				if (*Ins->switchHasDefault) *Trans += "goto " + SwName + "_Default"; else *Trans += "goto " + SwName + "_End";
 				*Trans += "\n";
 			} break;
+			case InsKind::FallThrough:
+				break; // No more purpose at this point!
 			case InsKind::Case: {
 				static std::map<std::string, size_t> CaseCount{};
 				if (!CaseCount.count(*Ins->SwitchName)) CaseCount[*Ins->SwitchName] = 0;
