@@ -455,8 +455,8 @@ public:
 				if (StringEscape) {
 					if (!FirstChar) {
 						Ret->Words.push_back(_Word::NewWord(WordKind::Comma, ","));
-						FirstChar = false;
 					}
+					FirstChar = false;
 					Ret->Words.push_back(_Word::NewWord(WordKind::Number, std::to_string((int)ch)));
 					StringEscape = false;
 					pos++;
@@ -469,8 +469,8 @@ public:
 				} else {
 					if (!FirstChar) {
 						Ret->Words.push_back(_Word::NewWord(WordKind::Comma, ","));
-						FirstChar = false;
 					}
+					FirstChar = false;
 					Ret->Words.push_back(_Word::NewWord(WordKind::Number, std::to_string((int)ch)));
 					pos++;
 				}
@@ -619,6 +619,11 @@ public:
 					break;
 				case '"':
 					InString = true;
+					pos++;
+					break;
+				case '\'':
+					InCharSeries = true;
+					FirstChar = true;
 					pos++;
 					break;
 				case '@': // Forces a class refereces
