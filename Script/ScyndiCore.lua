@@ -25,6 +25,7 @@ Scyndi = {}
 local _Scyndi = {}
 local SETTINGS={ STRICTNUM=true }
 local substr = string.sub
+
 _Scyndi.SETTINGS={}
 setmetatable(Scyndi,{
 	__newindex = function(self,key,value)
@@ -425,6 +426,9 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","MID",true,true,true,function(s,o,l)
 			st=s or ""
 			return substr(st,of,(of+ln)-1)
 		end)
+_Scyndi.ADDMBER("..GLOBALS..","Delegate","PREFIXED",true,true,true,function(str,pref)
+	return _Scyndi.GLOBALS.Left(str,#pref)==pref
+end)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","UPPER",true,true,true,string.upper)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LOWER",true,true,true,string.lower)
 
