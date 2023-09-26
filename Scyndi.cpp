@@ -44,7 +44,7 @@ using namespace Slyvina::JCR6;
 int main(int nargs, char** args) {
 	using namespace Scyndi;
 	init_zlib();
-	JCR6_InitReadDir();
+	JCR6_InitRealDir();
 	QCol->LGreen("Scyndi Compiler\n");
 	QCol->Doing("Version", QVersion.Version(true));
 	QCol->Doing("Coded by", "Jeroen P. Broks");

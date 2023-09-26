@@ -281,7 +281,7 @@ local function InstanceIndex(self,key)
 	assert(key~="CONSTRUCTOR","Illegal constructor call")
 	assert(key~="DESTRUCTOR","Illegal destructor call")
 	if key==".CLASSINSTANCE" then return true end
-	if self[".Methods"][key] then return function(...) self[".Methods"][key](self,...) end end
+	if self[".Methods"][key] then return function(...) return self[".Methods"][key](self,...) end end
 	local TTC = self[".TiedToClass"]
 	if self[".TiedToClass"].CR.staticmembers[key] then return index_static_member(self[".TiedToClass"].CH,key) end
 	if self[".TiedToClass"].CR.nonstaticmembers[key] then return self[".InstanceValues"][key] end
@@ -440,6 +440,9 @@ _Scyndi.ADDMBER("..GLOBALS..","STRING","ENDL",true,true,true,"\n")
 _Scyndi.ADDMBER("..GLOBALS..","Delegate","SPRINTF",true,true,true,string.format)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","PRINTF",true,true,true,function(fmt,...) io.write(fmt:format(...)) end)
 _Scyndi.ADDMBER("..GLOBALS..","Table","LUA",true,true,true,_G)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","TRIM",true,true,true,function(s)
+		return s:match( "^%s*(.-)%s*$" )
+end)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","CHR",true,true,true, string.char)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","EXPAND",true,true,true,function (t,p)
 	assert(type(t)=="table" or type(t)=="string","Table or string expected in Expand request (got "..type(t)..")\n"..debug.traceback())

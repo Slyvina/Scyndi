@@ -152,6 +152,7 @@ namespace Scyndi {
 			auto JO{ CreateJCR6(OutputFile) };
 			auto ret{ SaveTranslation(T, JO, Storage) };
 			JO->Close();
+			if (!ret) return CReturn(CompileResult::Fail);
 			QCol->Doing("Completed", ScyndiSource);
 			std::cout << "\n\n";
 			Done[Res->Entry(ScyndiSource)->MainFile] = true;

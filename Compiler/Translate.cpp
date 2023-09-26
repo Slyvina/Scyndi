@@ -1688,7 +1688,7 @@ public:
 				break;
 			case InsKind::StartInit:
 				*Trans += InitTag + "[#" + InitTag + "+1]=function()\n";
-				if (debug) *Trans += ("Scyndi.Debug.Push(\"Init Scope\")");
+				if (debug) *Trans += ("Scyndi.Debug.Push(\"Init Scope\") ");
 				break;
 			case InsKind::StartFor:
 			case InsKind::StartForEach: {
@@ -1912,6 +1912,7 @@ public:
 				if (dec->IsRoot) fclass = ScriptName;
 				TransAssert(fclass.size(), "GET property not possible as a local");
 				*Trans += TrSPrintF("Scyndi.ADDPROPERTY(\"%s\", \"%s\", %s, \"get\", function(self) \n", fclass.c_str(),VarName.c_str(),lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal));
+				if (debug) *Trans += TrSPrintF("Scyndi.Debug.Push(\"Property(GET) %s.%s\") ",fclass.c_str(),VarName.c_str());
 				if (Ins->DecData->BoundToClass.size() && (!Ins->DecData->IsStatic)) {
 					for (auto& FLD : Ret.Fields[Upper(Ins->DecData->BoundToClass)]) {
 						(*Ins->NextScope->LocalVars)[FLD] = TrSPrintF("self.%s", FLD.c_str());
@@ -1929,6 +1930,7 @@ public:
 				TransAssert(fclass.size(), "GET property not possible as a local");
 				Ins->NextScope->ScopeLoc = TrSPrintF("Scyndi_Set_Property_%08x_%s", count++, md5(VarName).c_str());
 				*Trans += TrSPrintF("Scyndi.ADDPROPERTY(\"%s\", \"%s\", %s, \"set\", function(self,_value) \n", fclass.c_str(), VarName.c_str(), lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal));
+				if (debug) *Trans += TrSPrintF("Scyndi.Debug.Push(\"Property(SET) %s.%s\") ", fclass.c_str(), VarName.c_str());
 				*Trans += Ins->NextScope->ScopeLoc; *Trans += " = Scyndi.CreateLocals()\n";
 				*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s,\"%s\", false,\"Value\",_value); ", Ins->NextScope->ScopeLoc.c_str(), _Declaration::E2S(Ins->DecData->Type).c_str());
 				(*Ins->NextScope->LocalVars)["VALUE"] = TrSPrintF("%s[\"VALUE\"]", Ins->NextScope->ScopeLoc.c_str());
@@ -2261,7 +2263,17 @@ public:
 				case VarType::Byte:
 				case VarType::Integer:
 				case VarType::Number:
-					if (!Ex->size()) *Trans += "0"; else *Trans += TrSPrintF("Scyndi.WantValue(\"%s\",%s)", _Declaration::E2S(fKind), Ex->c_str());
+					//std::cout << *Ex << "\n"; // debug
+					if (!Ex->size())
+						*Trans += "0"; 
+					else {
+						//*Trans += TrSPrintF("Scyndi.WantValue(\"%s\",%s)", _Declaration::E2S(fKind).c_str(), Ex->c_str());
+						*Trans += "Scyndi.WantValue(\"";
+						*Trans += _Declaration::E2S(fKind);
+						*Trans += "\", ";
+						*Trans += *Ex;
+						*Trans += ")";
+					}
 					break;
 				case VarType::String:
 					if (!Ex->size()) *Trans += "\"\""; else *Trans += TrSPrintF("Scyndi.WantValue(\"STRING\",%s)", Ex->c_str());
