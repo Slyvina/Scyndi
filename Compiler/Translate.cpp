@@ -114,6 +114,7 @@ namespace Scyndi {
 	};
 	std::map<std::string, VarType> _Declaration::S2E{
 		{"INT", VarType::Integer},
+		{"NUMBER",VarType::Number},
 		{"STRING",VarType::String},
 		{"TABLE",VarType::Table},
 		{"BOOL",VarType::Boolean},
@@ -419,8 +420,12 @@ public:
 		std::string FormWord{ "" };
 		Ret->SourceFile = srcfile;
 		Ret->LineNumber = LineNumber;
+		int TimeOut = 10000;
 		while (pos < Line.size()) {
 			auto ch{ Line[pos] };
+			if (!(TimeOut--)) {
+				TransError(TrSPrintF("Chopping timeout on position %d/%d (%c)", pos, (int)Line.size(), ch));
+			}
 			Chat("==> " << pos << "/" << Line.size() << "; Char: "<<ch);
 			// In Comment
 			if (InComment) {
