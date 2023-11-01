@@ -1,7 +1,7 @@
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
--- version: 23.01.17
+-- version: 23.11.01
 -- Copyright (C) 2022, 2023 Jeroen P. Broks
 -- This software is provided 'as-is', without any express or implied
 -- warranty.  In no event will the authors be held liable for any damages
@@ -281,6 +281,16 @@ local function InstanceIndex(self,key)
 	assert(key~="CONSTRUCTOR","Illegal constructor call")
 	assert(key~="DESTRUCTOR","Illegal destructor call")
 	if key==".CLASSINSTANCE" then return true end
+	if key==".HASMEMBER" then
+		return function(key)
+			if self[".Methods"][key] then return true end
+			if self[".TiedToClass"].CR.staticmembers[key] then return true end
+			if self[".TiedToClass"].CR.nonstaticmembers[key] then return true end
+			if self[".TiedToClass"].CR.methprop.pget[key] then return true end
+			if self[".TiedToClass"].CR.staticprop.pget[key] then return true end
+			return false
+		end
+	end
 	if self[".Methods"][key] then return function(...) return self[".Methods"][key](self,...) end end
 	local TTC = self[".TiedToClass"]
 	if self[".TiedToClass"].CR.staticmembers[key] then return index_static_member(self[".TiedToClass"].CH,key) end
@@ -429,6 +439,10 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","MID",true,true,true,function(s,o,l)
 _Scyndi.ADDMBER("..GLOBALS..","Delegate","PREFIXED",true,true,true,function(str,pref)
 	return _Scyndi.GLOBALS.Left(str,#pref)==pref
 end)
+_Scyndi.ADDMBER("..GLOBALS..","Delegate","SUFFIXED",true,true,true,function(str,suff)
+	return _Scyndi.GLOBALS.Right(str,#suff)==suff
+end)
+
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","UPPER",true,true,true,string.upper)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LOWER",true,true,true,string.lower)
 
