@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 23.01.06
+// Version: 23.11.01
 // EndLic
 
 #include <string>
@@ -62,7 +62,7 @@ namespace Scyndi {
 		"BOOL", "BOOLEAN",
 		"NUMBER",
 		"STRING",
-		"FUNCTION","DELEGATE",
+		"FUNCTION", "DELEGATE",
 		"USERDATA",
 		"VAR",
 		"PLUA",
