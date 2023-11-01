@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 23.01.17
+// Version: 23.11.01
 // EndLic
 
 #include <Slyvina.hpp>
@@ -64,6 +64,7 @@ namespace Scyndi {
 		Return, MutedByIfDef, StartInit, EndScope,
 		StartFor, StartForEach, Declaration,
 		StartDeclarationScope, StartFunction, StartMethod,
+		StartDo,
 		Switch, Case, Default,
 		FallThrough, Defer, StartClass,
 		StartGroup, Repeat, Until,
@@ -84,7 +85,7 @@ namespace Scyndi {
 		ForLoop, IfScope, ElIf,
 		ElseScope, Declaration, WhileScope,
 		Switch, Case, Default,
-		FunctionBody, Defer 
+		FunctionBody, Defer , Do
 	};
 
 	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate, Void, Var };
@@ -1439,9 +1440,12 @@ public:
 					//std::cout << "FORVAR: ("<<(uint64)Ret.GetScope().get() << "): " << loc << " -> " << (*sv)[loc] << " (line " << Ret.GetScope()->LocalDeclaLine[loc] << ")" << std::endl;
 				}
 				ins->ForEachExpression = endexpression;
-			} else if (ins->Words[0]->UpWord=="WHILE") {
+			} else if (ins->Words[0]->UpWord == "WHILE") {
 				ins->Kind = InsKind::WhileStatement;
 				Ret.PushScope(ScopeKind::WhileScope);
+			} else if (ins->Words[0]->UpWord=="DO"){
+				ins->Kind = InsKind::StartDo;
+				Ret.PushScope(ScopeKind::Do);
 			} else if (ins->Words[0]->UpWord == "IF") {
 				ins->Kind = InsKind::IfStatement;
 				Ret.PushScope(ScopeKind::IfScope);
@@ -1695,6 +1699,10 @@ public:
 				*Trans += InitTag + "[#" + InitTag + "+1]=function()\n";
 				if (debug) *Trans += ("Scyndi.Debug.Push(\"Init Scope\") ");
 				break;
+			case InsKind::StartDo:
+				*Trans += "do\n";
+				if (debug) *Trans += ("Scyndi.Debug.Push(\"Do Scope\") ");
+				break;
 			case InsKind::StartFor:
 			case InsKind::StartForEach: {
 				DbgLineCheck;
@@ -1764,6 +1772,7 @@ public:
 				case ScopeKind::ElIf:
 				case ScopeKind::ElseScope:
 				case ScopeKind::WhileScope:
+				case ScopeKind::Do:
 					*Trans += "end\n";
 					break;					
 				case ScopeKind::Case:
@@ -1953,7 +1962,7 @@ public:
 				auto FName{ Ins->Words[FNamePos] };
 				auto Arg1Pos{ FNamePos + 2 };
 				auto Ending{ Ins->Words.size() };
-				auto ScN{ TrSPrintF("ScyndiFuncScope_%08X_%s_%s",count++,FName->TheWord,md5(FName->TheWord + std::to_string(count)).c_str()) };
+				auto ScN{ TrSPrintF("ScyndiFuncScope_%08X_",count++) + FName->TheWord + md5(FName->TheWord + std::to_string(count)).c_str() };
 				auto VarName{ FName->UpWord };
 				auto PluaName{ FName->TheWord };
 				std::string Prefix{ "" }; if (TransConfig.count("PLUAPREFIX")) Prefix = TransConfig["PLUAPREFIX"]->TheWord;
@@ -2051,21 +2060,25 @@ public:
 							TransError("Default values not possible for boolean arguments");
 						} else { A.BaseValue = "false"; }
 						Args.push_back(A);
-						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (boolean) argument #%d", Args.size()));
 						Pos++;
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (boolean) argument #%d", Args.size()));
 					} else if (Ins->Words[Pos]->TheWord[0] == '@') {
 						TransError("Custom class type as function argument not (yet) supported. Just use an untyped argument or a pLua in stead");
 					} else if (Ins->Words[Pos]->UpWord == "DELEGATE" || Ins->Words[Pos]->UpWord == "TABLE" || Ins->Words[Pos]->UpWord == "BOOL") {
 						auto DT{ Ins->Words[Pos]->UpWord };
 						Pos++;
 						auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
-						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (numberic) argument #%d", Args.size()));
+						Args.push_back(A);
+						Pos++;
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (%s) argument #%d", DT.c_str(), Args.size()));
 						Pos++;
 					} else if (Ins->Words[Pos]->UpWord=="INFINITY") {
 						if (ArgLine.size()) ArgLine += ", "; ArgLine += "...";
 						Pos++;
 						TransAssert(Ins->Words.size() > Pos && Ins->Words[Pos]->UpWord == ")", "Syntax error after infinite parameters");
+						Pos++;
 					} else {
+						std::cout << Pos << std::endl; // debug
 						TransError("Syntax error");
 					}
 				}
@@ -2281,10 +2294,19 @@ public:
 					}
 					break;
 				case VarType::String:
-					if (!Ex->size()) *Trans += "\"\""; else *Trans += TrSPrintF("Scyndi.WantValue(\"STRING\",%s)", Ex->c_str());
+					if (!Ex->size()) *Trans += "\"\""; else {
+						// *Trans += TrSPrintF("Scyndi.WantValue(\"STRING\",%s)", Ex->c_str());
+						*Trans += "Scyndi.WantValue(\"STRING\",";
+						*Trans += *Ex;
+						*Trans += ")";
+					}
 					break;
 				case VarType::Boolean:
-					if (!Ex->size()) *Trans += "false"; else *Trans += TrSPrintF("Scyndi.WantValue(\"BOOL\",%s)", Ex->c_str());
+					if (!Ex->size()) *Trans += "false"; else {
+						*Trans += "Scyndi.WantValue(\"BOOL\",";
+						*Trans += Ex->c_str();
+						*Trans += ")";
+					}
 					break;
 				case VarType::Delegate:
 					if (!Ex->size()) *Trans += "nil"; else *Trans += TrSPrintF("Scyndi.WantValue(\"DELEGATE\",%s)", Ex->c_str());
