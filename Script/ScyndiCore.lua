@@ -453,6 +453,31 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","COUT",true,true,true,function(...) io.
 _Scyndi.ADDMBER("..GLOBALS..","STRING","ENDL",true,true,true,"\n")
 _Scyndi.ADDMBER("..GLOBALS..","Delegate","SPRINTF",true,true,true,string.format)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","PRINTF",true,true,true,function(fmt,...) io.write(fmt:format(...)) end)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SPLIT",true,true,true,function(str,sep)
+	-- I *KNOW* that this ain't the fastest method, but this way I can at least make sure the split went the way it SHOULD.
+	-- Lua leaves out things that should not be left out otherwise. That's why I chose this method.
+	sep = sep or " "
+	local w = ""
+	local ret = {}
+	local i=1
+	local wc = 0
+	while i<=#str do
+		local c=substr(str,i,i+#sep)
+		if c==sep then
+			ret[wc] = w
+			wc = wc + 1
+			w = ""
+			i = i + #sep
+		else
+			w = w .. substr(str,i,i)
+			i = i + 1
+		end
+		--print("Scyndi Split>",i,w,#ret)
+	end
+	if (#w>0) then ret[wc]=w end
+	--print("Scyndi Split>",i,w,#ret,"<return")
+	return ret
+end)
 _Scyndi.ADDMBER("..GLOBALS..","Table","LUA",true,true,true,_G)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","TRIM",true,true,true,function(s)
 		return s:match( "^%s*(.-)%s*$" )
