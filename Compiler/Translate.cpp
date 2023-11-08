@@ -1632,7 +1632,7 @@ public:
 					// std::cout << "Dec In Class '" << Dec->BoundToClass << "';\n"; //debug
 					if (Dec->BoundToClass.size()) {
 						auto ref{ TrSPrintF("Scyndi.Class[\"%s\"][\"%s\"]",Dec->BoundToClass.c_str(),VarName.c_str()) };
-						*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"%s\",\"%s\",%s,%s,%s,%s)\n", Dec->BoundToClass, DType.c_str(), VarName.c_str(), lboolstring(Dec->IsStatic), lboolstring(Dec->IsReadOnly).c_str(), Lower(boolstring(Dec->IsConstant)).c_str(), Value.c_str());
+						*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"%s\",\"%s\",%s,%s,%s,%s)\n", Dec->BoundToClass.c_str(), DType.c_str(), VarName.c_str(), lboolstring(Dec->IsStatic), lboolstring(Dec->IsReadOnly).c_str(), Lower(boolstring(Dec->IsConstant)).c_str(), Value.c_str());
 						if (Dec->IsStatic) {
 							(*Ins->ScopeData->DecScope()->LocalVars)[VarName] = ref;
 						} else {
