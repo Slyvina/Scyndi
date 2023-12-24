@@ -177,7 +177,7 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	local _static=_class.staticmembers
 	local _nonstatic=_class.nonstaticmembers
 	local cu = classname:upper()
-	assert(not(Identifier[cu] or classregister[cu]),"Class has dupe name")	
+	assert(not(Identifier[cu] or classregister[cu]),"Class has dupe name: "..classname)	
 	if (extends) then
 		extends:upper()
 		assert(classregister[extends],"Extending non existent class "..extends)
