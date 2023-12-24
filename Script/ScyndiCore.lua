@@ -1,7 +1,7 @@
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
--- version: 23.11.01
+-- version: 23.12.24
 -- Copyright (C) 2022, 2023 Jeroen P. Broks
 -- This software is provided 'as-is', without any express or implied
 -- warranty.  In no event will the authors be held liable for any damages
