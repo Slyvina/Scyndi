@@ -1315,7 +1315,7 @@ public:
 					case WordKind::Comma:
 						break; // Comma's are optional now. You can place them if you think it makes your code more beautiful, but it's not needed.
 					case WordKind::String:
-						CaseChain->push_back(TrSPrintF("\"%s\"", ins->Words[p]->TheWord));
+						CaseChain->push_back(TrSPrintF("\"%s\"", ins->Words[p]->TheWord.c_str()));
 						break;
 					case WordKind::Number:
 						for (size_t lp = 0; lp < ins->Words[p]->UpWord.size(); lp++) TransAssert(ins->Words[p]->UpWord[lp] != '.', "Only integers, strings, true and false can be used for casing");
