@@ -69,7 +69,8 @@ namespace Scyndi {
 		FallThrough, Defer, StartClass,
 		StartGroup, Repeat, Until,
 		Forever, LoopWhile, StartMetaMethod,
-		StartQuickMeta,PropertyGet,PropertySet
+		StartQuickMeta,PropertyGet,PropertySet, 
+		Break
 	};
 	enum class WordKind { 
 		Unknown, String, Number, 
@@ -1006,7 +1007,7 @@ public:
 				}
 				TransAssert(pos < ins->Words.size(), "Incomplete declaration");
 				if (Prefixed(ins->Words[pos]->UpWord, "@")) {
-					dec->Type == VarType::CustomClass;
+					dec->Type = VarType::CustomClass;
 					dec->CustomClass = ins->Words[pos]->UpWord.substr(1);
 				} else {
 					TransAssert(_Declaration::S2E.count(ins->Words[pos]->UpWord), "Type error (Intenal error! Please report) ");
@@ -1408,6 +1409,9 @@ public:
 				TransAssert(Ret.ScopeK() == ScopeKind::Repeat, "LOOPWHILE without REPEAT");
 				ins->Kind = InsKind::LoopWhile;
 				Ret.Scopes.pop_back();
+			} else if (ins->Words[0]->UpWord=="BREAK") {
+				ins->Kind = InsKind::Break;
+				TransAssert(ins->Words.size() == 1, "BREAK accepts no parameters");
 			} else if (ins->Words[0]->UpWord == "FOR") {
 				TransAssert(ins->Words.size() > 1, "FOR without stuff");
 				ins->Kind = InsKind::StartFor;
@@ -2328,6 +2332,9 @@ public:
 				}
 				*Trans += Ins->ScopeData->DeferID + "[ #" + Ins->ScopeData->DeferID + " + 1 ] = function()\n";
 			} break;
+			case InsKind::Break:
+				*Trans += "break\n";
+				break;
 			default:
 				TransError(TrSPrintF("Unknown instruction kind (%d) (Internal error. Please report!)",(int)Ins->Kind));
 				//break;

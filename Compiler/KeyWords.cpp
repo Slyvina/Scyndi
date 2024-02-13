@@ -84,7 +84,8 @@ namespace Scyndi {
 		"LOOPWHILE",
 		"FOREVER",
 		"END",
-		"DO"
+		"DO",
+		"BREAK",
 
 		// Switch
 		"SWITCH", "SELECT",
