@@ -1,8 +1,8 @@
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
--- version: 23.12.24
--- Copyright (C) 2022, 2023 Jeroen P. Broks
+-- version: 24.03.05
+-- Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 -- This software is provided 'as-is', without any express or implied
 -- warranty.  In no event will the authors be held liable for any damages
 -- arising from the use of this software.
@@ -445,6 +445,62 @@ end)
 
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","UPPER",true,true,true,string.upper)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LOWER",true,true,true,string.lower)
+--[[
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","RANGE",true,true,function(s,e,st)
+	st = math.abs(st or 1)
+	local p = s 
+	return function()
+		if s<e then 
+			p = p + st
+			if p>e then return nil end
+		elseif s>e then
+			p = p - st
+			if p<e then return nil end
+		else
+			return nil
+		end
+		return p
+	end
+end) ]]
+
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","RANGE2",true,true,true,function(s1,e1,s2,e2,st1,st2)
+	st1 = math.abs(st1 or 1)
+	st2 = math.abs(st2 or 1)
+	local p1 = s1
+	local p2 = s2
+	local c2 = false
+	local first = true
+	return function()
+		if first then
+			first = false
+		else 
+			if s1<e1 then 
+				p1 = p1 + st1 
+				if p1>e1 then c2=true end
+			elseif s1>e1 then
+				p1 = p1 - st1
+				if p1<e1 then c2=true end
+			else
+				return nil,nil
+			end
+			if c2 then
+				c2=false
+				p1 = s1
+				if s2<e2 then 
+					p2 = p2 + st2
+					if p2>e2 then return nil end
+				elseif s2>e2 then
+					p2 = p2 - st2
+					if p2<e2 then return nil end
+				else
+					return nil,nil
+				end
+			end
+		end
+		return p1,p2
+	end
+end)
+
 
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SETMETATABLE",true,true,true,setmetatable)
 _Scyndi.ADDMBER("..GLOBALS..","NUMBER","PI",true,true,true,math.pi)

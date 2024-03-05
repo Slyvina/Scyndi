@@ -4,7 +4,7 @@
 // 
 // 
 // 
-// (c) Jeroen P. Broks, 2022, 2023
+// (c) Jeroen P. Broks, 2022, 2023, 2024
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 23.12.24
+// Version: 24.03.05
 // EndLic
 
 #include <Slyvina.hpp>
@@ -1113,7 +1113,8 @@ public:
 				} else if (Opdracht == "UNDEF" || Opdracht == "UNDEFINE") {
 					if (!MuteByIfDef) Defs[Upper(Para)] = false;
 				} else if (Opdracht == "IF" || Opdracht == "IFDEF") {
-					TransAssert(ins->Words.size() < 3, "Incomplete #IF statement");
+					//for (auto i = 0; i < ins->Words.size(); ++i) printf("%d/%d> %s\n", i, (int)ins->Words.size(),ins->Words[i]->TheWord.c_str());
+					TransAssert(ins->Words.size() >= 3, "Incomplete #IF statement");
 					TransAssert(!(HaveIfDef || HaveElse), "Old #IF must be closed before starting a new one!");
 					auto outcome{ true };
 					for (size_t p = 2; p < ins->Words.size(); p++) {
