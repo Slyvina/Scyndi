@@ -501,6 +501,16 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","RANGE2",true,true,true,function(s1,e1,
 	end
 end)
 
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","EACH_CHAIN",true,true,true,function (Start)
+	local current = Start
+	return function()
+		if not current then return nil end
+		local ret = current
+		current = current.Next
+		return ret
+	end
+end)
+
 
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SETMETATABLE",true,true,true,setmetatable)
 _Scyndi.ADDMBER("..GLOBALS..","NUMBER","PI",true,true,true,math.pi)
