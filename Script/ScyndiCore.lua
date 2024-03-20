@@ -281,6 +281,7 @@ local function InstanceIndex(self,key)
 	assert(key~="CONSTRUCTOR","Illegal constructor call")
 	assert(key~="DESTRUCTOR","Illegal destructor call")
 	if key==".CLASSINSTANCE" then return true end
+	if key==".ISCLASS" then return false end
 	if key==".HASMEMBER" then
 		return function(key)
 			if self[".Methods"][key] then return true end
