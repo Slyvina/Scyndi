@@ -280,7 +280,7 @@ local function InstanceIndex(self,key)
 	key=key:upper()
 	assert(key~="CONSTRUCTOR","Illegal constructor call")
 	assert(key~="DESTRUCTOR","Illegal destructor call")
-	if key==".CLASSINSTANCE" then return true end
+	if key==".CLASSINSTANCE" or key==".ISCLASSINSTANCE" then return true end
 	if key==".ISCLASS" then return false end
 	if key==".HASMEMBER" then
 		return function(key)
