@@ -277,6 +277,9 @@ end
 
 local function InstanceIndex(self,key)
 	--print("Want: ",key,v)
+	if type(key)=="number" then
+		return self.NumIndex(key)
+	end
 	key=key:upper()
 	assert(key~="CONSTRUCTOR","Illegal constructor call")
 	assert(key~="DESTRUCTOR","Illegal destructor call")
