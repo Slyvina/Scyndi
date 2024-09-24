@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.05
+// Version: 24.09.24
 // EndLic
 
 #include <Slyvina.hpp>
@@ -2335,6 +2335,8 @@ public:
 			} break;
 			case InsKind::Break:
 				*Trans += "break\n";
+				break;
+			case InsKind::MutedByIfDef:
 				break;
 			default:
 				TransError(TrSPrintF("Unknown instruction kind (%d) (Internal error. Please report!)",(int)Ins->Kind));
