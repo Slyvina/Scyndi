@@ -1,0 +1,15 @@
+The directory in which jEdit has been installed contains a folder named "modes".
+The file scyndi.xml should be copied in there.
+The file "catalog" should have this line:
+
+<MODE NAME="scyndi"                FILE="scyndi.xml"
+        FILE_NAME_GLOB="*.scyndi"/>
+
+added between the <MODES> and </MODES> tag.
+
+
+
+This is pretty delicate, and jEdit easily refuses to work this way, 
+so it's recommended to make a backup of the original modes folder (the
+"catalog" file in particular) before engaging into the actual operation.
+
