@@ -517,6 +517,8 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","EACH_CHAIN",true,true,true,function (S
 end)
 
 
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","APPEND",true,true,true,function(tab,...) for _,v in ipairs{...} do tab[Scyndi.Globals.Len(tab)]=v end end)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","APPENDARRAY",true,true,true,function(tab,arr) for _,v in Scyndi.Globals.ipairs(arr) do tab[Scyndi.Globals.Len(tab)]=v end end)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SETMETATABLE",true,true,true,setmetatable)
 _Scyndi.ADDMBER("..GLOBALS..","NUMBER","PI",true,true,true,math.pi)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","TOSTRING",true,true,true,_Scyndi.TOSTRING)
