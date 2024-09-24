@@ -1,7 +1,7 @@
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
--- version: 24.03.05
+-- version: 24.09.24
 -- Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 -- This software is provided 'as-is', without any express or implied
 -- warranty.  In no event will the authors be held liable for any damages
@@ -307,6 +307,7 @@ end
 
 local function InstanceNewIndex(self,key,value)
 	-- print("InstanceNewIndex",self,key,value) -- ???
+	assert(key,"Nil received for key")
 	key=key:upper()
 	local TTC = self[".TiedToClass"]
 	-- print(TTC.CH,"Mem:"..key,"Static:",TTC.CR.staticmembers[key],"NonStatic:",TTC.CR.nonstaticmembers[key]) -- InstanceNewIndex Debug
