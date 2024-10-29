@@ -98,16 +98,16 @@ print("\x1b[95mAll source file accounted for!\x1b[0m")
 IncludeDirs = ["../../Libs/JCR6/Headers","../../Libs/Lunatic","../../Libs/Lunatic/Lua/Raw/src","../../Libs/Units/Headers"]
 
 QFiles = [
-    "../../../Libs/JCR6/Source/JCR6_Core.cpp",
-    "../../../Libs/JCR6/Source/JCR6_zlib.cpp",
-    "../../../Libs/Lunatic/Lunatic.cpp",
-    "../../../Libs/Units/Source/SlyvBank.cpp",
-    "../../../Libs/Units/Source/SlyvQCol.cpp",
-    "../../../Libs/Units/Source/SlyvSTOI.cpp",
-    "../../../Libs/Units/Source/SlyvStream.cpp",
-    "../../../Libs/Units/Source/SlyvString.cpp",
-    "../../../Libs/Units/Source/SlyvTime.cpp",
-    "../../../Libs/Units/Source/SlyvVolumes.cpp",
+    "../../Libs/JCR6/Source/JCR6_Core.cpp",
+    "../../Libs/JCR6/Source/JCR6_zlib.cpp",
+    "../../Libs/Lunatic/Lunatic.cpp",
+    "../../Libs/Units/Source/SlyvBank.cpp",
+    "../../Libs/Units/Source/SlyvQCol.cpp",
+    "../../Libs/Units/Source/SlyvSTOI.cpp",
+    "../../Libs/Units/Source/SlyvStream.cpp",
+    "../../Libs/Units/Source/SlyvString.cpp",
+    "../../Libs/Units/Source/SlyvTime.cpp",
+    "../../Libs/Units/Source/SlyvVolumes.cpp",
     "QuickScyndi/QuickScyndi.cpp"
 ] + LuaFiles + Glob("../../Libs/JCR6/3rdParty/zlib/src/*.c")
 
