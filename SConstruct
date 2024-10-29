@@ -102,6 +102,7 @@ QFiles = [
     "../../Libs/JCR6/Source/JCR6_zlib.cpp",
     "../../Libs/Lunatic/Lunatic.cpp",
     "../../Libs/Units/Source/SlyvBank.cpp",
+    "../../Libs/Units/Source/SlyvDir.cpp",
     "../../Libs/Units/Source/SlyvQCol.cpp",
     "../../Libs/Units/Source/SlyvSTOI.cpp",
     "../../Libs/Units/Source/SlyvStream.cpp",
