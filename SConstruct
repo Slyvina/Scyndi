@@ -95,7 +95,7 @@ Add(" Scyndi",[
     "Scyndi.cpp"])
 print("\x1b[95mAll source file accounted for!\x1b[0m")
 
-IncludeDirs = ["../../Libs/JCR6/Headers","../../Libs/Lunatic","../../Libs/Lunatic/Lua/Raw/src","../../Libs/Units/Headers"]
+IncludeDirs = ["../../Libs/JCR6/Headers","../../Libs/Lunatic","../../Libs/Lunatic/Lua/Raw/src","../../Libs/Units/Headers","../../Libs/JCR6/3rdParty/zlib/src/"]
 
 QFiles = [
     "../../Libs/JCR6/Source/JCR6_Core.cpp",
