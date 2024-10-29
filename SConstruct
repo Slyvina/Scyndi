@@ -38,7 +38,7 @@ Add("   JCR6",[
     "../../Libs/JCR6/Source/JCR6_Write.cpp",
     "../../Libs/JCR6/Source/JCR6_zlib.cpp"])
 if platform.system()!="Windows":
-    Add("   zlib",Glob("../../Libs/JCR6/3rdParty/zlib/src/*.c")
+    Add("   zlib",Glob("../../Libs/JCR6/3rdParty/zlib/src/*.c"))
 Add("    Lua",[    
     "../../Libs/Lunatic/Lua/Raw/src/lapi.c",
     "../../Libs/Lunatic/Lua/Raw/src/lauxlib.c",
