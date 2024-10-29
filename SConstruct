@@ -71,7 +71,7 @@ LuaFiles = [
     "../../Libs/Lunatic/Lua/Raw/src/lundump.c",
     "../../Libs/Lunatic/Lua/Raw/src/lutf8lib.c",
     "../../Libs/Lunatic/Lua/Raw/src/lvm.c",
-    "../../Libs/Lunatic/Lua/Raw/src/lzio.c"])
+    "../../Libs/Lunatic/Lua/Raw/src/lzio.c"]
 Add("    Lua",Lua)    
 Add("  Units",[
     "../../Libs/Units/Source/SlyvArgParse.cpp",
