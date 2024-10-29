@@ -72,7 +72,7 @@ LuaFiles = [
     "../../Libs/Lunatic/Lua/Raw/src/lutf8lib.c",
     "../../Libs/Lunatic/Lua/Raw/src/lvm.c",
     "../../Libs/Lunatic/Lua/Raw/src/lzio.c"]
-Add("    Lua",Lua)    
+Add("    Lua",LuaFiles)    
 Add("  Units",[
     "../../Libs/Units/Source/SlyvArgParse.cpp",
     "../../Libs/Units/Source/SlyvAsk.cpp",
@@ -109,7 +109,7 @@ QFiles = [
     "../../../Libs/Units/Source/SlyvTime.cpp",
     "../../../Libs/Units/Source/SlyvVolumes.cpp",
     "QuickScyndi/QuickScyndi.cpp"
-] + Lua + Glob("../../Libs/JCR6/3rdParty/zlib/src/*.c")
+] + LuaFiles + Glob("../../Libs/JCR6/3rdParty/zlib/src/*.c")
 
 
 Program("Exe/%s/scyndi"%platform.system(),Files,CPPPATH=IncludeDirs)
