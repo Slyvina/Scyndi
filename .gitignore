@@ -26,3 +26,8 @@ MKL_*
 Test/*
 QuickScyndi/QuickScyndi/ScyndiCore.lua
 QuickScyndi/QuickScyndi/ScyndiCore.lua
+
+
+
+# No SCons data
+.sconsign.dblite
