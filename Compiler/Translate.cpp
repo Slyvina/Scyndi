@@ -1,3 +1,29 @@
+// License:
+// 
+// Scyndi
+// Translator
+// 
+// 
+// 
+// 	(c) Jeroen P. Broks, 2022, 2023, 2024
+// 
+// 		This program is free software: you can redistribute it and/or modify
+// 		it under the terms of the GNU General Public License as published by
+// 		the Free Software Foundation, either version 3 of the License, or
+// 		(at your option) any later version.
+// 
+// 		This program is distributed in the hope that it will be useful,
+// 		but WITHOUT ANY WARRANTY; without even the implied warranty of
+// 		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// 		GNU General Public License for more details.
+// 		You should have received a copy of the GNU General Public License
+// 		along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// 	Please note that some references to data like pictures or audio, do not automatically
+// 	fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.10.29
+// End License
 // Lic:
 // Scyndi
 // Translator
@@ -1168,7 +1194,7 @@ public:
 						auto g{ ParseGINIE(bcj->GetString("Configuration.ini")) };
 						TransAssert(g, "Parsing GINIE failed! Delete the STB file and try again! ");
 						TransAssert(Upper(g->Value("Translation", "Target"))=="LUA", "Target error");
-						TransAssert(g->Value("Lua", "Version") == Slyvina::Lunatic::_Lunatic::Lua_Version(), TrSPrintF("This translation is for Lua version %s. However this version of Scyndi works with Lua version %s", g->Value("Lua", "Version").c_str(), Lunatic::_Lunatic::Lua_Version().c_str()));
+						TransAssert(g->Value("Lua", "Version") == Slyvina::NSLunatic::_Lunatic::Lua_Version(), TrSPrintF("This translation is for Lua version %s. However this version of Scyndi works with Lua version %s", g->Value("Lua", "Version").c_str(), NSLunatic::_Lunatic::Lua_Version().c_str()));
 						for (auto& glob : *g->List("Globals", "-List-")) {
 							auto sub{ g->Value("Globals",glob) };
 							TransAssert(sub.size(), TrSPrintF("No substitute found for global %s", glob.c_str()));
