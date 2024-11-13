@@ -1,3 +1,29 @@
+// License:
+// 
+// Scyndi
+// Project Management
+// 
+// 
+// 
+// 	(c) Jeroen P. Broks, 2022, 2023, 2024
+// 
+// 		This program is free software: you can redistribute it and/or modify
+// 		it under the terms of the GNU General Public License as published by
+// 		the Free Software Foundation, either version 3 of the License, or
+// 		(at your option) any later version.
+// 
+// 		This program is distributed in the hope that it will be useful,
+// 		but WITHOUT ANY WARRANTY; without even the implied warranty of
+// 		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// 		GNU General Public License for more details.
+// 		You should have received a copy of the GNU General Public License
+// 		along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// 	Please note that some references to data like pictures or audio, do not automatically
+// 	fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.11.09
+// End License
 // Lic:
 // Scyndi
 // Project Management
@@ -181,11 +207,11 @@ namespace Scyndi {
 		}
 		auto PrjData{ LoadGINIE(prj,prj,"Project file for a Scyndi Project\nLast modified: "+CurrentDate()) };
 		Ask(PrjData, "AA_META", "01_Title", "Project title: ", StripAll(prj));
-		auto author=Ask(PrjData, "AA_META", "02_CreatedBy", "Created by: ");
+		auto author = Ask(PrjData, "AA_META", "02_CreatedBy", "Created by: ");
 		Ask(PrjData, "AA_META", "03_Copyright", "Copyright: ", "(c) " + author);
 		Ask(PrjData, "AA_META", "04_License", "License:");
-		auto Dirs{ AskList(PrjData,"DIRECTORY","SOURCEFILES","Name the directories where I can find the source files:") };
-		auto Libs{ AskList(PrjData,"DIRECTORY","Libraries","Name the directories where I can find the libraries:",0) };
+		auto Dirs{ AskList(PrjData,"DIRECTORY::" + Slyvina::Platform(),"SOURCEFILES","Name the directories where I can find the source files:") };
+		auto Libs{ AskList(PrjData,"DIRECTORY::" + Slyvina::Platform() ,"Libraries","Name the directories where I can find the libraries:",0) };
 		auto Res{ std::make_shared<Slyvina::JCR6::_JT_Dir>() };
 		for (auto& D : *Dirs) {
 			if (!DirectoryExists(D)) { QCol->Error("Source directory '" + D + "' does not exist."); return 1; }
