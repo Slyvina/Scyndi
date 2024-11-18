@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.10.29
+// Version: 24.11.18
 // End License
 // Lic:
 // Scyndi
@@ -75,7 +75,7 @@ int main(int nargs, char** args) {
 	QCol->Doing("Version", QVersion.Version(true));
 	QCol->Doing("Coded by", "Jeroen P. Broks");
 	std::cout << "\n";
-	QCol->Doing("Lua version", Slyvina::NSLunatic::_Lunatic::Lua_Version());
+	QCol->Doing("Lua version", Slyvina::NSLunatic::_Lunatic::LuaVersion());
 	QCol->Doing("Lua developed by", "PUC Rio");
 	std::cout << "\n\n\n";
 	FlagConfig cargs{};

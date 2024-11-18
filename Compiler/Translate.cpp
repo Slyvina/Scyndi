@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.11.14
+// Version: 24.11.18
 // End License
 
 #include <Slyvina.hpp>
@@ -71,6 +71,7 @@ namespace Scyndi {
 		StartGroup, Repeat, Until,
 		Forever, LoopWhile, StartMetaMethod,
 		StartQuickMeta,PropertyGet,PropertySet, 
+		ExternImport,
 		Break
 	};
 	enum class WordKind { 
@@ -221,7 +222,7 @@ namespace Scyndi {
 		uint64 ScopeLevel{ 0 };
 		Scyndi::Scope ScopeData{ nullptr };
 		ScopeKind Scope{ ScopeKind::Unknown };
-		size_t ForEachExpression;
+		size_t ForEachExpression{ 0 };
 		std::vector < std::string > ForVars{};
 		StringMap ForTrans{ NewStringMap() };		
 		//std::string ForStart{ "0" }, ForTo{ "0" }, ForStep{ "1" };  // Although only numbers processed, in translation this is the better ride
@@ -259,6 +260,14 @@ public:
 	}
 
 	std::string Identifier(Translation Trans, size_t lnr, std::string _id, bool ignoreglobals = false) {
+		/*
+		if (Macros->count(Upper(_id))) {
+			auto subcode{ (*Macros)[Upper(_id)] };
+			if (Prefixed(Upper(subcode), "::PLUA::")) {
+				return subcode.substr(8);
+			}
+		}
+		//*/
 		if (_id[0] == '@') {
 			_id = _id.substr(1);
 			if (Trans->Classes->count(_id)) {
@@ -267,7 +276,7 @@ public:
 			}
 			return "";
 		}
-		if (_id[0] == '$') _id = _id.substr(1);
+		if (_id[0] == '$') _id = _id.substr(1);		
 		Trans2Upper(_id);
 		// Is this a local?
 		for (auto fscope = this; fscope; fscope = fscope->Parent) {
@@ -288,7 +297,10 @@ public:
 		}
 	}
 	*/
-		if (ignoreglobals) return "";
+		if (ignoreglobals) {
+			//QCol->Warn("INGORE GLOBALS FOR THIS IDENTIFIER: " + _id); // debug only
+			return "";
+		}
 		if (CoreGlobals.count(_id)) return CoreGlobals[_id];
 		if (Trans->GlobalVar->count(_id)) { auto GV{ Trans->GlobalVar }; return (*GV)[_id]; }
 		if (Trans->Classes->count(_id)) { auto CL{ Trans->Classes }; return (*CL)[_id]; }
@@ -405,6 +417,9 @@ public:
 	}
 #define TransError(Err) { _TLError=Err; _TLError += " in line #"+std::to_string(LineNumber)+" ("+srcfile+")"; return nullptr; }
 #define TransAssert(Condition,Err) { if (!(Condition)) TransError(Err); }
+#define BoolError(Err) { _TLError=Err; _TLError += " in line #"+std::to_string(LineNumber)+" ("+srcfile+")"; return false; }
+#define BoolAssert(Condition,Err) { if (!(Condition)) BoolError(Err); }
+
 
 	Instruction Chop(std::string Line, uint64 LineNumber, size_t& pos, std::string srcfile) {
 		bool
@@ -758,18 +773,39 @@ public:
 		return Ret; 
 	}
 
-	static std::vector<Instruction> ChopCode(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug) {
+	static std::vector<Instruction> ChopCode(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug, std::map<String, String>*Macros) {
 		Chat("Chopping " << srcfile);
 		std::vector<Instruction> Ret;
 		for (size_t _ln = 0; _ln < sourcelines->size(); _ln++) {
 			auto LineNumber{ _ln + 1 };
 			Chat("=> Line " << LineNumber << "/" << sourcelines->size());
 			size_t pos{0};
-			while (pos >= 0 && pos < (*sourcelines)[_ln].size()) {
-				Chat("=> Postion: " << pos << "/" << (*sourcelines)[_ln].size());
-				auto Chopped = Chop((*sourcelines)[_ln], LineNumber, pos, srcfile);
-				if (!Chopped) return std::vector<Instruction>();				
-				Ret.push_back(Chopped);
+			if (Prefixed(Upper(Trim((*sourcelines)[_ln])), "#MACRO")) {
+				auto ok{ true };
+				auto trsl{ Trim((*sourcelines)[_ln]) };
+				auto p{ IndexOf(trsl,' ') };
+				if (p < 0 || Upper(trsl.substr(0, p)) != "#MACRO") ok = false;
+				if (ok) {
+					auto mdef{ trsl.substr(p + 1) };
+					p = IndexOf(mdef, ' ');
+					if (p <= 0) {
+						auto key{ Upper(mdef) };
+						if (Macros->count(key)) Macros->erase(key);
+					} else {
+						auto key{ Upper(mdef.substr(0,p)) };
+						(*Macros)[key] = mdef.substr(p + 1);
+					}
+				} else { QCol->Warn("Invalid #MACRO definition"); }				
+			} else {
+				for (auto M : *Macros) {
+					(*sourcelines)[_ln] = StCIReplace((*sourcelines)[_ln], M.first, M.second);
+				}
+				while (pos >= 0 && pos < (*sourcelines)[_ln].size()) {
+					Chat("=> Postion: " << pos << "/" << (*sourcelines)[_ln].size());
+					auto Chopped = Chop((*sourcelines)[_ln], LineNumber, pos, srcfile);
+					if (!Chopped) return std::vector<Instruction>();
+					Ret.push_back(Chopped);
+				}
 			}
 		}
 		return Ret;
@@ -791,7 +827,7 @@ public:
 		return "WK" + std::to_string((int)K);
 	}
 
-	static std::unique_ptr<std::string> Expression(Translation T,Instruction Ins, size_t start,bool ignoreglobals=false) {
+	static std::shared_ptr<std::string> Expression(Translation T,Instruction Ins, size_t start,bool ignoreglobals=false) {
 		std::string Ret{ "" };
 		auto srcfile{ Ins->SourceFile };
 		auto LineNumber{ Ins->LineNumber };
@@ -813,7 +849,7 @@ public:
 			default:
 				switch (W->Kind) {
 				case WordKind::Identifier: {
-					auto WT{ Ins->ScopeData->Identifier(T,Ins->LineNumber,W->UpWord,ignoreglobals) };
+					auto WT{ Ins->ScopeData->Identifier(T,Ins->LineNumber,W->UpWord,ignoreglobals) };					
 					//if (!WT.size()) for (size_t pos = start; pos < Ins->Words.size(); pos++) { std::cout << "Word #" << pos << ": " << Ins->Words[pos]->TheWord << "\n"; } // debug only
 					TransAssert(WT.size(), "Unknown identifier " + W->TheWord);
 					Ret += WT;
@@ -869,12 +905,79 @@ public:
 		case 0: break;
 		default: TransError(TrSPrintF("Internal error! (kw_new=%d) Please report!", kw_new));
 		}
-		return std::unique_ptr<std::string>(new std::string(Ret));
+		return std::shared_ptr<std::string>(new std::string(Ret));
+	}
+
+	bool TransUse(String&Para,_TransProcess *Ret,Slyvina::JCR6::JT_Dir JD,bool debug,String srcfile, uint32&LineNumber,bool force,GINIE dat,std::vector<String>* UseDependencies,std::map<String,String>*Macros) {
+		auto bcFile{ Para }; if (debug) bcFile += ".debug"; bcFile += ".stb";
+		auto srFile{ Para };
+		auto skip{ false };
+		//VecString GetMacros{ nullptr };
+		if (JD->EntryExists(Para + ".Scyndi")) {
+			srFile += ".Scyndi";
+		} else if (JD->EntryExists(Para + ".lua")) {
+			BoolError("No support yet for the inclusion of lua files through #USE yet!");
+		} else if (JD->EntryExists(bcFile)) {
+			skip = true;
+		} else if (JD->DirectoryExists(Para+".ScyndiBundle")) {			
+			for (auto& JDI : JD->_Entries) {
+				if (ExtractExt(Upper(JDI.first)) == "SCYNDI" && ExtractDir(Upper(JDI.first)) == Upper(Para + ".ScyndiBundle")) {
+					auto inc{ StripExt(JDI.second->Name()) };
+					QCol->Doing("= Entry", inc);
+					if (!TransUse(inc, Ret, JD, debug, srcfile, LineNumber, force, dat, UseDependencies,Macros)) return false;
+				}
+			}
+			return true;
+		} else BoolError("No way found to get any data about #USE request for " + Para);
+		if (skip) {
+			auto bcj{ JCR6::JCR6_Dir(JD->Entry(bcFile)->MainFile) };
+			auto g{ ParseGINIE(bcj->GetString("Configuration.ini")) };
+			BoolAssert(g, "Parsing GINIE failed! Delete the STB file and try again! ");
+			BoolAssert(Upper(g->Value("Translation", "Target")) == "LUA", "Target error");
+			BoolAssert(g->Value("Lua", "Version") == Slyvina::NSLunatic::_Lunatic::LuaVersion(), TrSPrintF("This translation is for Lua version %s. However this version of Scyndi works with Lua version %s", g->Value("Lua", "Version").c_str(), NSLunatic::_Lunatic::LuaVersion().c_str()));
+			for (auto& glob : *g->List("Globals", "-List-")) {
+				auto sub{ g->Value("Globals",glob) };
+				BoolAssert(sub.size(), TrSPrintF("No substitute found for global %s", glob.c_str()));
+				(*Ret->Trans->GlobalVar)[glob] = sub;
+			}
+			auto GetMacros = g->Values("Macros");
+			QCol->Doing("-> Macros", GetMacros->size()); // DEBUG ONLY!!!
+			for (auto M : *GetMacros) { 
+				QCol->Doing("-> Macro " + M, g->Value("Macros", M)); // DEBUG ONLY!!
+				(*Macros)[M] = g->Value("Macros", M); 
+			}
+		} else {
+			auto CR{ Compile(dat,JD,srFile,debug,force) };
+			BoolAssert(CR, "Compilation returned NULL (internal error. Please report!)");
+			BoolAssert(CR->Result != CompileResult::Fail, TrSPrintF("#USE request for '%s' failed", Para.c_str()));
+			if (CR->Result == CompileResult::Skip) {
+				Verb("Status", "Up-to-date");
+				auto bcj{ JCR6::JCR6_Dir(JD->Entry(bcFile)->MainFile) };
+				CR->Data = ParseGINIE(bcj->GetString("Configuration.ini"));
+			} else {
+				if (force) Verb("Status", "Forced"); else Verb("Status", "Outdated");
+			}
+			for (auto& glob : *CR->Data->List("Globals", "-List-")) {
+				auto sub{ CR->Data->Value("Globals",glob) };
+				BoolAssert(sub.size(), TrSPrintF("No substitute found for global %s", glob.c_str()));
+				(*Ret->Trans->GlobalVar)[glob] = sub;
+			}
+			auto GetMacros = CR->Data->Values("Macros");
+			QCol->Doing("-> Macros", GetMacros->size()," (in "+Para+"\n"); // DEBUG ONLY!!!
+			for (auto M : *GetMacros) { 
+				QCol->Doing("-> Macro " + M, CR->Data->Value("Macros", M)); // DEBUG ONLY!!
+				(*Macros)[M] = CR->Data->Value("Macros", M); 
+			}
+		}		
+		
+		UseDependencies->push_back(Para);
+		return true;
 	}
 
 	Translation Translate(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, GINIE dat, bool debug, bool force) {
 		std::string StaticRegister = "ScyndiStaticRegister_" + md5(srcfile) + md5(CurrentDate()) + md5(CurrentTime());
 		std::vector<std::string> UseDependencies{};
+		std::map<String, String>Macros{};
 		Verb("Compiling", srcfile);
 		_TLError = "";
 		_TransProcess Ret;
@@ -882,7 +985,7 @@ public:
 		//uint64 ScopeLevel{ 0 };
 		
 		// Chopping
-		Ret.Instructions = ChopCode(sourcelines, srcfile, JD, debug);
+		Ret.Instructions = ChopCode(sourcelines, srcfile, JD, debug, &Macros);
 		if (!Ret.Instructions.size()) return nullptr; // Something must have gone wrong
 		// Include
 	StartInclude:
@@ -900,11 +1003,11 @@ public:
 					std::vector<Instruction> IncChopped{};
 					if (FileExists(_file->TheWord)) {
 						auto isrc = LoadLines(_file->TheWord);
-						IncChopped = ChopCode(isrc,srcfile,JD,debug);
+						IncChopped = ChopCode(isrc, srcfile, JD, debug, &Macros);
 						Ret.Trans->RealIncludes->push_back(_file->TheWord);
 					} else if (JD->EntryExists(_file->TheWord)) {
 						auto isrc = JD->GetLines(_file->TheWord);
-						IncChopped = ChopCode(isrc, srcfile, JD, debug);
+						IncChopped = ChopCode(isrc, srcfile, JD, debug, &Macros);
 						Ret.Trans->JCRIncludes->push_back(_file->TheWord);
 					} else {
 						TransError("Inclusion of " + _file->TheWord + " failed!\nFile not found");
@@ -990,6 +1093,8 @@ public:
 				ins->NextScope->DecData = dec;
 				DecScope = true;
 				//std::cout << " ???? DESTRUCTOR IGNORED ???\n";
+			} else if (ins->Words.size() && ins->Words[0]->UpWord == "EXTERN") { 
+				ins->Kind = InsKind::ExternImport; 
 			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY"|| ins->Words[0]->UpWord == "GET" || ins->Words[0]->UpWord == "SET" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
 				Chat("Will this be a variable declaration or a function definition? (Line: " << ins->LineNumber << ")");
 				TransAssert(ScriptName.size(), "Header first");
@@ -1152,6 +1257,8 @@ public:
 					TransAssert(ins->Words[2]->Kind == WordKind::String, "String expected to determine the dependency to load with #USE");
 					Verb("Use request", Para);
 					Ret.Trans->Data->AddNew("Dependencies", "List", Para);
+					if (!TransUse(Para, &Ret, JD, debug, srcfile, LineNumber,force,dat,&UseDependencies,&Macros)) return nullptr;
+					/* Original (in case this goes wrong)
 					auto bcFile{ Para }; if (debug) bcFile += ".debug"; bcFile += ".stb";
 					auto srFile{ Para }; 
 					auto skip{ false };
@@ -1169,7 +1276,7 @@ public:
 						auto g{ ParseGINIE(bcj->GetString("Configuration.ini")) };
 						TransAssert(g, "Parsing GINIE failed! Delete the STB file and try again! ");
 						TransAssert(Upper(g->Value("Translation", "Target"))=="LUA", "Target error");
-						TransAssert(g->Value("Lua", "Version") == Slyvina::NSLunatic::_Lunatic::Lua_Version(), TrSPrintF("This translation is for Lua version %s. However this version of Scyndi works with Lua version %s", g->Value("Lua", "Version").c_str(), NSLunatic::_Lunatic::Lua_Version().c_str()));
+						TransAssert(g->Value("Lua", "Version") == Slyvina::NSLunatic::_Lunatic::LuaVersion(), TrSPrintF("This translation is for Lua version %s. However this version of Scyndi works with Lua version %s", g->Value("Lua", "Version").c_str(), NSLunatic::_Lunatic::LuaVersion().c_str()));
 						for (auto& glob : *g->List("Globals", "-List-")) {
 							auto sub{ g->Value("Globals",glob) };
 							TransAssert(sub.size(), TrSPrintF("No substitute found for global %s", glob.c_str()));
@@ -1193,6 +1300,7 @@ public:
 						}
 					}
 					UseDependencies.push_back(Para);
+					//*/
 				} else {
 					TransError("Unknown compiler directive #" + Opdracht);
 				}
@@ -1387,11 +1495,19 @@ public:
 				}
 				Ret.Trans->Data->Value("Globals", SC->ClassID, (*SC->LocalVars)["SELF"]);
 				Ret.Trans->Data->Add("Globals", "-list-", SC->ClassID);
+			} else if (ins->Words[0]->UpWord == "EXTERN") {
+				TransAssert(ins->Words.size() >= 3, TrSPrintF("EXTERN incomplete (%d/3)", ins->Words.size()));
+				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "EXTERN expects identifier");
+				TransAssert(ins->Words[2]->Kind == WordKind::String, "EXTERN expects string to define the pure external code");
+				Ret.Trans->Data->Value("Globals", ins->Words[1]->UpWord, ins->Words[2]->TheWord);				
+				Ret.Trans->Data->Add("Globals", "-list-", ins->Words[1]->UpWord);
+				(*Ret.Trans->GlobalVar)[ins->Words[1]->UpWord] = ins->Words[2]->TheWord;
+				QCol->Doing("- Extern", ins->Words[1]->TheWord);
 			} else if (ins->Words[0]->UpWord == "QUICKMETA") {
 				TransAssert(ins->Words.size() == 2, "QUICKMETA only needs an identifier name");
 				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected to name QUICKMETA");
 				auto QMName{ ins->Words[1]->UpWord };
-				(*Ret.Trans->GlobalVar)[QMName] = "Scyndi.Globals[\""+QMName+"\"]";
+				(*Ret.Trans->GlobalVar)[QMName] = "Scyndi.Globals[\"" + QMName + "\"]";				
 				Ret.Trans->Data->Value("Globals", QMName, (*Ret.Trans->GlobalVar)[QMName]);
 				Ret.Trans->Data->Add("Globals", "-list-", QMName);
 				Ret.PushScope(ScopeKind::QuickMeta);
@@ -2339,6 +2455,8 @@ public:
 			case InsKind::Break:
 				*Trans += "break\n";
 				break;
+			case InsKind::ExternImport:
+				break;
 			case InsKind::MutedByIfDef:
 				break;
 			default:
@@ -2357,6 +2475,7 @@ public:
 		Ret.Trans->Data->Value("Translation", "Target", "Lua");
 		Ret.Trans->Data->Value("Translation", "Origin", "Scyndi");
 		Ret.Trans->Data->Value("Translation", "Debug", boolstring(debug));
+		for (auto M : Macros) Ret.Trans->Data->Value("Macros", M.first, M.second);
 #pragma endregion
 		return Ret.Trans;
 	}
