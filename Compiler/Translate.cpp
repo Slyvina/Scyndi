@@ -439,6 +439,26 @@ public:
 		Ret->SourceFile = srcfile;
 		Ret->LineNumber = LineNumber;
 		int TimeOut = 10000;
+		if (StrContains(Line, "+=") || StrContains(Line,"-=")) {
+			String Ex[2]{ {""},{""} };
+			Byte tEx{ 0 };
+			bool Skip{ false };
+			char want{ 0 };
+			for (int p{ 0 }; p < Line.size(); ++p) {
+				auto c{ Line[p] };
+				if (tEx == 0 && (c == '+' || c == '-') && p < Line.size() - 1 && Line[p + 1] == '=') {
+					want = c;
+					tEx = 1;
+					Skip = true;
+				} else if (Skip) {
+					Skip = false;
+				} else {
+					Ex[tEx] += c;
+				}
+			}
+			Line = Ex[0] + " = Lua.Scyndi." + (want == '+' ? "ADD(" : "SUB(") + Trim(Ex[0]) + "," + Ex[1] + ")";
+			//QCol->Doing("Constructed new line", Line); // Debug only!
+		}
 		while (pos < Line.size()) {
 			auto ch{ Line[pos] };
 			if (!(TimeOut--)) {
@@ -941,9 +961,9 @@ public:
 				(*Ret->Trans->GlobalVar)[glob] = sub;
 			}
 			auto GetMacros = g->Values("Macros");
-			QCol->Doing("-> Macros", GetMacros->size()); // DEBUG ONLY!!!
+			//QCol->Doing("-> Macros", GetMacros->size()); // DEBUG ONLY!!!
 			for (auto M : *GetMacros) { 
-				QCol->Doing("-> Macro " + M, g->Value("Macros", M)); // DEBUG ONLY!!
+				//QCol->Doing("-> Macro " + M, g->Value("Macros", M)); // DEBUG ONLY!!
 				(*Macros)[M] = g->Value("Macros", M); 
 			}
 		} else {
@@ -952,7 +972,8 @@ public:
 			BoolAssert(CR->Result != CompileResult::Fail, TrSPrintF("#USE request for '%s' failed", Para.c_str()));
 			if (CR->Result == CompileResult::Skip) {
 				Verb("Status", "Up-to-date");
-				auto bcj{ JCR6::JCR6_Dir(JD->Entry(bcFile)->MainFile) };
+				auto ent{ JD->Entry(bcFile) }; BoolAssert(ent, "JCR6 failed to get data for '" + bcFile + "'  (" + JCR6::Last()->ErrorMessage + ")");
+				auto bcj{ JCR6::JCR6_Dir(ent->MainFile) };
 				CR->Data = ParseGINIE(bcj->GetString("Configuration.ini"));
 			} else {
 				if (force) Verb("Status", "Forced"); else Verb("Status", "Outdated");
@@ -963,9 +984,9 @@ public:
 				(*Ret->Trans->GlobalVar)[glob] = sub;
 			}
 			auto GetMacros = CR->Data->Values("Macros");
-			QCol->Doing("-> Macros", GetMacros->size()," (in "+Para+"\n"); // DEBUG ONLY!!!
+			//QCol->Doing("-> Macros", GetMacros->size()," (in "+Para+")\n"); // DEBUG ONLY!!!
 			for (auto M : *GetMacros) { 
-				QCol->Doing("-> Macro " + M, CR->Data->Value("Macros", M)); // DEBUG ONLY!!
+				//QCol->Doing("-> Macro " + M, CR->Data->Value("Macros", M)); // DEBUG ONLY!!
 				(*Macros)[M] = CR->Data->Value("Macros", M); 
 			}
 		}		
@@ -1093,7 +1114,7 @@ public:
 				ins->NextScope->DecData = dec;
 				DecScope = true;
 				//std::cout << " ???? DESTRUCTOR IGNORED ???\n";
-			} else if (ins->Words.size() && ins->Words[0]->UpWord == "EXTERN") { 
+			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "EXTERN" || ins->Words[0]->UpWord == "LOCEXTERN")) {
 				ins->Kind = InsKind::ExternImport; 
 			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY"|| ins->Words[0]->UpWord == "GET" || ins->Words[0]->UpWord == "SET" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
 				Chat("Will this be a variable declaration or a function definition? (Line: " << ins->LineNumber << ")");
@@ -1133,7 +1154,7 @@ public:
 					if (pos + 2 >= ins->Words.size());
 					if (ins->Words.size() > ins->ForEachExpression + 1 && ins->Words[ins->ForEachExpression + 1]->UpWord == "(") {
 						ins->Kind = InsKind::DefineFunction;
-						if (PScope->Kind == ScopeKind::Class) ins->Kind = InsKind::StartMethod;
+						if (PScope->Kind == ScopeKind::Class || PScope->Kind==ScopeKind::Group) ins->Kind = InsKind::StartMethod;
 						//TransError("Defining functions still in preparation");
 						Ret.PushScope(ScopeKind::FunctionBody);
 						Ret.GetScope()->DecData = dec;
@@ -1166,7 +1187,9 @@ public:
 					//TransError("Class declarations not yet supported");
 				
 				} else if (PScope->Kind == ScopeKind::Group) {
-					TransError("Group declarations not yet supported");
+					dec->BoundToClass = ins->ScopeData->ClassID;
+					dec->IsStatic = true;
+					//TransError("Group declarations not yet supported");
 				}
 
 				if (dec->Type == VarType::pLua) {
@@ -1476,17 +1499,17 @@ public:
 				TransAssert(ins->Scope == ScopeKind::FunctionBody || ins->Scope == ScopeKind::Method || ins->Scope == ScopeKind::Init, "Defer can only be used inside a function/method/init scope");
 				ins->Kind = InsKind::Defer;
 				Ret.PushScope(ScopeKind::Defer);
-			} else if (ins->Words[0]->UpWord == "CLASS") {
+			} else if (ins->Words[0]->UpWord == "CLASS" || ins->Words[0]->UpWord=="GROUP") {
 				// start class
 				TransAssert(ins->ScopeData->Kind == ScopeKind::Root, "Class can only be created in root scope");
 				ins->Kind = InsKind::StartClass;
 				if (ins->Words.size() < 2) TransError("Incomplete class defintion");
 				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier for class expected");
-				Ret.PushScope(ScopeKind::Class);
+				Ret.PushScope(ins->Words[0]->UpWord == "CLASS" ? ScopeKind::Class : ScopeKind::Group);
 				auto SC{ Ret.GetScope() };
 				SC->ClassID = ins->Words[1]->TheWord;
 				(*Ret.Trans->GlobalVar)[SC->ClassID] = "SCYNDI.CLASSES[\"" + SC->ClassID + "\"]";
-				Ret.Trans->Data->Add("CLASSES", "CLASS", SC->ClassID);
+				Ret.Trans->Data->Add("CLASSES", "CLASS", Upper(SC->ClassID));
 				(*SC->LocalVars)["SELF"] = "Scyndi.Class[\"" + SC->ClassID + "\"]";
 				if (ins->Words.size() > 2) {
 					TransAssert(ins->Words.size() == 4, "3 or more than 4 terms on a class? What are you doing?");
@@ -1494,7 +1517,7 @@ public:
 					TransError("Extended classes not yet supported");
 				}
 				Ret.Trans->Data->Value("Globals", SC->ClassID, (*SC->LocalVars)["SELF"]);
-				Ret.Trans->Data->Add("Globals", "-list-", SC->ClassID);
+				Ret.Trans->Data->Add("Globals", "-list-", Upper(SC->ClassID));
 			} else if (ins->Words[0]->UpWord == "EXTERN") {
 				TransAssert(ins->Words.size() >= 3, TrSPrintF("EXTERN incomplete (%d/3)", ins->Words.size()));
 				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "EXTERN expects identifier");
@@ -1503,6 +1526,40 @@ public:
 				Ret.Trans->Data->Add("Globals", "-list-", ins->Words[1]->UpWord);
 				(*Ret.Trans->GlobalVar)[ins->Words[1]->UpWord] = ins->Words[2]->TheWord;
 				QCol->Doing("- Extern", ins->Words[1]->TheWord);
+			} else if (ins->Words[0]->UpWord == "LOCEXTERN") {
+				TransAssert(ins->Words.size() >= 3, TrSPrintF("LOCEXTERN incomplete (%d/3)", ins->Words.size()));
+				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "LOCEXTERN expects identifier");
+				TransAssert(ins->Words[2]->Kind == WordKind::String, "LocEXTERN expects string to define the pure external code");
+				//Ret.Trans->Data->Value("Globals", ins->Words[1]->UpWord, ins->Words[2]->TheWord);
+				//Ret.Trans->Data->Add("Globals", "-list-", ins->Words[1]->UpWord);
+				//(*Ret.Trans->GlobalVar)[ins->Words[1]->UpWord] = ins->Words[2]->TheWord;
+				auto SC{ Ret.GetScope() };
+				switch (SC->Kind) {
+				case ScopeKind::Root:
+				case ScopeKind::Default:
+				case ScopeKind::Defer:
+				case ScopeKind::Do:
+				case ScopeKind::ElIf:
+				case ScopeKind::ElseScope:
+				case ScopeKind::ForLoop:
+				case ScopeKind::FunctionBody:
+				case ScopeKind::Case:
+				case ScopeKind::General:
+				case ScopeKind::Repeat:
+				case ScopeKind::WhileScope:
+					break;
+				case ScopeKind::QuickMeta:
+					TransError("LOCEXTERN not allowed in a QuickMeta scope");
+				case ScopeKind::Switch:
+					TransError("LOCEXTERN in a switch scope. Either CASE or DEFAULT expected");
+				case ScopeKind::Class:
+				case ScopeKind::Group:
+					TransError("LOCLEXTERN cannot be used as a class or a group member");
+				default:
+					QCol->Warn("Unknown scope type for LOCEXTERN. No telling how the system will behave on it");
+				}
+				QCol->Doing("- Extern", ins->Words[1]->TheWord, " "); QCol->LMagenta("(LOCAL)\n");
+				(*SC->LocalVars)[ins->Words[1]->UpWord] = ins->Words[2]->TheWord;
 			} else if (ins->Words[0]->UpWord == "QUICKMETA") {
 				TransAssert(ins->Words.size() == 2, "QUICKMETA only needs an identifier name");
 				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected to name QUICKMETA");
@@ -1993,14 +2050,17 @@ public:
 							stname{ TrSPrintF("Static_%08x",count++) },
 							fullstname{ StaticRegister + "_" + stname };
 						*Trans += TrSPrintF("if not %s[\"%s\"] then ", StaticRegister.c_str(), stname.c_str());
-						if (Ins->DecData->Type == VarType::pLua) {
+						// Static Locals!
+						//if (Ins->DecData->Type == VarType::pLua) {
 							*Trans += TrSPrintF("%s = %s; ", fullstname.c_str(), BaseValue.c_str());
 							(*Ins->ScopeData->LocalVars)[VarName] = fullstname;
-						} else {
+						/* } else {
 							auto ReadOnly{ Lower(boolstring(Ins->DecData->IsReadOnly || Ins->DecData->IsConstant)) };
 							*Trans += TrSPrintF("Scyndi.ADDMBER(\"..GLOBALS..\", \"%s\", \"%s\", false, %s, %s, value);", _Declaration::E2S(Ins->DecData->Type).c_str(), fullstname.c_str(), ReadOnly.c_str(), ReadOnly.c_str(), BaseValue.c_str());
 							(*Ins->ScopeData->LocalVars)[VarName] = TrSPrintF("Scyndi.Globals.%s", fullstname.c_str());
-						}
+						}//*/
+						*Trans += TrSPrintF("%s[\"%s\"]=true ", StaticRegister.c_str(), stname.c_str());
+						//*Trans += "print(' Registered static local  "+ StaticRegister+"::"+ stname+"') "; // DEBUG ONLY!						
 						*Trans += " end\n";
 						Ins->ScopeData->LocalDeclaLine[VarName] = Ins->LineNumber;
 						break;
@@ -2208,6 +2268,7 @@ public:
 				}
 				switch (oscope->Kind) {
 				case ScopeKind::Class:
+				case ScopeKind::Group:
 					if (Ins->DecData->IsStatic)
 						*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"DELEGATE\",\"%s\",true,true,true,function (%s) ", Ins->DecData->BoundToClass.c_str(), VarName.c_str(), ArgLine.c_str());
 					else if (ArgLine.size())

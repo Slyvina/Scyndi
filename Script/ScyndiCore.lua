@@ -127,7 +127,11 @@ local function index_static_member(cl,key,allowprivate)
 		if classregister[cu].staticprop.pget[key] then
 		return classregister[cu].staticprop.pget[key](classregister[cu].pub)
 	end
-
+	if key==".HASMEMBER" then
+		return function (m)
+			return classregister[cu].staticmembers[m:upper()]~=nil
+		end
+	end
 	assert(classregister[cu].staticmembers[key],"Class "..cl.." has no static member named "..key)
 	local member=classregister[cu].staticmembers[key]
 	if (not allowprivate) then assert(not member.private,"Class "..cl.." does have a static member named "..key..", however it's private and cannot be called this way.") end
@@ -689,6 +693,11 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ARRAYREMOVE",true,true,true,function(A
 	until false
 end)
 
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","GLOBALEXISTS",true,true,true,function(gi)
+	return _Scyndi.CLASS["..GLOBALS.."][".HasMember"](gi)
+end)
+
+
 
 -- ***** Incrementor / Decrementor support ***** --
 function _Scyndi.INC(v)
@@ -720,11 +729,14 @@ function _Scyndi.ADD(v,a)
 	elseif t=="string" then
 		return v..a
 	elseif t=="table" and v[".ClassInstance"] then
-		return v.__ADD(v,a)
+		v.__ADD(v,a)
+		return v
 	elseif t=="table" then
 		v[_Scyndi.GLOBALS.LEN(v)] = a
+		return v
 	else
-		error("Don't know how to add to a "..t)
+		print(debug.traceback())
+		error("Don't know how to add to a "..t.."\n ADD("..tostring(v)..", "..tostring(a).." )")
 	end
 end
 	
@@ -738,10 +750,13 @@ function _Scyndi.SUBSTRACT(v,a)
 		return v.__SUBSTRACT(v,a)
 	elseif t=="table" then
 		_Scyndi.Globals.ArrayRemove(v,a,1)
+		return v
 	else
 		error("Don't know how to substract a "..t)
 	end
 end
+
+_Scyndi.SUB = _Scyndi.SUBSTRACT
 
 
 -- ***** Lua basic modules/libraries/whatever copied into Scyndi groups ***** --

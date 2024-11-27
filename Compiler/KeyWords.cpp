@@ -67,7 +67,7 @@ namespace Scyndi {
 		"NEW",
 
 		// Import
-		"EXTERN",
+		"EXTERN","LOCEXTERM",
 
 		"CONSTRUCTOR",
 		"DESTRUCTOR",

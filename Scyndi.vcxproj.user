@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-force "E:\Projects\Applications\Scyndi\House Of Cards\SRC\Scripts\Project\HouseOfCards.ini"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-force "E:\Projects\Applications\Scyndi\Star Story\src\Script\Project\StarStory.ini"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerWorkingDirectory>E:\Projects\Applications\Scyndi\House Of Cards\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>E:\Projects\Applications\Scyndi\Star Story\</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
 </Project>
