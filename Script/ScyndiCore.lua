@@ -1,3 +1,26 @@
+-- License:
+-- 	Script/ScyndiCore.lua
+-- 	Scyndi - Core Script
+-- 	version: 24.12.17
+-- 
+-- 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
+-- 
+-- 	This software is provided 'as-is', without any express or implied
+-- 	warranty.  In no event will the authors be held liable for any damages
+-- 	arising from the use of this software.
+-- 
+-- 	Permission is granted to anyone to use this software for any purpose,
+-- 	including commercial applications, and to alter it and redistribute it
+-- 	freely, subject to the following restrictions:
+-- 
+-- 	1. The origin of this software must not be misrepresented; you must not
+-- 	   claim that you wrote the original software. If you use this software
+-- 	   in a product, an acknowledgment in the product documentation would be
+-- 	   appreciated but is not required.
+-- 	2. Altered source versions must be plainly marked as such, and must not be
+-- 	   misrepresented as being the original software.
+-- 	3. This notice may not be removed or altered from any source distribution.
+-- End License
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
@@ -288,6 +311,7 @@ local function InstanceIndex(self,key)
 	assert(key~="CONSTRUCTOR","Illegal constructor call")
 	assert(key~="DESTRUCTOR","Illegal destructor call")
 	if key==".CLASSINSTANCE" or key==".ISCLASSINSTANCE" then return true end
+	if key==".CLASSNAME" then return self[".TiedToClass"].CL.name end
 	if key==".ISCLASS" then return false end
 	if key==".HASMEMBER" then
 		return function(key)
@@ -675,6 +699,15 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","FIND",true,true,true,function(HayStack
 		return nil
 	end
 	error("Cannot search "..type(HayStack))
+end)
+
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","TYPE",true,true,true,function(id,ignorescyndi)
+	if (not ignorescyndi) and type(HayStack)=="table" then
+		if id==_Scyndi then return "Scyndi" end
+		if id[".Classinstance"] then return "Scyndi Class Instance::"..ud[".ClassName"] end
+		if id[".IsClass"] then return "Scyndi Class" end
+	end
+	return type(id)
 end)
 
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","ARRAYREMOVE",true,true,true,function(ARRAY,VICTIM,TIMES)

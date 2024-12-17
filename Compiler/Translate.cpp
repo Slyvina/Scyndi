@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.11.18
+// Version: 24.12.17
 // End License
 
 #include <Slyvina.hpp>
@@ -72,6 +72,7 @@ namespace Scyndi {
 		Forever, LoopWhile, StartMetaMethod,
 		StartQuickMeta,PropertyGet,PropertySet, 
 		ExternImport,
+		QFuncDef,
 		Break
 	};
 	enum class WordKind { 
@@ -88,7 +89,8 @@ namespace Scyndi {
 		ForLoop, IfScope, ElIf,
 		ElseScope, Declaration, WhileScope,
 		Switch, Case, Default,
-		FunctionBody, Defer , Do
+		FunctionBody, Defer , Do,
+		QFuncBody
 	};
 
 	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate, Void, Var };
@@ -334,6 +336,7 @@ public:
 			case ScopeKind::Init:
 			case ScopeKind::FunctionBody:
 			case ScopeKind::Method:
+			//case ScopeKind::QFuncBody:
 				if (DeferID.size())
 					return "for _,ifunc in ipairs(" + DeferID + ") do ifunc() end;\t";
 				else
@@ -1564,11 +1567,35 @@ public:
 				TransAssert(ins->Words.size() == 2, "QUICKMETA only needs an identifier name");
 				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected to name QUICKMETA");
 				auto QMName{ ins->Words[1]->UpWord };
-				(*Ret.Trans->GlobalVar)[QMName] = "Scyndi.Globals[\"" + QMName + "\"]";				
+				(*Ret.Trans->GlobalVar)[QMName] = "Scyndi.Globals[\"" + QMName + "\"]";
 				Ret.Trans->Data->Value("Globals", QMName, (*Ret.Trans->GlobalVar)[QMName]);
 				Ret.Trans->Data->Add("Globals", "-list-", QMName);
 				Ret.PushScope(ScopeKind::QuickMeta);
 				ins->Kind = InsKind::StartQuickMeta;
+			} else if (ins->Words[0]->UpWord == "LDEF" || ins->Words[0]->UpWord == "DDEF") {
+				TransAssert(ins->Words.size() == 2, "LDEF and DDEF only needs an identifier name");
+				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected to name "+ins->Words[0]->UpWord);
+				auto SC{ Ret.GetScope() };
+				switch (SC->Kind) {
+				case ScopeKind::Class:
+				case ScopeKind::Group:
+					TransError(ins->Words[0]->UpWord + " cannot be used as a class or a group member");
+				case ScopeKind::QuickMeta:
+					TransError(ins->Words[0]->UpWord + " not allowed in a QuickMeta scope");
+				case ScopeKind::Root:
+					TransError(ins->Words[0]->UpWord + " may not be used inside the root scope.");
+				}
+				auto Parent{ Ret.GetScope() };
+				Ret.PushScope(ScopeKind::QFuncBody);
+				//auto QFBS{ Ret.GetScope() };
+				if (ins->Words[0]->UpWord == "DDEF") {
+					static int C{ 0 };
+					(*Parent->LocalVars)[ins->Words[1]->UpWord] = TrSPrintF("SCYNDI_QUICKFUNCTION_VARIABLE_%d", C) + "_" + md5(CurrentDate()) + "_" + md5(CurrentTime());
+					ins->ForVars.clear(); ins->ForVars.push_back((*Parent->LocalVars)[ins->Words[1]->UpWord]); // Dirty, but good enough here.
+				} else {
+					TransAssert(Ret.Identifier(ins->Words[1]->UpWord).size(),"Unknown identifier ("+ins->Words[1]->TheWord+") for LDEF definition");
+				}
+				ins->Kind = InsKind::QFuncDef;
 			} else if (ins->Words[0]->UpWord == "REPEAT") {
 				TransAssert(ins->Words.size() == 1, "REPEAT doesn't accept any parameters");
 				ins->Kind = InsKind::Repeat;
@@ -1934,6 +1961,18 @@ public:
 				DbgLineCheck;
 				*Trans += "else\n";
 				break;
+			case InsKind::QFuncDef:
+				DbgLineCheck;
+				if (Ins->Words[0]->UpWord == "DDEF") {
+					TransAssert(Ins->ForVars.size(),"INTERNAL ERROR! DDEF declaration not properly transferred!");
+					*Trans += "local function "+Ins->ForVars[0];
+				} else {
+					auto Ex{ Expression(Ret.Trans,Ins,1) };
+					if (!Ex) return nullptr;
+					*Trans += *Ex + " = function";
+				}
+				*Trans += "(...)\n";
+				break;
 			case InsKind::EndScope:
 				DbgLineCheck;
 				switch (Ins->Scope) {
@@ -1954,6 +1993,7 @@ public:
 				case ScopeKind::ElseScope:
 				case ScopeKind::WhileScope:
 				case ScopeKind::Do:
+				case ScopeKind::QFuncBody:
 					*Trans += "end\n";
 					break;					
 				case ScopeKind::Case:

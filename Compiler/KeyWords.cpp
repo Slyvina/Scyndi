@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.11.18
+// Version: 24.12.17
 // End License
 // Lic:
 // Scyndi
@@ -95,6 +95,9 @@ namespace Scyndi {
 		"USERDATA",
 		"VAR",
 		"PLUA",
+
+		// Quick Inline Function
+		"LDEF","DDEF",
 
 		// Infinite arguments
 		"INFINITY",
