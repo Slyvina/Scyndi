@@ -59,6 +59,7 @@
     <SEQ TYPE="OPERATOR">==</SEQ>
     <SEQ TYPE="OPERATOR">!=</SEQ>
     <SEQ TYPE="OPERATOR">=</SEQ>
+	<SEQ TYPE="OPERATOR">:=</SEQ>
 <!--    <SEQ TYPE="OPERATOR">div</SEQ> -->
     <!-- Function calls and definitions -->
     <MARK_PREVIOUS TYPE="FUNCTION" MATCH_TYPE="OPERATOR">(</MARK_PREVIOUS>
@@ -106,6 +107,8 @@
       <KEYWORD1>extends</KEYWORD1>
       <KEYWORD1>forever</KEYWORD1>
 	  <KEYWORD1>elif</KEYWORD1>
+	  <KEYWORD1>ldef</KEYWORD1>
+	  <KEYWORD1>ddef</KEYWORD1>
 
       <KEYWORD2>scyndiuse</KEYWORD2>
       <KEYWORD2>new</KEYWORD2>

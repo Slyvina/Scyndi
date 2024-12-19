@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.12.17
+// Version: 24.12.19 I
 // End License
 
 #include <Slyvina.hpp>
@@ -1007,6 +1007,42 @@ public:
 		_TransProcess Ret;
 		Ret.Trans = std::make_shared<_Translation>();
 		//uint64 ScopeLevel{ 0 };
+
+		// The := statement
+		
+		for (size_t l = 1; l < sourcelines->size(); l++) {
+			auto line{ Trim( (*sourcelines)[l]) };
+			auto found{ false };
+			auto LineNumber(l + 1);
+			size_t pos{ 0 };
+			found = false; // Make sure!
+			for (size_t p = 1; p < line.size() - 1; ++p) {
+				if (line[p] == '"') break; // Strings are not eligable anyway, so this should be pretty safe.
+				if (line[p] == '/') break; // Either / or //, the former should be a normal error and the latter be a comment
+				if (line[p] == ':' && line[p + 1] == '=') { found = true;  pos = p; break; }
+			}
+			if (found) {
+				printf("\x1b[0mLine %04zd; := found on position %zd -> %s\n", LineNumber, pos, line.c_str());
+				auto
+					before{ Trim(line.substr(0,pos)) },
+					after{ Trim(line.substr(pos + 2)) },
+					dvar{ before };
+				TransAssert(before.size() && after.size(), "Syntax error: Incomplete := statement");
+				bool noplua{ false };
+				for (auto p = before.size() - 1; p > 0; p--) {
+					if (before[p] == ' ' || before[p] == '\t') {
+						dvar = before.substr(p + 1);
+						noplua = true;
+						break;
+					}
+				}
+				String NewLine{ (noplua ? before : "plua " + dvar) + "; "};
+				NewLine += dvar + " = " + after + "   // replaces: " + line;
+				(*sourcelines)[l] = NewLine;
+				continue; // Just make sure no other crap happens before the next line
+			}
+		}
+		
 		
 		// Chopping
 		Ret.Instructions = ChopCode(sourcelines, srcfile, JD, debug, &Macros);
@@ -1497,6 +1533,7 @@ public:
 				for (size_t i = 0; i < ins->Words.size() - 1; i++) Nw.push_back(ins->Words[i]);
 				ins->Words = Nw;
 			} else if (ins->Words[0]->UpWord == "RETURN") {
+				TransAssert(Ret.GetScope()->Kind != ScopeKind::Root, "Return instructions not allowed in the root scope");
 				ins->Kind = InsKind::Return;
 			} else if (ins->Words[0]->UpWord == "DEFER") {
 				TransAssert(ins->Scope == ScopeKind::FunctionBody || ins->Scope == ScopeKind::Method || ins->Scope == ScopeKind::Init, "Defer can only be used inside a function/method/init scope");
@@ -2204,7 +2241,7 @@ public:
 						if (ArgLine.size()) ArgLine += ", "; ArgLine += TrSPrintF("Arg%d", Args.size());
 						Args.push_back(Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",VarType::Var,false });
 						Pos++;
-						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (variant) argument #%d", Args.size()));
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (variant) argument #%d (W#%d)", Args.size(), Pos));
 						Pos++;
 					} else if (Ins->Words[Pos]->UpWord == "PLUA") {
 						Pos++;
@@ -2284,8 +2321,8 @@ public:
 							TransError("Default values not possible for boolean arguments");
 						} else { A.BaseValue = "false"; }
 						Args.push_back(A);
+						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (boolean) argument #%d", Args.size())+" ("+ Ins->Words[Pos]->TheWord+")");
 						Pos++;
-						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (boolean) argument #%d", Args.size()));
 					} else if (Ins->Words[Pos]->TheWord[0] == '@') {
 						TransError("Custom class type as function argument not (yet) supported. Just use an untyped argument or a pLua in stead");
 					} else if (Ins->Words[Pos]->UpWord == "DELEGATE" || Ins->Words[Pos]->UpWord == "TABLE" || Ins->Words[Pos]->UpWord == "BOOL") {
