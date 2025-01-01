@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.12.19 I
+// Version: 24.12.25
 // End License
 
 #include <Slyvina.hpp>
@@ -317,6 +317,8 @@ public:
 			case ScopeKind::Root:
 			case ScopeKind::Defer:
 				return VarType::Void;
+			case ScopeKind::QFuncBody:
+				return VarType::pLua;
 			case ScopeKind::FunctionBody:
 			case ScopeKind::Method:
 				return Check->DecData->Type;
