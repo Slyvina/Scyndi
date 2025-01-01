@@ -1,7 +1,7 @@
 -- License:
 -- 	Script/ScyndiCore.lua
 -- 	Scyndi - Core Script
--- 	version: 24.12.17
+-- 	version: 24.12.25
 -- 
 -- 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 -- 
@@ -20,7 +20,6 @@
 -- 	2. Altered source versions must be plainly marked as such, and must not be
 -- 	   misrepresented as being the original software.
 -- 	3. This notice may not be removed or altered from any source distribution.
--- End License
 -- <License Block>
 -- Script/ScyndiCore.lua
 -- Scyndi - Core Script
@@ -40,6 +39,9 @@
 -- misrepresented as being the original software.
 -- 3. This notice may not be removed or altered from any source distribution.
 -- </License Block>
+-- End License
+
+
  -- Script --
 
 
@@ -554,6 +556,7 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","COUT",true,true,true,function(...) io.
 _Scyndi.ADDMBER("..GLOBALS..","STRING","ENDL",true,true,true,"\n")
 _Scyndi.ADDMBER("..GLOBALS..","Delegate","SPRINTF",true,true,true,string.format)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","PRINTF",true,true,true,function(fmt,...) io.write(fmt:format(...)) end)
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","TERNARY",true,true,true,function(cond,wel,niet) if cond then return wel else return niet end end)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","SPLIT",true,true,true,function(str,sep)
 	-- I *KNOW* that this ain't the fastest method, but this way I can at least make sure the split went the way it SHOULD.
 	-- Lua leaves out things that should not be left out otherwise. That's why I chose this method.
@@ -870,6 +873,23 @@ function _Scyndi.GLOBALSFORCPLUSPLUS()
 	end
 	print("\n\t};\n}\n")
 end
+
+local function AllStuff_Index(s,key)
+	key = key:upper()
+	local ret 
+	if classregister[key] then return classregister[key].pub end
+	if classregister["..GLOBALS.."].staticmembers[key] then return _Scyndi.GLOBALS[key] end
+	error("Neither a class nor a global named "..key.." has been found")	
+end
+
+local function AllStuff_NewIndex(s,key,value)
+	key = key:upper()
+	assert(not classregister[key],"Classes are read-only!")
+	assert(classregister["..GLOBALS.."].staticmembers[key],"No global named "..key.." found")
+	_Scyndi.GLOBALS[key]=value
+end
+
+_Scyndi.ALLIDENTIFIERS = setmetatable({},{__index=AllStuff_Index,__newindex=AllStuff_NewIndex})
 
 
 
