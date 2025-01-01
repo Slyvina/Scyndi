@@ -7,10 +7,7 @@
   <PROPS>
     <!-- Comments -->
     <PROPERTY NAME="lineComment" VALUE="//"/>
-	<!--
-    <PROPERTY NAME="commentStart" VALUE="--[["/>
-    <PROPERTY NAME="commentEnd" VALUE="]]"/>
-	-->
+	
     <PROPERTY NAME="wordBreakChars" VALUE=",+-=&lt;&gt;/?^&amp;*"/>
     <!-- Auto indent -->
     <PROPERTY NAME="indentOpenBrackets" VALUE="{"/>
@@ -18,7 +15,7 @@
     <!--
     <PROPERTY NAME="indentNextLines" VALUE=".*((then|else|do|function)).*"/>
     -->
-	<PROPERTY NAME="indentNextLines" VALUE=".*((if|else|elseif|elif|do|repeat|void|while)).*"/>
+	<PROPERTY NAME="indentNextLines" VALUE=".*((if|else|elseif|elif|do|repeat|void|while|ddef|ldef)).*"/>
     <PROPERTY NAME="doubleBracketIndent" VALUE="true"/>
   </PROPS>
   <RULES IGNORE_CASE="TRUE" NO_WORD_SEP="_:." HIGHLIGHT_DIGITS="TRUE"
@@ -79,6 +76,7 @@
 	<KEYWORD1>abstract</KEYWORD1>
       <KEYWORD1>void</KEYWORD1>
       <KEYWORD1>int</KEYWORD1>
+	  <KEYWORD1>plua</KEYWORD1>
       <KEYWORD1>number</KEYWORD1>
       <KEYWORD1>bool</KEYWORD1>
       <KEYWORD1>ltable.</KEYWORD1>
@@ -152,13 +150,27 @@
       <KEYWORD1>in</KEYWORD1>
       <KEYWORD1>function</KEYWORD1>
       <KEYWORD1>local</KEYWORD1>
+	  <KEYWORD1>extern</KEYWORD1>
+	  <KEYWORD1>locextern</KEYWORD1>
       <KEYWORD3>nil</KEYWORD3>
       <KEYWORD3>true</KEYWORD3>
       <KEYWORD3>false</KEYWORD3>
-      <KEYWORD1>and</KEYWORD1>
-      <KEYWORD1>or</KEYWORD1>
-      <KEYWORD1>not</KEYWORD1>
       <!-- Builtin functions or special names -->
+	  <KEYWORD2>lua</KEYWORD2>
+	  <KEYWORD2>lua.assert</KEYWORD2>
+	  <KEYWORD2>lua.error</KEYWORD2>
+	  <KEYWORD2>lua.pcall</KEYWORD2>
+	  <KEYWORD2>lua.xpcall</KEYWORD2>
+	  <KEYWORD2>ipairs</KEYWORD2>
+	  <KEYWORD2>pairs</KEYWORD2>
+	  <KEYWORD2>spairs</KEYWORD2>
+	  <KEYWORD2>each</KEYWORD2>
+	  <KEYWORD2>type</KEYWORD2>
+	  <KEYWORD2>index</KEYWORD2>
+	  <KEYWORD2>ternary</KEYWORD2>
+	  <KEYWORD2>newindex</KEYWORD2>
+	  
+	  <!--
       <KEYWORD2>assert</KEYWORD2>
       <KEYWORD2>collectgarbage</KEYWORD2>
       <KEYWORD2>dofile</KEYWORD2>
@@ -212,6 +224,7 @@
       <KEYWORD2>__fenv</KEYWORD2>
       <KEYWORD2>...</KEYWORD2>
       <KEYWORD2>arg</KEYWORD2>
+	  -->
       <KEYWORD2>coroutine.create</KEYWORD2>
       <KEYWORD2>coroutine.resume</KEYWORD2>
       <KEYWORD2>coroutine.status</KEYWORD2>
