@@ -2348,9 +2348,11 @@ public:
 				switch (oscope->Kind) {
 				case ScopeKind::Class:
 				case ScopeKind::Group:
-					if (Ins->DecData->IsStatic)
+					if (Ins->DecData->IsStatic) {
 						*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"DELEGATE\",\"%s\",true,true,true,function (%s) ", Ins->DecData->BoundToClass.c_str(), VarName.c_str(), ArgLine.c_str());
-					else if (ArgLine.size())
+						//(*Ins->NextScope->LocalVars)["SELF"] = "Scyndi.Class[\"" + Ins->DecData->BoundToClass + "\"]";
+						*Trans += "local self = Scyndi.Class[\"" + Ins->DecData->BoundToClass + "\"]\t";
+					} else if (ArgLine.size())
 						*Trans += TrSPrintF("Scyndi.ADDMETHOD(\"%s\", \"%s\", %s, function(self,%s)", Ins->DecData->BoundToClass.c_str(), VarName.c_str(), lboolstring(Ins->DecData->IsFinal).c_str(), ArgLine.c_str());
 					else {
 						*Trans += TrSPrintF("Scyndi.ADDMETHOD(\"%s\", \"%s\", %s, function(self)", Ins->DecData->BoundToClass.c_str(), VarName.c_str(), lboolstring(Ins->DecData->IsFinal).c_str());
