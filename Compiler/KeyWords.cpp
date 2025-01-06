@@ -23,7 +23,6 @@
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
 // Version: 24.12.17
-// End License
 // Lic:
 // Scyndi
 // Keyword list
@@ -49,6 +48,7 @@
 // 
 // Version: 24.03.05
 // EndLic
+// End License
 
 #include <string>
 #include <vector>
@@ -133,7 +133,10 @@ namespace Scyndi {
 		// Value Based Keywords
 		"NIL",
 		"TRUE",
-		"FALSE"
+		"FALSE",
+
+		// DefTable
+		"DEFTABLE"
 
 	};
 
