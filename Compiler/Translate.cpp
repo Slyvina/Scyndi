@@ -5,7 +5,7 @@
 // 
 // 
 // 
-// 	(c) Jeroen P. Broks, 2022, 2023, 2024
+// 	(c) Jeroen P. Broks, 2022, 2023, 2024, 2025
 // 
 // 		This program is free software: you can redistribute it and/or modify
 // 		it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.12.25
+// Version: 25.01.06
 // End License
 
 #include <Slyvina.hpp>
@@ -1024,7 +1024,7 @@ public:
 				if (line[p] == ':' && line[p + 1] == '=') { found = true;  pos = p; break; }
 			}
 			if (found) {
-				printf("\x1b[0mLine %04zd; := found on position %zd -> %s\n", LineNumber, pos, line.c_str());
+				//printf("\x1b[0mLine %04zd; := found on position %zd -> %s\n", LineNumber, pos, line.c_str());
 				auto
 					before{ Trim(line.substr(0,pos)) },
 					after{ Trim(line.substr(pos + 2)) },
@@ -1589,6 +1589,7 @@ public:
 				case ScopeKind::General:
 				case ScopeKind::Repeat:
 				case ScopeKind::WhileScope:
+				case ScopeKind::Init:
 					break;
 				case ScopeKind::QuickMeta:
 					TransError("LOCEXTERN not allowed in a QuickMeta scope");
