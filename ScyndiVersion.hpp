@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 25.01.06
+// Version: 25.01.06 I
 // End License
 #pragma once
 #include <string>
@@ -47,6 +47,6 @@ namespace Scyndi {
 		}
 	};
 
-	static QVersionClass QVersion{0,5,3,"20250106085134","WIP/In development"};
+	static QVersionClass QVersion{0,6,0,"20250106155322","WIP/In development"};
 
 } // namespace Scyndi
