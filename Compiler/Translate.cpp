@@ -73,6 +73,7 @@ namespace Scyndi {
 		StartQuickMeta,PropertyGet,PropertySet, 
 		ExternImport,
 		QFuncDef,
+		DefTable,DefTableIndex,
 		Break
 	};
 	enum class WordKind { 
@@ -90,7 +91,7 @@ namespace Scyndi {
 		ElseScope, Declaration, WhileScope,
 		Switch, Case, Default,
 		FunctionBody, Defer , Do,
-		QFuncBody
+		QFuncBody,DefTable
 	};
 
 	enum class VarType { Unknown, Integer, String, Table, Number, Boolean, CustomClass, pLua, Byte, UserData, Delegate, Void, Var };
@@ -250,6 +251,7 @@ public:
 	Declaration DecData{ nullptr };
 	std::string DeferID{ "" };
 	std::string ClassID{ "" };
+	String TableDefVar{ "" };
 
 	_Scope* DecScope() {
 		if (Kind == ScopeKind::Declaration) return Parent; else return this;
@@ -442,7 +444,7 @@ public:
 			Scopes{ ScopeKind::Root };
 		std::string FormWord{ "" };
 		Ret->SourceFile = srcfile;
-		Ret->LineNumber = LineNumber;
+		Ret->LineNumber = (uint32)LineNumber;
 		int TimeOut = 10000;
 		if (StrContains(Line, "+=") || StrContains(Line,"-=")) {
 			String Ex[2]{ {""},{""} };
@@ -1414,6 +1416,10 @@ public:
 				}
 			} else if (MuteByIfDef) {
 				ins->Kind = InsKind::MutedByIfDef;
+			} else if (ins->Scope==ScopeKind::DefTable) {				
+				ins->Kind = ins->Words.size() == 0 ? InsKind::WhiteLine : (ins->Words[0]->UpWord == "END" ? InsKind::EndScope : InsKind::DefTableIndex);
+				if (ins->Kind==InsKind::EndScope) Ret.Scopes.pop_back();
+				//printf("DEBUG:DefTable command: %s %d -> %02d (%s)\n", ins->RawInstruction.c_str(), (int)ins->Words.size(), (int)ins->Kind, ins->Words.size()?ins->Words[0]->UpWord.c_str():"<Whiteline>" );
 			} else if (ins->Scope==ScopeKind::QuickMeta) {
 				ins->Kind = InsKind::StartMetaMethod;
 				if (ins->Words[0]->UpWord == "DESTRUCTOR") {
@@ -1603,6 +1609,33 @@ public:
 				}
 				QCol->Doing("- Extern", ins->Words[1]->TheWord, " "); QCol->LMagenta("(LOCAL)\n");
 				(*SC->LocalVars)[ins->Words[1]->UpWord] = ins->Words[2]->TheWord;
+			} else if (ins->Words[0]->UpWord == "DEFTABLE") {
+				TransAssert(ins->Words.size() == 2, "DEFTABLE only needs an identifier name");
+				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected for DEFTABLE");
+				auto SC{ Ret.GetScope() };
+				ins->Kind = InsKind::DefTable;
+				SC->TableDefVar = SC->Identifier(Ret.Trans, LineNumber, ins->Words[1]->UpWord);
+				switch (SC->Kind) {
+				case ScopeKind::Defer:
+				case ScopeKind::Do:
+				case ScopeKind::IfScope:
+				case ScopeKind::ElIf:
+				case ScopeKind::ElseScope:
+				case ScopeKind::ForLoop:
+				case ScopeKind::FunctionBody:
+				case ScopeKind::Case:
+				case ScopeKind::General:
+				case ScopeKind::Repeat:
+				case ScopeKind::WhileScope:
+				case ScopeKind::Init:
+				case ScopeKind::QFuncBody:
+					break;
+				default:
+					TransError("Illegal scope for DEFTABLE");
+					break;
+				}
+				printf("%s","Debug:Opening DefTable Scope\n");
+				Ret.PushScope(ScopeKind::DefTable);
 			} else if (ins->Words[0]->UpWord == "QUICKMETA") {
 				TransAssert(ins->Words.size() == 2, "QUICKMETA only needs an identifier name");
 				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected to name QUICKMETA");
@@ -1630,7 +1663,7 @@ public:
 				//auto QFBS{ Ret.GetScope() };
 				if (ins->Words[0]->UpWord == "DDEF") {
 					static int C{ 0 };
-					(*Parent->LocalVars)[ins->Words[1]->UpWord] = TrSPrintF("SCYNDI_QUICKFUNCTION_VARIABLE_%d", C) + "_" + md5(CurrentDate()) + "_" + md5(CurrentTime());
+					(*Parent->LocalVars)[ins->Words[1]->UpWord] = TrSPrintF("SCYNDI_QUICKFUNCTION_VARIABLE_%d", C++) + "_" + md5(CurrentDate()) + "_" + md5(CurrentTime());
 					ins->ForVars.clear(); ins->ForVars.push_back((*Parent->LocalVars)[ins->Words[1]->UpWord]); // Dirty, but good enough here.
 				} else {
 					TransAssert(Ret.Identifier(ins->Words[1]->UpWord).size(),"Unknown identifier ("+ins->Words[1]->TheWord+") for LDEF definition");
@@ -1981,6 +2014,34 @@ public:
 				*Trans += *Ex;
 				*Trans += " do\n";
 			} break;
+			case InsKind::DefTable:
+			{
+				auto id{ Expression(Ret.Trans,Ins,1) };				
+				if (!id) return nullptr;
+				*Trans += *id + " = { \n";
+			} break;
+			case InsKind::DefTableIndex: {
+				//*Trans += Ins->ScopeData->TableDefVar;
+				TransAssert(Ins->Words.size() >= 3, "Invalid DefTable Index");
+				switch (Ins->Words[0]->Kind) {
+				case WordKind::Unknown: TransError("Unknown word kind for DefTable Index");
+				case WordKind::KeyWord: QCol->Warn("A keyword for a DefTable index is allowed (will be converted to string), but be aware that a keyword was used."); // FALLTHROUGH!
+				case WordKind::String:
+				case WordKind::Identifier:
+					*Trans += "[\"" + Ins->Words[0]->TheWord + "\"]"; // Note this *is* case sensitive. It's always counted as a string, remember!
+					break;
+				case WordKind::Number:
+					*Trans += "[" + Ins->Words[0]->TheWord + "]";
+					break;
+				default:
+					TransError("Unexpected " + Ins->Words[0]->TheWord + TrSPrintF("(%d::%02x) as DefTable Index", (int)Ins->Words[0]->Kind, (int)Ins->Words[0]->Kind));
+				}
+				*Trans += " = ";
+
+				auto Ex{ Expression(Ret.Trans, Ins, Ins->Words[1]->TheWord == "=" ? 2 : 1) };
+				if (!Ex) return nullptr;
+				*Trans += *Ex + ",\n";
+			} break;
 			case InsKind::IfStatement: {
 				DbgLineCheck;
 				*Trans += "if ";
@@ -2014,8 +2075,14 @@ public:
 				*Trans += "(...)\n";
 				break;
 			case InsKind::EndScope:
-				DbgLineCheck;
+				if (Ins->ScopeData->Kind != ScopeKind::DefTable) {
+					DbgLineCheck;
+				}
 				switch (Ins->Scope) {
+				case ScopeKind::DefTable:
+					printf("%s","DEBUG: Closing DefTable Scope\n");
+					*Trans += "nil} -- DefTable Scope Ended --\n";
+					break;
 				case ScopeKind::Init:
 				case ScopeKind::Defer:
 					if (!Ins->ScopeData->DidReturn) {
@@ -2080,7 +2147,7 @@ public:
 						*Trans += ",";
 					}
 					*Trans += "\n";
-					break;
+					break;					
 				case ScopeKind::QuickMeta:
 					*Trans += "})) -- End QuickMeta!\n\n";
 					break;
@@ -2164,7 +2231,7 @@ public:
 					}
 					*Trans += "\n";
 				}
-				break;
+				break;			
 			case InsKind::QuickMeta:
 			case InsKind::StartQuickMeta:
 				*Trans += TrSPrintF("Scyndi.ADDMBER(\"..GLOBALS..\", \"TABLE\", \"%s\", true, true, true, setmetatable({},{\n", Ins->Words[1]->UpWord.c_str());
