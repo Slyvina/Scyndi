@@ -32,3 +32,4 @@ QuickScyndi/QuickScyndi/ScyndiCore.lua
 # No SCons data
 .sconsign.dblite
 qvmin.ps1
+qvmaj.ps1
