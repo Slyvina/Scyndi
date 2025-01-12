@@ -12,6 +12,7 @@ Compiler/ScyndiGlobals.cpp
 x64
 *.pdb
 *.dll
+bin
 
 # This is an automatic copy made during the build process of the compiler. Once the .exe is created the compiler needs to this put in all the base stuff (or at least, that's the idea)
 Scyndi/ScyndiCore.lua
@@ -33,3 +34,8 @@ QuickScyndi/QuickScyndi/ScyndiCore.lua
 .sconsign.dblite
 qvmin.ps1
 qvmaj.ps1
+
+
+
+# Does Code::Blocks need this, or is this merely an index that will always be generated?
+*.depend

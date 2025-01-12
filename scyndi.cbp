@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="Scyndi" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/Scyndi" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/Scyndi" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="Compiler/Config.cpp" />
+		<Unit filename="Compiler/Config.hpp" />
+		<Unit filename="Compiler/KeyWords.cpp" />
+		<Unit filename="Compiler/Keywords.hpp" />
+		<Unit filename="Compiler/SaveTranslation.cpp" />
+		<Unit filename="Compiler/SaveTranslation.hpp" />
+		<Unit filename="Compiler/ScyndiGlobals.cpp" />
+		<Unit filename="Compiler/ScyndiGlobals.hpp" />
+		<Unit filename="Compiler/ScyndiProject.cpp" />
+		<Unit filename="Compiler/ScyndiProject.hpp" />
+		<Unit filename="Compiler/Translate.cpp" />
+		<Unit filename="Compiler/Translate.hpp" />
+		<Unit filename="Scyndi.cpp" />
+		<Unit filename="ScyndiVersion.hpp" />
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>
