@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 25.01.12
+// Version: 25.01.13
 // End License
 
 #include <Lunatic.hpp>
@@ -53,6 +53,8 @@ int main(int nargs, char** args) {
 	std::cout << "\n";
 	QCol->Doing("Lua version", Slyvina::NSLunatic::_Lunatic::LuaVersion());
 	QCol->Doing("Lua developed by", "PUC Rio");
+	std::cout << "\n\n\n";
+	QCol->Doing("Running from",CurrentDir());
 	std::cout << "\n\n\n";
 	FlagConfig cargs{};
 	AddFlag(cargs, "sf", false); // if true project, if false single file

@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 25.01.06 I
+// Version: 25.01.13
 // End License
 
 #include <Slyvina.hpp>
@@ -70,18 +70,18 @@ namespace Scyndi {
 		FallThrough, Defer, StartClass,
 		StartGroup, Repeat, Until,
 		Forever, LoopWhile, StartMetaMethod,
-		StartQuickMeta,PropertyGet,PropertySet, 
+		StartQuickMeta,PropertyGet,PropertySet,
 		ExternImport,
 		QFuncDef,
 		DefTable,DefTableIndex,
 		Break
 	};
-	enum class WordKind { 
-		Unknown, String, Number, 
+	enum class WordKind {
+		Unknown, String, Number,
 		KeyWord, Identifier, IdentifierClass,
-		Operator, Macro, Comma, 
+		Operator, Macro, Comma,
 		Field, CompilerDirective, HaakjeOpenen,
-		HaakjeSluiten 
+		HaakjeSluiten
 	};
 	enum class ScopeKind {
 		Unknown, General, Root,
@@ -106,14 +106,14 @@ namespace Scyndi {
 			IsGet{ false }, IsSet{ false },
 			IsRoot{ false }, // Only checked if not global
 			IsStatic{ false },
-			IsGlobal{ false }, // May not be used in classes and groups			
+			IsGlobal{ false }, // May not be used in classes and groups
 			IsReadOnly{ false },
 			IsFinal{ false },
 			IsConstant{ false };
 		std::string
 			CustomClass{ "" },
 			BoundToClass{ "" };
-		
+
 		static std::string E2S(VarType T) {
 			for (auto& K : S2E) if (K.second == T) return K.first;
 			return "";
@@ -148,13 +148,13 @@ namespace Scyndi {
 		WordKind Kind{ WordKind::Unknown };
 		std::string TheWord;
 		std::string UpWord;
-		static Word NewWord(WordKind K, std::string W) { 
+		static Word NewWord(WordKind K, std::string W) {
 			auto ret{ std::make_shared<_Word>() };
 			ret->Kind = K;
 			ret->TheWord = W;
 			ret->UpWord = Upper(W);
 			Chat("New Word <" << (int)K << "> string: " << W);
-			return ret;			
+			return ret;
 		}
 
 		static Word NewWord(WordKind K, char C) {
@@ -227,14 +227,14 @@ namespace Scyndi {
 		ScopeKind Scope{ ScopeKind::Unknown };
 		size_t ForEachExpression{ 0 };
 		std::vector < std::string > ForVars{};
-		StringMap ForTrans{ NewStringMap() };		
+		StringMap ForTrans{ NewStringMap() };
 		//std::string ForStart{ "0" }, ForTo{ "0" }, ForStep{ "1" };  // Although only numbers processed, in translation this is the better ride
 		Scyndi::Scope NextScope{ nullptr };
-		
+
 	};
 	typedef std::shared_ptr<_Instruction> Instruction;
 
-	
+
 class _Scope {
 public:
 	bool DidReturn{ false }; // Needed to make sure that nothing could be placed after the return command (Lua doesn't accept that).
@@ -280,7 +280,7 @@ public:
 			}
 			return "";
 		}
-		if (_id[0] == '$') _id = _id.substr(1);		
+		if (_id[0] == '$') _id = _id.substr(1);
 		Trans2Upper(_id);
 		// Is this a local?
 		for (auto fscope = this; fscope; fscope = fscope->Parent) {
@@ -357,7 +357,7 @@ public:
 		} while (true);
 	}
 };
-	
+
 
 	class _TransProcess {
 	public:
@@ -371,7 +371,7 @@ public:
 		Scope RootScope;
 		Scope GetScope() {
 			auto lvl{ ScopeLevel() };
-			if (lvl == 0) return RootScope; //ScopeKind::Root;						
+			if (lvl == 0) return RootScope; //ScopeKind::Root;
 			return Scopes[lvl - 1];
 		}
 		void PushScope(ScopeKind K) {
@@ -382,7 +382,7 @@ public:
 		}
 		uint64 ScopeLevel() { return Scopes.size(); };
 		Scope GetScope(size_t lvl) {
-			if (lvl == 0) return RootScope; //ScopeKind::Root;						
+			if (lvl == 0) return RootScope; //ScopeKind::Root;
 			return Scopes[lvl - 1];
 		}
 		ScopeKind ScopeK() { return GetScope()->Kind; }
@@ -690,7 +690,7 @@ public:
 						pos += 2;
 					} else {
 						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "="));
-						pos += 1;						 
+						pos += 1;
 					}
 					break;
 				case '>':
@@ -701,7 +701,7 @@ public:
 					if (Line[pos + 1] == '=') {
 						W += '=';
 						pos += 2;
-					} else {						
+					} else {
 						pos += 1;
 					}
 					Ret->Words.push_back(_Word::NewWord(WordKind::Operator, W));
@@ -718,7 +718,7 @@ public:
 					} else {
 						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "+"));
 						pos++;
-					} 
+					}
 					break;
 				case '-':
 					TransAssert(pos < Line.size() - 1, "There can never be a - at the end of a line");
@@ -783,7 +783,7 @@ public:
 						Ret->Words.push_back(_Word::NewWord(WordKind::Operator, "" + ch+Line[pos+1]));
 						pos += 2;
 					} else {
-						std::string chs{ "character '" }; chs += ch; chs += "'";				
+						std::string chs{ "character '" }; chs += ch; chs += "'";
 						TransError(TrSPrintF("Completely unexpected %s (Position %d) ", chs.c_str(), pos));
 					}
 				}
@@ -797,7 +797,7 @@ public:
 			if (!Ret->Words[p]) QCol->Warn(TrSPrintF("\x7\x7There is null word on position %d/%d found!", p, Ret->Words.size()));
 		}
 #endif
-		return Ret; 
+		return Ret;
 	}
 
 	static std::vector<Instruction> ChopCode(Slyvina::VecString sourcelines, std::string srcfile, Slyvina::JCR6::JT_Dir JD, bool debug, std::map<String, String>*Macros) {
@@ -822,7 +822,7 @@ public:
 						auto key{ Upper(mdef.substr(0,p)) };
 						(*Macros)[key] = mdef.substr(p + 1);
 					}
-				} else { QCol->Warn("Invalid #MACRO definition"); }				
+				} else { QCol->Warn("Invalid #MACRO definition"); }
 			} else {
 				for (auto M : *Macros) {
 					(*sourcelines)[_ln] = StCIReplace((*sourcelines)[_ln], M.first, M.second);
@@ -876,7 +876,7 @@ public:
 			default:
 				switch (W->Kind) {
 				case WordKind::Identifier: {
-					auto WT{ Ins->ScopeData->Identifier(T,Ins->LineNumber,W->UpWord,ignoreglobals) };					
+					auto WT{ Ins->ScopeData->Identifier(T,Ins->LineNumber,W->UpWord,ignoreglobals) };
 					//if (!WT.size()) for (size_t pos = start; pos < Ins->Words.size(); pos++) { std::cout << "Word #" << pos << ": " << Ins->Words[pos]->TheWord << "\n"; } // debug only
 					TransAssert(WT.size(), "Unknown identifier " + W->TheWord);
 					Ret += WT;
@@ -946,7 +946,7 @@ public:
 			BoolError("No support yet for the inclusion of lua files through #USE yet!");
 		} else if (JD->EntryExists(bcFile)) {
 			skip = true;
-		} else if (JD->DirectoryExists(Para+".ScyndiBundle")) {			
+		} else if (JD->DirectoryExists(Para+".ScyndiBundle")) {
 			for (auto& JDI : JD->_Entries) {
 				if (ExtractExt(Upper(JDI.first)) == "SCYNDI" && ExtractDir(Upper(JDI.first)) == Upper(Para + ".ScyndiBundle")) {
 					auto inc{ StripExt(JDI.second->Name()) };
@@ -969,9 +969,9 @@ public:
 			}
 			auto GetMacros = g->Values("Macros");
 			//QCol->Doing("-> Macros", GetMacros->size()); // DEBUG ONLY!!!
-			for (auto M : *GetMacros) { 
+			for (auto M : *GetMacros) {
 				//QCol->Doing("-> Macro " + M, g->Value("Macros", M)); // DEBUG ONLY!!
-				(*Macros)[M] = g->Value("Macros", M); 
+				(*Macros)[M] = g->Value("Macros", M);
 			}
 		} else {
 			auto CR{ Compile(dat,JD,srFile,debug,force) };
@@ -992,12 +992,12 @@ public:
 			}
 			auto GetMacros = CR->Data->Values("Macros");
 			//QCol->Doing("-> Macros", GetMacros->size()," (in "+Para+")\n"); // DEBUG ONLY!!!
-			for (auto M : *GetMacros) { 
+			for (auto M : *GetMacros) {
 				//QCol->Doing("-> Macro " + M, CR->Data->Value("Macros", M)); // DEBUG ONLY!!
-				(*Macros)[M] = CR->Data->Value("Macros", M); 
+				(*Macros)[M] = CR->Data->Value("Macros", M);
 			}
-		}		
-		
+		}
+
 		UseDependencies->push_back(Para);
 		return true;
 	}
@@ -1013,18 +1013,21 @@ public:
 		//uint64 ScopeLevel{ 0 };
 
 		// The := statement
-		
+
 		for (size_t l = 1; l < sourcelines->size(); l++) {
 			auto line{ Trim( (*sourcelines)[l]) };
 			auto found{ false };
 			auto LineNumber(l + 1);
 			size_t pos{ 0 };
 			found = false; // Make sure!
-			for (size_t p = 1; p < line.size() - 1; ++p) {
-				if (line[p] == '"') break; // Strings are not eligable anyway, so this should be pretty safe.
-				if (line[p] == '/') break; // Either / or //, the former should be a normal error and the latter be a comment
-				if (line[p] == ':' && line[p + 1] == '=') { found = true;  pos = p; break; }
-			}
+            Chat("Preprocessing := definitions - line "<<(l+1)<<"/"<<sourcelines->size());
+            if (line.size()>2) {
+                for (size_t p = 1; p < line.size() - 1; ++p) {
+                    if (line[p] == '"') break; // Strings are not eligable anyway, so this should be pretty safe.
+                    if (line[p] == '/') break; // Either / or //, the former should be a normal error and the latter be a comment
+                    if (line[p] == ':' && p<line.size()-1 && line[p + 1] == '=') { found = true;  pos = p; break; }
+                }
+            }
 			if (found) {
 				//printf("\x1b[0mLine %04zd; := found on position %zd -> %s\n", LineNumber, pos, line.c_str());
 				auto
@@ -1046,8 +1049,8 @@ public:
 				continue; // Just make sure no other crap happens before the next line
 			}
 		}
-		
-		
+
+
 		// Chopping
 		Ret.Instructions = ChopCode(sourcelines, srcfile, JD, debug, &Macros);
 		if (!Ret.Instructions.size()) return nullptr; // Something must have gone wrong
@@ -1158,7 +1161,7 @@ public:
 				DecScope = true;
 				//std::cout << " ???? DESTRUCTOR IGNORED ???\n";
 			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "EXTERN" || ins->Words[0]->UpWord == "LOCEXTERN")) {
-				ins->Kind = InsKind::ExternImport; 
+				ins->Kind = InsKind::ExternImport;
 			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY"|| ins->Words[0]->UpWord == "GET" || ins->Words[0]->UpWord == "SET" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
 				Chat("Will this be a variable declaration or a function definition? (Line: " << ins->LineNumber << ")");
 				TransAssert(ScriptName.size(), "Header first");
@@ -1210,7 +1213,7 @@ public:
 						ins->Kind = InsKind::PropertyGet;
 						Ret.PushScope(ScopeKind::FunctionBody);
 						Ret.GetScope()->DecData = dec;
-						ins->NextScope = Ret.GetScope();						
+						ins->NextScope = Ret.GetScope();
 					} else if (dec->IsSet) {
 						ins->Kind = InsKind::PropertySet;
 						Ret.PushScope(ScopeKind::FunctionBody);
@@ -1225,10 +1228,10 @@ public:
 					TransAssert(PScope->Kind == ScopeKind::Root, "Global declaration only possible in the root scope");
 				} else if (PScope->Kind == ScopeKind::Root || (PScope->Kind == ScopeKind::Declaration && PScope->Parent->Kind == ScopeKind::Root)) {
 					dec->IsRoot = true;
-				} else if (PScope->Kind == ScopeKind::Class) {					
+				} else if (PScope->Kind == ScopeKind::Class) {
 					dec->BoundToClass = ins->ScopeData->ClassID;
 					//TransError("Class declarations not yet supported");
-				
+
 				} else if (PScope->Kind == ScopeKind::Group) {
 					dec->BoundToClass = ins->ScopeData->ClassID;
 					dec->IsStatic = true;
@@ -1242,7 +1245,7 @@ public:
 			} else if (Ret.GetScope()->Kind == ScopeKind::Declaration) {
 				if (ins->Words.size() && ins->Words[0]->UpWord == "END") {
 					Ret.Scopes.pop_back();
-					DecScope = true;					
+					DecScope = true;
 				} else if (ins->Words.size() && ins->Words[0]->Kind != WordKind::Identifier) {
 					Ret.Scopes.pop_back();
 					DecScope = false;
@@ -1277,7 +1280,7 @@ public:
 						return nullptr;
 					}
 				} else if (Opdracht == "PRAGMA") {
-					// Do nothing at the present time, but 'Pragma' can be used for engine specific settings (if the compiler supports those).					
+					// Do nothing at the present time, but 'Pragma' can be used for engine specific settings (if the compiler supports those).
 				} else if (Opdracht == "REGION" || Opdracht == "ENDREGION") {
 					// Do nothing as these are merely markers that some (advanced) IDEs may be able to use. Similar to #region and #endregion in C#.
 				} else if (Opdracht == "DEF" || Opdracht == "DEFINE") {
@@ -1326,13 +1329,13 @@ public:
 					if (!TransUse(Para, &Ret, JD, debug, srcfile, LineNumber,force,dat,&UseDependencies,&Macros)) return nullptr;
 					/* Original (in case this goes wrong)
 					auto bcFile{ Para }; if (debug) bcFile += ".debug"; bcFile += ".stb";
-					auto srFile{ Para }; 
+					auto srFile{ Para };
 					auto skip{ false };
-					
+
 					//auto cfFile{ bcFile + "/Configuration.ini" };
 					if (JD->EntryExists(Para + ".Scyndi")) {
 						srFile += ".Scyndi";
-					} else if (JD->EntryExists(Para + ".lua")) {						
+					} else if (JD->EntryExists(Para + ".lua")) {
 						TransError("No support yet for the inclusion of lua files through #USE yet!");
 					} else if (JD->EntryExists(bcFile)) {
 						skip = true;
@@ -1354,7 +1357,7 @@ public:
 						TransAssert(CR->Result != CompileResult::Fail, TrSPrintF("#USE request for '%s' failed", Para.c_str()));
 						if (CR->Result == CompileResult::Skip) {
 							Verb("Status", "Up-to-date");
-							auto bcj{ JCR6::JCR6_Dir(JD->Entry(bcFile)->MainFile) };							
+							auto bcj{ JCR6::JCR6_Dir(JD->Entry(bcFile)->MainFile) };
 							CR->Data = ParseGINIE(bcj->GetString("Configuration.ini"));
 						} else {
 							if (force) Verb("Status", "Forced"); else Verb("Status", "Outdated");
@@ -1416,7 +1419,7 @@ public:
 				}
 			} else if (MuteByIfDef) {
 				ins->Kind = InsKind::MutedByIfDef;
-			} else if (ins->Scope==ScopeKind::DefTable) {				
+			} else if (ins->Scope==ScopeKind::DefTable) {
 				ins->Kind = ins->Words.size() == 0 ? InsKind::WhiteLine : (ins->Words[0]->UpWord == "END" ? InsKind::EndScope : InsKind::DefTableIndex);
 				if (ins->Kind==InsKind::EndScope) Ret.Scopes.pop_back();
 				//printf("DEBUG:DefTable command: %s %d -> %02d (%s)\n", ins->RawInstruction.c_str(), (int)ins->Words.size(), (int)ins->Kind, ins->Words.size()?ins->Words[0]->UpWord.c_str():"<Whiteline>" );
@@ -1425,7 +1428,7 @@ public:
 				if (ins->Words[0]->UpWord == "DESTRUCTOR") {
 					ins->Words[0]->UpWord = "GC";
 					ins->Words[0]->TheWord = "GC";
-				} 
+				}
 				if (ins->Words[0]->UpWord == "END") {
 					ins->Kind = InsKind::EndScope;
 					Ret.Scopes.pop_back();
@@ -1496,7 +1499,8 @@ public:
 					case WordKind::Comma:
 						break; // Comma's are optional now. You can place them if you think it makes your code more beautiful, but it's not needed.
 					case WordKind::String:
-						CaseChain->push_back(TrSPrintF("\"%s\"", ins->Words[p]->TheWord.c_str()));
+						//CaseChain->push_back(TrSPrintF("\"%s\"", ins->Words[p]->TheWord.c_str()));
+						CaseChain->push_back(("\""+ins->Words[p]->TheWord+"\""));
 						break;
 					case WordKind::Number:
 						for (size_t lp = 0; lp < ins->Words[p]->UpWord.size(); lp++) TransAssert(ins->Words[p]->UpWord[lp] != '.', "Only integers, strings, true and false can be used for casing");
@@ -1570,7 +1574,7 @@ public:
 				TransAssert(ins->Words.size() >= 3, TrSPrintF("EXTERN incomplete (%d/3)", ins->Words.size()));
 				TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "EXTERN expects identifier");
 				TransAssert(ins->Words[2]->Kind == WordKind::String, "EXTERN expects string to define the pure external code");
-				Ret.Trans->Data->Value("Globals", ins->Words[1]->UpWord, ins->Words[2]->TheWord);				
+				Ret.Trans->Data->Value("Globals", ins->Words[1]->UpWord, ins->Words[2]->TheWord);
 				Ret.Trans->Data->Add("Globals", "-list-", ins->Words[1]->UpWord);
 				(*Ret.Trans->GlobalVar)[ins->Words[1]->UpWord] = ins->Words[2]->TheWord;
 				QCol->Doing("- Extern", ins->Words[1]->TheWord);
@@ -1806,7 +1810,7 @@ public:
 			auto Dec{ Ins->DecData };
 			if (Dec) {
 				auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };
-				auto PluaName{ Ins->Words[Ins->ForEachExpression]->TheWord };			
+				auto PluaName{ Ins->Words[Ins->ForEachExpression]->TheWord };
 				std::string Value{ "" };
 				std::string DType{ "" };
 				if (Dec->Type == VarType::CustomClass)
@@ -1850,12 +1854,12 @@ public:
 							//Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 						}
 					}
-					break; 
+					break;
 					//TransError("Function definitions not yet supported");
 				case InsKind::PropertySet:
 				case InsKind::PropertyGet: {
 					auto FClass{ Dec->BoundToClass };
-					auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };					
+					auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };
 					if (Dec->IsGlobal) FClass = "..GLOBALS..";
 					if (Dec->IsRoot) FClass = ScriptName;
 					if (Ins->Kind == InsKind::PropertyGet) {
@@ -1877,7 +1881,7 @@ public:
 						if (Dec->IsStatic) {
 							(*Ins->ScopeData->DecScope()->LocalVars)[VarName] = ref;
 						} else {
-							Ret.Fields[Upper(Dec->BoundToClass)].push_back(VarName);							
+							Ret.Fields[Upper(Dec->BoundToClass)].push_back(VarName);
 						}
 					}
 				} break;
@@ -1913,7 +1917,8 @@ public:
 					// std::cout << "Dec In Class '" << Dec->BoundToClass << "';\n"; //debug
 					if (Dec->BoundToClass.size()) {
 						auto ref{ TrSPrintF("Scyndi.Class[\"%s\"][\"%s\"]",Dec->BoundToClass.c_str(),VarName.c_str()) };
-						*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"%s\",\"%s\",%s,%s,%s,%s)\n", Dec->BoundToClass.c_str(), DType.c_str(), VarName.c_str(), lboolstring(Dec->IsStatic), lboolstring(Dec->IsReadOnly).c_str(), Lower(boolstring(Dec->IsConstant)).c_str(), Value.c_str());
+						//*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"%s\",\"%s\",%s,%s,%s,%s)\n", Dec->BoundToClass.c_str(), DType.c_str(), VarName.c_str(), lboolstring(Dec->IsStatic).c_str(), lboolstring(Dec->IsReadOnly).c_str(), Lower(boolstring(Dec->IsConstant)).c_str(), Value.c_str());
+						*Trans+="Scyndi.ADDMBER(\""+Dec->BoundToClass+"\", \""+DType+"\", \""+VarName+"\", "+lboolstring(Dec->IsStatic)+", "+lboolstring(Dec->IsReadOnly)+", "+lboolstring(Dec->IsConstant)+", "+ Value+")\n";
 						if (Dec->IsStatic) {
 							(*Ins->ScopeData->DecScope()->LocalVars)[VarName] = ref;
 						} else {
@@ -1958,7 +1963,7 @@ public:
 		// Translate
 		Verb("Translating", srcfile);
 		auto InitTag{ TrSPrintF("__Scyndi__Init__%s",md5(srcfile + CurrentDate() + CurrentTime()).c_str()) };
-		if (HasInit) *Trans += "\nlocal " + InitTag + " = {}\n";	
+		if (HasInit) *Trans += "\nlocal " + InitTag + " = {}\n";
 		for (auto& Ins : Ret.Instructions) {
 			auto LineNumber{ Ins->LineNumber };
 			if (Ins->Kind == InsKind::EndScope || Ins->Kind==InsKind::ElseIfStatement || Ins->Kind==InsKind::ElseStatement)
@@ -2016,7 +2021,7 @@ public:
 			} break;
 			case InsKind::DefTable:
 			{
-				auto id{ Expression(Ret.Trans,Ins,1) };				
+				auto id{ Expression(Ret.Trans,Ins,1) };
 				if (!id) return nullptr;
 				*Trans += *id + " = { \n";
 			} break;
@@ -2102,7 +2107,7 @@ public:
 				case ScopeKind::Do:
 				case ScopeKind::QFuncBody:
 					*Trans += "end\n";
-					break;					
+					break;
 				case ScopeKind::Case:
 				case ScopeKind::Default:
 					*Trans += "end\t";
@@ -2147,7 +2152,7 @@ public:
 						*Trans += ",";
 					}
 					*Trans += "\n";
-					break;					
+					break;
 				case ScopeKind::QuickMeta:
 					*Trans += "})) -- End QuickMeta!\n\n";
 					break;
@@ -2196,7 +2201,8 @@ public:
 						auto
 							stname{ TrSPrintF("Static_%08x",count++) },
 							fullstname{ StaticRegister + "_" + stname };
-						*Trans += TrSPrintF("if not %s[\"%s\"] then ", StaticRegister.c_str(), stname.c_str());
+						//*Trans += TrSPrintF("if not %s[\"%s\"] then ", StaticRegister.c_str(), stname.c_str());
+						*Trans += "if not "+StaticRegister+"[\""+stname+"\"] then ";
 						// Static Locals!
 						//if (Ins->DecData->Type == VarType::pLua) {
 							*Trans += TrSPrintF("%s = %s; ", fullstname.c_str(), BaseValue.c_str());
@@ -2207,7 +2213,7 @@ public:
 							(*Ins->ScopeData->LocalVars)[VarName] = TrSPrintF("Scyndi.Globals.%s", fullstname.c_str());
 						}//*/
 						*Trans += TrSPrintF("%s[\"%s\"]=true ", StaticRegister.c_str(), stname.c_str());
-						//*Trans += "print(' Registered static local  "+ StaticRegister+"::"+ stname+"') "; // DEBUG ONLY!						
+						//*Trans += "print(' Registered static local  "+ StaticRegister+"::"+ stname+"') "; // DEBUG ONLY!
 						*Trans += " end\n";
 						Ins->ScopeData->LocalDeclaLine[VarName] = Ins->LineNumber;
 						break;
@@ -2225,13 +2231,14 @@ public:
 							Ins->ScopeData->ScopeLoc += md5(Ins->ScopeData->ScopeLoc + srcfile);
 							*Trans += "local " + Ins->ScopeData->ScopeLoc + " = Scyndi.CreateLocals(); ";
 						}
-						*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s, \"%s\", %s, \"%s\", %s);", Ins->ScopeData->ScopeLoc.c_str(), _Declaration::E2S(Ins->DecData->Type).c_str(), Lower(boolstring(Ins->DecData->IsReadOnly || Ins->DecData->IsConstant)).c_str(), VarName.c_str(), BaseValue.c_str());
-						(*Ins->ScopeData->LocalVars)[VarName] = TrSPrintF("%s[\"%s\"]", Ins->ScopeData->ScopeLoc.c_str(), VarName.c_str());
+						//*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s, \"%s\", %s, \"%s\", %s);", Ins->ScopeData->ScopeLoc.c_str(), _Declaration::E2S(Ins->DecData->Type).c_str(), Lower(boolstring(Ins->DecData->IsReadOnly || Ins->DecData->IsConstant)).c_str(), VarName.c_str(), BaseValue.c_str());
+						*Trans += "Scyndi.DECLARELOCAL("+Ins->ScopeData->ScopeLoc+", \""+_Declaration::E2S(Ins->DecData->Type)+"\", "+lboolstring(Ins->DecData->IsReadOnly || Ins->DecData->IsConstant)+", \""+VarName+"\", "+BaseValue+") ";
+						(*Ins->ScopeData->LocalVars)[VarName] = Ins->ScopeData->ScopeLoc+"[\""+VarName+"\"]"; //TrSPrintF("%s[\"%s\"]", Ins->ScopeData->ScopeLoc.c_str(), VarName.c_str());
 						Ins->ScopeData->LocalDeclaLine[VarName] = Ins->LineNumber;
 					}
 					*Trans += "\n";
 				}
-				break;			
+				break;
 			case InsKind::QuickMeta:
 			case InsKind::StartQuickMeta:
 				*Trans += TrSPrintF("Scyndi.ADDMBER(\"..GLOBALS..\", \"TABLE\", \"%s\", true, true, true, setmetatable({},{\n", Ins->Words[1]->UpWord.c_str());
@@ -2249,14 +2256,15 @@ public:
 				*Trans += ")\n";
 				break;
 			case InsKind::PropertyGet: {
-				auto dec{ Ins->DecData }; 
+				auto dec{ Ins->DecData };
 				auto fclass{ dec->BoundToClass };
 				auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };
 				TransAssert(dec->Type != VarType::pLua, "PLUA cannot be used for properties!");
 				if (dec->IsGlobal) fclass = "..GLOBALS..";
 				if (dec->IsRoot) fclass = ScriptName;
 				TransAssert(fclass.size(), "GET property not possible as a local");
-				*Trans += TrSPrintF("Scyndi.ADDPROPERTY(\"%s\", \"%s\", %s, \"get\", function(self) \n", fclass.c_str(),VarName.c_str(),lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal));
+				//*Trans += TrSPrintF("Scyndi.ADDPROPERTY(\"%s\", \"%s\", %s, \"get\", function(self) \n", fclass.c_str(),VarName.c_str(),lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal).c_str());
+				*Trans += "Scyndi.ADDPROPERTY(\""+fclass+"\", \""+VarName+"\", "+lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal)+", \"get\", function(self) \n";
 				if (debug) *Trans += TrSPrintF("Scyndi.Debug.Push(\"Property(GET) %s.%s\") ",fclass.c_str(),VarName.c_str());
 				if (Ins->DecData->BoundToClass.size() && (!Ins->DecData->IsStatic)) {
 					for (auto& FLD : Ret.Fields[Upper(Ins->DecData->BoundToClass)]) {
@@ -2274,11 +2282,13 @@ public:
 				if (dec->IsRoot) fclass = ScriptName;
 				TransAssert(fclass.size(), "GET property not possible as a local");
 				Ins->NextScope->ScopeLoc = TrSPrintF("Scyndi_Set_Property_%08x_%s", count++, md5(VarName).c_str());
-				*Trans += TrSPrintF("Scyndi.ADDPROPERTY(\"%s\", \"%s\", %s, \"set\", function(self,_value) \n", fclass.c_str(), VarName.c_str(), lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal));
+				//*Trans += TrSPrintF("Scyndi.ADDPROPERTY(\"%s\", \"%s\", %s, \"set\", function(self,_value) \n", fclass.c_str(), VarName.c_str(), lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal));
+				*Trans += "Scyndi.ADDPROPERTY(\""+fclass+"\", \""+VarName+"\", "+lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal)+", \"set\", function(self,_value) \n";
 				if (debug) *Trans += TrSPrintF("Scyndi.Debug.Push(\"Property(SET) %s.%s\") ", fclass.c_str(), VarName.c_str());
 				*Trans += Ins->NextScope->ScopeLoc; *Trans += " = Scyndi.CreateLocals()\n";
-				*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s,\"%s\", false,\"Value\",_value); ", Ins->NextScope->ScopeLoc.c_str(), _Declaration::E2S(Ins->DecData->Type).c_str());
-				(*Ins->NextScope->LocalVars)["VALUE"] = TrSPrintF("%s[\"VALUE\"]", Ins->NextScope->ScopeLoc.c_str());
+				//*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s,\"%s\", false,\"Value\",_value); ", Ins->NextScope->ScopeLoc.c_str(), _Declaration::E2S(Ins->DecData->Type).c_str());
+				*Trans += "Scyndi.DECLARELOCAL("+Ins->NextScope->ScopeLoc+", \""+_Declaration::E2S(Ins->DecData->Type)+"\",false,\"Value\",_value); ";
+				(*Ins->NextScope->LocalVars)["VALUE"] = Ins->NextScope->ScopeLoc+"[\"VALUE\"]";
 				if (Ins->DecData->BoundToClass.size() && (!Ins->DecData->IsStatic)) {
 					for (auto& FLD : Ret.Fields[Upper(Ins->DecData->BoundToClass)]) {
 						(*Ins->NextScope->LocalVars)[FLD] = TrSPrintF("self.%s", FLD.c_str());
@@ -2307,9 +2317,12 @@ public:
 				while (Pos < Ending && Ins->Words[Pos]->UpWord != ")") {
 					//std::cout << VarName << ":\t" << Pos << "\t" << Ins->Words[Pos]->UpWord << "\t" << (Ins->Words[Pos]->UpWord == "PLUA") << "\n"; // debug only!
 					if (Ins->Words[Pos]->Kind == WordKind::Identifier) {
-						
+
 						if (ArgLine.size()) ArgLine += ", "; ArgLine += TrSPrintF("Arg%d", Args.size());
-						Args.push_back(Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",VarType::Var,false });
+						//Args.push_back(Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",VarType::Var,false });
+						//Args.push_back(Arg{Ins->Words[Pos]->UpWord,csfmt("$[0][\"$[1]\"]",2,String[ScN,Ins->Words[Pos]->UpWord]),"",VarType::Var,false});
+						Arg __fuckyou_gcc{Ins->Words[Pos]->UpWord,ScN+"[\""+Ins->Words[Pos]->UpWord+"\"]","",VarType::Var,false};
+						Args.push_back(__fuckyou_gcc);
 						Pos++;
 						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (variant) argument #%d (W#%d)", Args.size(), Pos));
 						Pos++;
@@ -2342,7 +2355,8 @@ public:
 					} else if (Ins->Words[Pos]->UpWord == "INT" || Ins->Words[Pos]->UpWord == "NUMBER" || Ins->Words[Pos]->UpWord == "BYTE") {
 						auto DT{ Ins->Words[Pos]->UpWord };
 						Pos++;
-						auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						//auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						auto A{ Arg{ Ins->Words[Pos]->UpWord,ScN+"[\""+Ins->Words[Pos]->UpWord+"\"]","",_Declaration::S2E[DT],false} };
 						// std::cout << "Arg type " << (int)A.dType << "(" << DT << ")\n"; // debug
 						if (ArgLine.size()) ArgLine += ", "; ArgLine += TrSPrintF("Arg%d", Args.size());
 						Pos++;
@@ -2359,7 +2373,13 @@ public:
 					} else if (Ins->Words[Pos]->UpWord == "STRING") {
 						auto DT{ Ins->Words[Pos]->UpWord };
 						Pos++;
-						auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						//auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN.c_str(),Ins->Words[Pos]->UpWord.c_str()),"",_Declaration::S2E[DT],false} };
+						Arg A{
+						    Ins->Words[Pos]->UpWord,
+						    ScN+"[\""+Ins->Words[Pos]->UpWord+"\"]",
+						    "",
+						    _Declaration::S2E[DT],
+						    false};
 						// std::cout << "Arg type " << (int)A.dType << "(" << DT << ")\n"; // debug
 						if (ArgLine.size()) ArgLine += ", "; ArgLine += TrSPrintF("Arg%d", Args.size());
 						Pos++;
@@ -2376,7 +2396,11 @@ public:
 					} else if (Ins->Words[Pos]->UpWord=="BOOL"){
 						auto DT{ Ins->Words[Pos]->UpWord };
 						Pos++;
-						auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						//auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						Arg A {
+						    Ins->Words[Pos]->UpWord,
+						    ScN+"[\""+Ins->Words[Pos]->UpWord+"\"]",
+						    "",_Declaration::S2E[DT],false};
 						// std::cout << "Arg type " << (int)A.dType << "(" << DT << ")\n"; // debug
 						if (ArgLine.size()) ArgLine += ", "; ArgLine += TrSPrintF("Arg%d", Args.size());
 						Pos++;
@@ -2441,7 +2465,7 @@ public:
 							//auto ref{ TrSPrintF("Scyndi.Globals[\"%s\"]",VarName.c_str()) };
 							//Ret.Trans->Data->Add("Globals", "-list-", VarName);
 							//Ret.Trans->Data->Value("Globals", VarName, ref);
-							//(*Ret.Trans->GlobalVar)[VarName] = ref;						
+							//(*Ret.Trans->GlobalVar)[VarName] = ref;
 						}
 					} else if (Ins->DecData->IsRoot) {
 						if (Ins->DecData->Type == VarType::pLua) {
@@ -2489,15 +2513,24 @@ public:
 							if (Ag->HasBaseValue) TransError("Plua cannot hold a base value");
 							break;
 						case VarType::String:
-							if (Ag->HasBaseValue) IValue = TrSPrintF("\"%s\"", Ag->BaseValue); else IValue="error('String expected for argument \""+Ag->Name+"\"')"; //IValue = "\"\"";
+							if (Ag->HasBaseValue) IValue = TrSPrintF("\"%s\"", Ag->BaseValue.c_str()); else IValue="error('String expected for argument \""+Ag->Name+"\"')"; //IValue = "\"\"";
 							break;
 						default:
 							if (Ag->HasBaseValue) TransError("Base value not permitted for that type");
 							IValue = "nil";
 							break;
 						}
-						*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s,\"%s\", false,\"%s\",Arg%d or %s); ", Ins->NextScope->ScopeLoc.c_str(), _Declaration::E2S(Args[ap].dType).c_str(), Args[ap].Name.c_str(), ap, IValue.c_str());
-						(*Ins->NextScope->LocalVars)[Upper(Ag->Name)] = TrSPrintF("%s[\"%s\"]", Ins->NextScope->ScopeLoc.c_str(), Ag->Name.c_str());
+						//*Trans += TrSPrintF("Scyndi.DECLARELOCAL(%s,\"%s\", false,\"%s\",Arg%d or %s); ", Ins->NextScope->ScopeLoc.c_str(), _Declaration::E2S(Args[ap].dType).c_str(), Args[ap].Name.c_str(), ap, IValue.c_str());
+						*Trans += "Scyndi.DECLARELOCAL(" +
+                            Ins->NextScope->ScopeLoc +
+                            ", \""+
+                            _Declaration::E2S(Args[ap].dType) +
+                            "\",  false, \""+
+                            Args[ap].Name +
+                            TrSPrintF("\", Arg%d or ",ap) +
+                            IValue +
+                            ");  ";
+						(*Ins->NextScope->LocalVars)[Upper(Ag->Name)] = Ins->NextScope->ScopeLoc+"[\""+Ag->Name+"\"]"; //TrSPrintF("%s[\"%s\"]", Ins->NextScope->ScopeLoc.c_str(), Ag->Name.c_str());
 					}
 				}
 				*Trans += pLuaLine;
@@ -2505,7 +2538,7 @@ public:
 				if (Ins->Kind == InsKind::StartMethod) {
 					(*Ins->NextScope->LocalVars)["SELF"] = "self";
 					//std::cout << "Fields for "<< Upper(Ins->DecData->BoundToClass)<<"\n";
-					for (auto& FLD : Ret.Fields[Upper(Ins->DecData->BoundToClass)]) {						
+					for (auto& FLD : Ret.Fields[Upper(Ins->DecData->BoundToClass)]) {
 						(*Ins->NextScope->LocalVars)[FLD] = TrSPrintF("self.%s", FLD.c_str());
 					}
 				}
@@ -2518,7 +2551,7 @@ public:
 				*Trans += *Ex;
 				*Trans += '\n';
 			} break;
-			case InsKind::Increment: {			
+			case InsKind::Increment: {
 				DbgLineCheck;
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
 				if (!Ex) return nullptr;
@@ -2541,7 +2574,7 @@ public:
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
 				if (!Ex) return nullptr;
 				auto SwName{ *Ins->SwitchName };
-				auto SwVar{ *Ins->SwitchName }; SwVar += "_CheckVar"; 
+				auto SwVar{ *Ins->SwitchName }; SwVar += "_CheckVar";
 				*Trans += "local " + SwVar + "= "; *Trans += *Ex; *Trans += ";\t";
 				for (size_t i = 0; i < Ins->switchcase->size(); i++) {
 					auto CaseChain{ (*Ins->switchcase)[i] };
@@ -2569,7 +2602,7 @@ public:
 				*Trans += "end;\t";
 				*Trans += TrSPrintF("::%s_Default:: do ", Ins->SwitchName->c_str());
 			} break;
-			case InsKind::Forever: 
+			case InsKind::Forever:
 				DbgLineCheck;
 				*Trans += "until false\n";
 				break;
@@ -2617,7 +2650,7 @@ public:
 				case VarType::Number:
 					//std::cout << *Ex << "\n"; // debug
 					if (!Ex->size())
-						*Trans += "0"; 
+						*Trans += "0";
 					else {
 						//*Trans += TrSPrintF("Scyndi.WantValue(\"%s\",%s)", _Declaration::E2S(fKind).c_str(), Ex->c_str());
 						*Trans += "Scyndi.WantValue(\"";

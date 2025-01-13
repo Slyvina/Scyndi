@@ -31,6 +31,206 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/adler32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/compress.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/crc32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/crc32.h" />
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/deflate.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/deflate.h" />
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/gzclose.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/gzguts.h" />
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/gzlib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/gzread.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/gzwrite.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/infback.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/inffast.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/inffast.h" />
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/inffixed.h" />
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/inflate.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/inflate.h" />
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/inftrees.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/inftrees.h" />
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/trees.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/trees.h" />
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/uncompr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/zconf.h" />
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/zlib.h" />
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/zutil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/JCR6/3rdParty/zlib/src/zutil.h" />
+		<Unit filename="../../Libs/JCR6/Source/JCR6_Core.cpp" />
+		<Unit filename="../../Libs/JCR6/Source/JCR6_JQL.cpp" />
+		<Unit filename="../../Libs/JCR6/Source/JCR6_RealDir.cpp" />
+		<Unit filename="../../Libs/JCR6/Source/JCR6_Write.cpp" />
+		<Unit filename="../../Libs/JCR6/Source/JCR6_zlib.cpp" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lapi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lapi.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lauxlib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lauxlib.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lbaselib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lcode.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lcode.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lcorolib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lctype.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lctype.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ldblib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ldebug.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ldebug.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ldo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ldo.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ldump.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lfunc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lfunc.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lgc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lgc.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/linit.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/liolib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ljumptab.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/llex.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/llex.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/llimits.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lmathlib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lmem.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lmem.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/loadlib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lobject.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lobject.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lopcodes.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lopcodes.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lopnames.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/loslib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lparser.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lparser.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lprefix.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lstate.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lstate.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lstring.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lstring.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lstrlib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ltable.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ltable.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ltablib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ltm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/ltm.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lua.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lua.hpp" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/luaconf.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lualib.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lundump.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lundump.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lutf8lib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lvm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lvm.h" />
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lzio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../Libs/Lunatic/Lua/Raw/src/lzio.h" />
+		<Unit filename="../../Libs/Lunatic/Lunatic.cpp" />
+		<Unit filename="../../Libs/Lunatic/Lunatic.hpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvArgParse.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvAsk.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvBank.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvDir.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvDirry.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvMD5.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvQCol.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvRoman.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvSTOI.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvStream.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvString.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvTime.cpp" />
+		<Unit filename="../../Libs/Units/Source/SlyvVolumes.cpp" />
 		<Unit filename="Compiler/Config.cpp" />
 		<Unit filename="Compiler/Config.hpp" />
 		<Unit filename="Compiler/KeyWords.cpp" />
