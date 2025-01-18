@@ -1,7 +1,7 @@
 -- License:
 -- 	Script/ScyndiCore.lua
 -- 	Scyndi - Core Script
--- 	version: 25.01.06
+-- 	version: 25.01.18 VI
 -- 
 -- 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 -- 
@@ -169,6 +169,39 @@ local function newindex_static_member(cl,key,value,allowprivate)
 	member.value = _Scyndi.WANTVALUE(member.dtype,value)
 end
 
+local function tabcpy(ori)
+	local tar = {}
+	for k,v in pairs(ori) do
+		if type(v)=="table" then 
+			tar[k] = tabcpy(v)
+		else
+			tar[k] = v
+		end
+	end
+	return tar
+end
+
+-- Perform Extend Class
+local function PEC(classname)
+	local cu = classname:upper()
+	local _class = classregister[cu]
+	assert(_class,"Cannot perform extend on non-existent class: "..classname)
+	if (_class.extended) then return end -- Don't extend again if that's already done
+	if _class.extendclass then
+		local uex = _class.extendclass:upper()
+		assert(classregister[uex],"Extending non-existing class: ".._class.extendclass)
+		local base = classregister[uex]
+		base.sealed=true -- extending a class must seal the base. 
+		_class.extends = { base=base, extname=uex }
+		for _,k in pairs{"staticmembers","nonstaticmembers","methods","staticprop","methprop","abstracts","finals"} do
+			print(string.format("Extending - copy %s from %s to %s",k,_class.extendclass,classname)) -- debug only
+			_class[k] = tabcpy(base[k])
+			for mk,v in pairs(_class[k]) do print("\t",type(v),mk) end
+			_class.extended = true
+		end
+	end
+end
+
 
 function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	local _class = { 
@@ -182,19 +215,37 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 		staticprop={pget={},pset={}},
 		methprop={pget={},pset={}},
 		pub={},
-		priv={}
-	}	
+		priv={},
+		abstracts={},
+		finals={},
+		extends={},
+		extendclass=extends,
+		extended=false,		
+	}		
+	--[[
+	if extends then
+		local uex = extends:upper()
+		assert(classregister[uex],"Extending non-existing class: "..extends)
+		local base = classregister[uex]
+		_class.extends = { base=base, extname=uex }
+		for _,k in pairs{"staticmembers","nonstaticmembers","methods","staticprop","methprop","abstracts","finals"} do
+			print(string.format("Extending - copy %s from %s to %s",k,extends,classname)) -- debug only
+			_class[k] = tabcpy(base[k])
+			for mk,v in pairs(_class[k]) do print("\t",type(v),mk) end
+		end
+	end
+	]]
 	local _static=_class.staticmembers
 	local _nonstatic=_class.nonstaticmembers
 	local cu = classname:upper()
 	assert(not(Identifier[cu] or classregister[cu]),"Class has dupe name: "..classname)	
-	if (extends) then
-		extends:upper()
-		assert(classregister[extends],"Extending non existent class "..extends)
-		_class.extends=extends
-		for k,v in pairs(classregister[extends].staticmembers) do _static[k]=v end
-		for k,v in pairs(classregister[extends].nonstaticmembers) do _snontatic[k]=v end
-	end
+	--if (extends) then
+	--	extends = extends:upper()
+	--	assert(classregister[extends],"Extending non existent class "..extends)
+	--	_class.extends=extends
+	--	for k,v in pairs(classregister[extends].staticmembers) do _static[k]=v end
+	--	for k,v in pairs(classregister[extends].nonstaticmembers) do _snontatic[k]=v end
+	--end
 	local meta={}
 	local metapriv={}
 	function meta.__index(self,key)
@@ -219,7 +270,9 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 end
 
 _Scyndi.CLASSES = setmetatable({},{
-	__newindex=function() error("Scyndi.Classes is read-only!") end,
+	__newindex=function(s,cl,v)
+		print(string.format("Error! Trying to write value %s(%s) to class %s!",v,type(v),cl)
+		error("Scyndi.Classes is read-only!") end,
 	__index=function(s,key) 
 		key = key:upper()
 		assert(classregister[key],"No class named "..key.." found")
@@ -230,8 +283,9 @@ _Scyndi.CLASS = _Scyndi.CLASSES -- Laziness, but it should fix (read: void) coun
 
 function _Scyndi.ADDPROPERTY(ch,name,static,getset,func)
 	local cu=ch:upper()
-	name=name:upper()	
+	name=name:upper()
 	assert(classregister[cu],"Class "..cu.." unknown (member addition)")
+	--PEC(cu)
 	local _class=classregister[cu]
 	assert(not _class.sealed,"Class "..cu.." is already sealed. No new members allowed!")
 	local _prop
@@ -249,11 +303,12 @@ function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 	local cu=ch:upper()
 	name=name:upper()	
 	assert(classregister[cu],"Class "..cu.." unknown (member addition)")
+	--PEC(cu)
 	local _class=classregister[cu]
 	assert(not _class.sealed,"Class "..cu.." is already sealed. No new members allowed!")
 	if (_class.staticclass) then status=true end
 	assert(not _class.staticmembers[name],"Class "..ch.." already has a static member named "..name)
-	-- TODO: Override abstract
+	assert(not _class.abstracts[name],"Abstract "..name.." can only be overridden with a method!") -- Override abstract not possible with members
 	assert(not _class.nonstaticmembers[name],"Class "..ch.." already has a member named "..name)
 	local nm={
 		dtype=dtype,
@@ -266,21 +321,41 @@ function _Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
 	if (static) then _class.staticmembers[name]=nm else _class.nonstaticmembers[name]=nm end
 end
 
+function _Scyndi.ADDABSTRACT(ch,dtype,_name)
+	local cu=ch:upper()
+	local name=_name:upper()
+	PEC(cu)
+	assert(classregister[cu],"Class "..cu.." unknown (abstract addition)")
+	local _class=classregister[cu]
+	assert(not _class.sealed,"Class "..cu.." is already sealed. No new abstracts allowed!")
+	assert(not _class.staticmembers[name],"Class "..ch.." already has a static member named "..name)
+	assert(not _class.nonstaticmembers[name],"Class "..ch.." already has a member named "..name)
+	assert(not _class.abstracts[name],"Class "..ch.." already has an abstract named "..name)
+	_class.abstracts[name]=dtype:upper()
+end
+
 function _Scyndi.ADDMETHOD(ch,name,IsFinal,func)
 local cu=ch:upper()
+	PEC(cu)
 	name=name:upper()	
 	assert(classregister[cu],"Class "..cu.." unknown (member addition)")
 	assert(not classregister[cu].sealed,"Class "..cu.." is sealed. No methods can be added anymore")
 	local _class=classregister[cu]
 	assert(type(func)=="function","That is not a function, so it cannot be turned into a method")
 	assert( not ( _class.methods[name] and _class.methods[name].IsFinal ), "Final method cannot be overridden")
-	_class.methods[name] = { IsAbstract=false, IsFinal=False, Meth = func }
+	--print("New Method:",name," abstract: "..tostring(_class.abstracts[name]))
+	if (_class.abstracts[name]) then
+		--print("Abstract "..name.." removed from class: "..ch)
+		_class.abstracts[name]=nil 
+	end -- abstract overridden after all!
+	_class.methods[name] = { IsAbstract=false, IsFinal=IsFinal, Meth = func }
 end
 
 function _Scyndi.SEAL(ch)
 	local cu=ch:upper()
-	assert(classregister[cu],"Class "..cu.." unknown")
+	assert(classregister[cu],"Class "..cu.." unknown")	
 	assert(classregister[cu].sealable,"Class "..cu.." is NOT sealable")
+	PEC(cu)
 	classregister[cu].sealed=true
 	_Scyndi.ADDMBER("..GLOBALS..","TABLE",cu,true,true,true,classregister[cu].pub)
 end
@@ -347,6 +422,9 @@ function _Scyndi.NEW(ch,...)
 		[".TiedToClass"]={ CL=_Scyndi.CLASS[ch],CR=classregister[ch],CH=ch },
 		[".sealed"] = false
 	}
+	for ab,_ in pairs(_class.abstracts) do
+		error("Abstract "..ab.." found in class "..ch.."! Not possible to create new instance until all abstracts have been overridden!")
+	end 
 	for MK,MF in pairs(_class.methods) do
 		if MF.IsAbstract then error("Class "..ch.." contains abstracts") end
 		-- for MFK,MFV in pairs(MF) do io.write(type(MFV)," ",MK,".",MFK," -> ",tostring(MFV),"\n") end -- debug

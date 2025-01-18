@@ -8,18 +8,22 @@
 		<Build>
 			<Target title="Debug">
 				<Option output="bin/Debug/Scyndi" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="/media/tricky/Scyndi/Projects/Applications/Scyndi/Star Story" />
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="src/Script/Project/StarStory.ini -debug -scyndidebug -scyndiforce" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/Scyndi" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="/media/tricky/Scyndi/Projects/Applications/Scyndi/Star Story" />
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="src/Script/Project/StarStory.ini -debug -scyndidebug -scyndiforce" />
 				<Compiler>
 					<Add option="-O2" />
 				</Compiler>

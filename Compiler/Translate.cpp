@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 25.01.13
+// Version: 25.01.18
 // End License
 
 #include <Slyvina.hpp>
@@ -40,10 +40,17 @@
 #include "ScyndiProject.hpp"
 
 #undef TransDebug
+#undef TransVeryVerbose
 
+#ifdef TransVeryVerbose
+#define TransDebug
+#define TVV(abc) QCol->LMagenta("SCYNDI TRANSLATOR HARSH DEBUG> "); QCol->White(""); std::cout << abc << std::endl
+#else
+#define TVV(abc)
+#endif // TransVeryVerbose
 
 #ifdef TransDebug
-#define Chat(abc) QCol->LGreen("SCYNDI TRANSLATOR DEBUG> "); QCol->White(""); std::cout << abc << std::endl;
+#define Chat(abc) QCol->LGreen("SCYNDI TRANSLATOR DEBUG> "); QCol->White(""); std::cout << abc << std::endl
 #else
 #define Chat(abc)
 #endif
@@ -61,7 +68,7 @@ namespace Scyndi {
 		Unknown, HeaderDefintion, General,
 		QuickMeta, IfStatement, ElseIfStatement, ElseStatement,
 		WhileStatement, Increment, Decrement, DeclareVariable,
-		DefineFunction, CompilerDirective, WhiteLine,
+		DefineFunction, CompilerDirective, WhiteLine, AddAbstract,
 		Return, MutedByIfDef, StartInit, EndScope,
 		StartFor, StartForEach, Declaration,
 		StartDeclarationScope, StartFunction, StartMethod,
@@ -1139,7 +1146,7 @@ public:
 				ins->NextScope = Ret.GetScope();
 				ins->NextScope->DecData = dec;
 			} else if (ins->Words.size() && ins->Words[0]->UpWord == "DESTRUCTOR") {
-				TransAssert(ins->Words.size() == 1, "DESTRUCTOR accepts no kind of paramters at all!");
+				TransAssert(ins->Words.size() == 1, "DESTRUCTOR accepts no kind of parameters at all!");
 				auto dec = std::make_shared<_Declaration>();
 				ins->Words.push_back(_Word::NewWord("("));
 				ins->Words.push_back(_Word::NewWord(")"));
@@ -1160,6 +1167,12 @@ public:
 				ins->NextScope->DecData = dec;
 				DecScope = true;
 				//std::cout << " ???? DESTRUCTOR IGNORED ???\n";
+			} else if (ins->Words.size() && ins->Words[0]->UpWord == "ABSTRACT") {
+			    TransAssert(ins->Scope == ScopeKind::Class, TrSPrintF("(%d) Abstracts can only be created in classes",(int)ins->Scope));
+			    ins->Kind = InsKind::AddAbstract;
+			    //auto dec = std::make_shared<_Declaration>();
+			    //ins->DecData = dec;
+			    //dec->BoundToClass = ins->ScopeData->ClassID;
 			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "EXTERN" || ins->Words[0]->UpWord == "LOCEXTERN")) {
 				ins->Kind = InsKind::ExternImport;
 			} else if (ins->Words.size() && (ins->Words[0]->UpWord == "GLOBAL" || ins->Words[0]->UpWord == "STATIC" || ins->Words[0]->UpWord == "CONST" || ins->Words[0]->UpWord == "READONLY"|| ins->Words[0]->UpWord == "GET" || ins->Words[0]->UpWord == "SET" || Prefixed(ins->Words[0]->UpWord, "@") || _Declaration::S2E.count(ins->Words[0]->UpWord))) {
@@ -1566,7 +1579,8 @@ public:
 				if (ins->Words.size() > 2) {
 					TransAssert(ins->Words.size() == 4, "3 or more than 4 terms on a class? What are you doing?");
 					TransAssert(ins->Words[2]->UpWord == "EXTENDS", "EXTENDS expected");
-					TransError("Extended classes not yet supported");
+					//TransError("Extended classes not yet supported");
+					TransAssert(ins->Words[3]->Kind == WordKind::Identifier,"Class syntax error: Identifier expected for EXTENDS");
 				}
 				Ret.Trans->Data->Value("Globals", SC->ClassID, (*SC->LocalVars)["SELF"]);
 				Ret.Trans->Data->Add("Globals", "-list-", Upper(SC->ClassID));
@@ -1760,6 +1774,8 @@ public:
 					ins->Kind = InsKind::Declaration;
 				else
 					ins->Kind = InsKind::General;
+			} else if (ins->Words[0]->UpWord == "ABSTRACT") {
+			    // Nothing! All that should be done has been done, but this routine doesn't appear to understand that!
 			} else {
 				QCol->Error("The next kind of instruction is not yet understood, due to the translator not yet being finished (Line #" + std::to_string(LineNumber) + ")");
 			}
@@ -1791,7 +1807,14 @@ public:
 				*Trans += Ins->Words[1]->UpWord + "\", ";
 				*Trans += "true, true";
 				// ,extends )
-				if (Ins->Words.size() > 2) TransError("Extended classes not yet supported");
+				if (Ins->Words.size() > 2) {
+                        //TransError("Extended classes not yet supported");
+                        QCol->Yellow("= Class ");
+                        QCol->LCyan(Ins->Words[1]->TheWord);
+                        QCol->Yellow(" extends ");
+                        QCol->LCyan(Ins->Words[3]->TheWord+"\n");
+                        *Trans += ", \""+Ins->Words[3]->UpWord+"\"";
+				}
 				*Trans += ")\n";
 				(*Ret.Trans->GlobalVar)[Ins->Words[1]->UpWord] = "Scyndi.Classes." + Ins->Words[1]->UpWord;
 				break;
@@ -1965,11 +1988,13 @@ public:
 		auto InitTag{ TrSPrintF("__Scyndi__Init__%s",md5(srcfile + CurrentDate() + CurrentTime()).c_str()) };
 		if (HasInit) *Trans += "\nlocal " + InitTag + " = {}\n";
 		for (auto& Ins : Ret.Instructions) {
+            TVV("Translating "<<srcfile<<" line #"<<Ins->LineNumber);
 			auto LineNumber{ Ins->LineNumber };
 			if (Ins->Kind == InsKind::EndScope || Ins->Kind==InsKind::ElseIfStatement || Ins->Kind==InsKind::ElseStatement)
 				for (size_t tab = 1; tab < Ins->ScopeLevel; tab++) *Trans += '\t';
 			else
 				for (size_t tab = 0; tab < Ins->ScopeLevel; tab++) *Trans += '\t';
+            TVV("Kind: "<<(int)Ins->Kind);
 			switch (Ins->Kind) {
 				// Alright! Move along! There's nothing to see here.
 				// These kind of instructions were valid to preprocessing and stuff, but have no value any more during translating itself.
@@ -2544,6 +2569,53 @@ public:
 				}
 				//TransError("Function defs not yet complete"); // security
 			} break;
+            case InsKind::AddAbstract:
+                TVV("Abstract translation");
+                TVV("Words: "<<Ins->Words.size());
+                switch (Ins->Words.size()) {
+                    case 0: TransError("Internal error! Wordless Abstract"); // Can never happen under normal use.
+                    case 1: TransError("Abstract what?");
+                    case 2: {
+                        TransAssert(Ins->Words[1]->Kind==WordKind::Identifier,"Syntax error in short abstract definition! Identifier expected");
+                        //TransAssert(Ins->DecData->BoundToClass.size(),"Abstract without class");
+                        TransAssert(Ins->ScopeData->ClassID.size(),"Abstract without class");
+                        // _Scyndi.ADDABSTRACT(ch,dtype,_name)
+                        *Trans += "Scyndi.ADDABSTRACT(\"";
+                        //*Trans += Ins->DecData->BoundToClass;
+                        *Trans += Ins->ScopeData->ClassID;
+                        *Trans += "\", \"VAR\", \"";
+                        *Trans += Ins->Words[1]->UpWord;
+                        *Trans += "\")\n";
+                    } break;
+                    default: {
+                        TVV("Abstract - Long");
+                        int p{-1};
+                        for(int i=2;p<0;i++){
+                            //TVV(TrSPrintF("Check: i=%d; p=%d; wsize=%d",i,p,Ins->Words.size()));
+                            //printf("Check: i=%d; p=%d; wsize=%d",i,p,Ins->Words.size());
+                            TransAssert(i<Ins->Words.size(),"Abstract syntax error! (PE)"); // PE = Past end
+                            //printf(" -- %s\n",Ins->Words[i]->UpWord.c_str());
+                            p = Ins->Words[i]->UpWord=="(" ? i : -1;
+                        }
+                        TransAssert(p>-1,"Internal error on abstract translation! (p check remained negative) ");
+                        int idp{p-1};
+                        //printf("p=%d; idp=%d\n",p,idp);
+                        TransAssert(Ins->Words[idp]->Kind==WordKind::Identifier,"Abstract syntax error! (NI)"); // NI = No identifier (where expected)
+                        TransAssert(Ins->ScopeData->ClassID.size(),"Abstract without class");
+                        //std::cout<<"Updating *Trans\n";
+                        //TransAssert(Trans,"Internal error on abstract translation (Trans = null)");
+                        *Trans += "Scyndi.ADDABSTRACT(\"";
+                        //std::cout << "Bound to class: ";
+                        //TransAssert(Ins->DecData,"Internal error on abstract translation (DecData = null)");
+                        *Trans += Ins->ScopeData->ClassID;
+                        //std::cout<<*Trans<<"***End Of *Trans\n";
+                        //std::cout<<Ins->DecData->BoundToClass<<"\n";
+                        *Trans += "\", \"VAR\", \""; // Normally the type goes here, but at the present time Scyndi Core ignores that anyway.
+                        *Trans += Ins->Words[idp]->UpWord;
+                        *Trans += "\")\n";
+                        //std::cout<<"Done! Next, please\n";
+                    } break;
+                } break;
 			case InsKind::General: {
 				DbgLineCheck;
 				auto Ex{ Expression(Ret.Trans,Ins,0) };
@@ -2612,10 +2684,13 @@ public:
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
 				if (!Ex) return nullptr;
 				*Trans += "until ";
-				if (Ins->Kind == InsKind::LoopWhile)
-					*Trans += TrSPrintF("not(%s)", Ex->c_str());
-				else
-					*Trans += Ex->c_str();
+				if (Ins->Kind == InsKind::LoopWhile) {
+					//*Trans += TrSPrintF("not(%s)", Ex->c_str());
+					*Trans += "not( ";
+					*Trans += *Ex;
+					*Trans += ")";
+				} else
+					*Trans += *Ex;
 				*Trans += "\n";
 			} break;
 			case InsKind::Repeat:
