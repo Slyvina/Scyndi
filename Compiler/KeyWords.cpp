@@ -5,7 +5,7 @@
 // 
 // 
 // 
-// 	(c) Jeroen P. Broks, 2022, 2023, 2024, 2025
+// 	(c) Jeroen P. Broks, 2022, 2023, 2024, 2025, 2026
 // 
 // 		This program is free software: you can redistribute it and/or modify
 // 		it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 25.01.06
+// Version: 26.02.18
 // End License
 
 #include <string>
@@ -111,7 +111,9 @@ namespace Scyndi {
 		"FALSE",
 
 		// DefTable
-		"DEFTABLE"
+		"DEFTABLE",
+
+		"LINK"
 
 	};
 
@@ -143,6 +145,7 @@ namespace Scyndi {
 		{"NEWINDEX",{"KEY","VALUE"}},
 		{"INDEX",{"KEY"}},
 		{"GC",{}},
+		{"CALL",{"..."}},
 		{"TOSTRING",{}}
 	};
 }

@@ -15,6 +15,7 @@
 				<Option parameters="src/Script/Project/StarStory.ini -debug -scyndidebug -scyndiforce" />
 				<Compiler>
 					<Add option="-g" />
+					<Add directory="Tools/Yggdrassil/YggNews" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -26,6 +27,7 @@
 				<Option parameters="src/Script/Project/StarStory.ini -debug -scyndidebug -scyndiforce" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add directory="Tools/Yggdrassil/YggNews" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />

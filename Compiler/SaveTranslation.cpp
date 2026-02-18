@@ -1,26 +1,52 @@
-// Lic:
+// License:
+// 
 // Scyndi
 // Save and bundle translation
 // 
 // 
 // 
-// (c) Jeroen P. Broks, 2022, 2023
+// 	(c) Jeroen P. Broks, 2022, 2023, 2026
 // 
+// 		This program is free software: you can redistribute it and/or modify
+// 		it under the terms of the GNU General Public License as published by
+// 		the Free Software Foundation, either version 3 of the License, or
+// 		(at your option) any later version.
+// 
+// 		This program is distributed in the hope that it will be useful,
+// 		but WITHOUT ANY WARRANTY; without even the implied warranty of
+// 		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// 		GNU General Public License for more details.
+// 		You should have received a copy of the GNU General Public License
+// 		along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// 	Please note that some references to data like pictures or audio, do not automatically
+// 	fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 26.02.18
+// End License
+// Lic:
+// Scyndi
+// Save and bundle translation
+//
+//
+//
+// (c) Jeroen P. Broks, 2022, 2023
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-// 
+//
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
-// 
+//
 // Version: 23.01.04
 // EndLic
 extern "C" {
@@ -74,13 +100,13 @@ namespace Scyndi {
 	}
 
 	static int DumpLua(lua_State* L, const void* p, size_t sz, void* ud) {
-	   
+
 		auto pcp{ (char*)p };
 		for (size_t i = 0; i < sz; ++i) OutBuf->push_back(pcp[i]);
 		return 0;
 	}
 
-	bool SaveTranslation(Translation Trans, JT_Create Out,std::string Storage) {
+	bool SaveTranslation(Translation Trans, JT_Create Out,std::string Storage,bool Strip) {
 		err = false;
 		auto L{ luaL_newstate() };
 		auto source{ Trans->LuaSource };
@@ -91,12 +117,12 @@ namespace Scyndi {
 		//lua_call(L, 0, 0);
 		if (!err) {
 			OutBuf = std::make_shared < std::vector < char > >();
-			lua_dump(L, DumpLua, NULL, 0);
+			lua_dump(L, DumpLua, NULL, Strip?1:0);
 		}
 		if (!OutBuf->size()) {
 			QCol->Error("Lua translation failed!");
 			LuaPaniek(L); // Test
-			QCol->LGreen("<source>\n"); 
+			QCol->LGreen("<source>\n");
 			auto Lines = Split(source,'\n');
 			for (size_t ln = 0; ln < Lines->size(); ln++) {
 				QCol->LMagenta(TrSPrintF("%9d\t", ln + 1));

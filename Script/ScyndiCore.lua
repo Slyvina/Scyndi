@@ -1,9 +1,9 @@
 -- License:
 -- 	Script/ScyndiCore.lua
 -- 	Scyndi - Core Script
--- 	version: 25.01.18 VI
+-- 	version: 26.02.18
 -- 
--- 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
+-- 	Copyright (C) 2022, 2023, 2024, 2025, 2026 Jeroen P. Broks
 -- 
 -- 	This software is provided 'as-is', without any express or implied
 -- 	warranty.  In no event will the authors be held liable for any damages
@@ -113,7 +113,7 @@ function _Scyndi.WANTVALUE(dtype,value)
 end
 
 function _Scyndi.TOSTRING(v)
-	if type(v)=="table" and v[".classinstance"] then
+	if type(v)=="table" and v[".ClassInstance"] then
 		if v[".hasmember"]("TOSTRING") then return v.TOSTRING(v) end
 	end
 	return tostring(v)
@@ -138,7 +138,14 @@ local function index_static_member(cl,key,allowprivate)
 			return classregister[cu].staticmembers[m:upper()]~=nil
 		end
 	end
-	assert(classregister[cu].staticmembers[key],"Class "..cl.." has no static member named "..key)
+	if key==".CLASSINSTANCE" then
+		return nil
+	end
+	if not classregister[cu].staticmembers[key] then
+		--local fuckyou = debug.traceback()
+		print(debug.traceback())
+		error(" I:Class "..cl.." has no static member named "..key.."\n")
+	end
 	local member=classregister[cu].staticmembers[key]
 	if (not allowprivate) then assert(not member.private,"Class "..cl.." does have a static member named "..key..", however it's private and cannot be called this way.") end
 	if member.kind=="PROPERTY" then
@@ -148,6 +155,10 @@ local function index_static_member(cl,key,allowprivate)
 		return member.value
 	end
 end
+
+local function call_static(cl)
+	return _Scyndi.Class[cl].__CALL
+end	
 
 local function newindex_static_member(cl,key,value,allowprivate)
 	-- print("Static define:",cl,key,value) -- StaticNewIndex
@@ -159,7 +170,7 @@ local function newindex_static_member(cl,key,value,allowprivate)
 		return
 	end
 
-	assert(classregister[cu].staticmembers[key],"Class "..cl.." has no static member named "..key)
+	assert(classregister[cu].staticmembers[key],"NI:Class "..cl.." has no static member named "..key)
 	local member=classregister[cu].staticmembers[key]
 	if (not allowprivate) then assert(not member.private,"Class "..cl.." does have a static member named "..key..", however it's private and cannot be called this way.") end
 	--if member.kind=="PROPERTY" then
@@ -195,7 +206,19 @@ local function PEC(classname)
 		_class.extends = { base=base, extname=uex }
 		for _,k in pairs{"staticmembers","nonstaticmembers","methods","staticprop","methprop","abstracts","finals"} do
 			print(string.format("Extending - copy %s from %s to %s",k,_class.extendclass,classname)) -- debug only
-			_class[k] = tabcpy(base[k])
+			--_class[k] = tabcpy(base[k])
+			local t=tabcpy(base[k])
+			if (k=="staticprop" or k=="methprop") then
+				for _,kp in pairs{"pget","pset"} do
+					for km,vm in pairs(t[kp]) do
+						_class[k][kp][km] = _class[k][kp][km] or vm
+					end
+				end
+			else
+				for km,vm in pairs(t) do
+					_class[k][km] = _class[k][km] or vm
+				end
+			end
 			for mk,v in pairs(_class[k]) do print("\t",type(v),mk) end
 			_class.extended = true
 		end
@@ -249,10 +272,12 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	local meta={}
 	local metapriv={}
 	function meta.__index(self,key)
+		if type(key)=="number" then return index_static_member(cu,"STATICNUMINDEX")(key) end 
 		if key:upper()==".ISCLASS" then return true end
 		return index_static_member(cu,key)
 	end
 	function meta.__newindex(self,key,value)
+		if type(key)=="number" then index_static_member(cu,"STATICNUMNEWINDEX")(key,value) return end
 		return newindex_static_member(cu,key,value)
 	end
 	function metapriv.__index(self,key)
@@ -261,6 +286,9 @@ function _Scyndi.STARTCLASS(classname,staticclass,sealable,extends)
 	end
 	function metapriv.__newindex(self,key,value)
 		return newindex_static_member(cu,key,value,true)
+	end
+	function meta.__call(self)
+		return index_static_member(cu,"__CALL")
 	end
 	local ret = setmetatable(_class.pub,meta)
 	local retpriv = setmetatable(_class.priv,metapriv)
@@ -271,7 +299,8 @@ end
 
 _Scyndi.CLASSES = setmetatable({},{
 	__newindex=function(s,cl,v)
-		print(string.format("Error! Trying to write value %s(%s) to class %s!",v,type(v),cl)
+		print(string.format("Error! Trying to write value %s(%s) to class %s!",v,type(v),cl))
+		print(debug.traceback())
 		error("Scyndi.Classes is read-only!") end,
 	__index=function(s,key) 
 		key = key:upper()
@@ -394,10 +423,17 @@ end
 local function InstanceNewIndex(self,key,value)
 	-- print("InstanceNewIndex",self,key,value) -- ???
 	assert(key,"Nil received for key")
+	if type(key)=="number" then
+		self.NumNewIndex(key,value)
+		return
+	end
 	key=key:upper()
 	local TTC = self[".TiedToClass"]
 	-- print(TTC.CH,"Mem:"..key,"Static:",TTC.CR.staticmembers[key],"NonStatic:",TTC.CR.nonstaticmembers[key]) -- InstanceNewIndex Debug
-	if self[".Methods"][key] then error("Cannot overwrite methods") end
+	if self[".Methods"][key] then 
+		print(debug.traceback())
+		error("Cannot overwrite methods: "..key) 
+	end
 	if TTC.CR.staticmembers[key] then newindex_static_member(self[".TiedToClass"].CH,key,value); return; end
 	if TTC.CR.nonstaticmembers[key] then
 		local NSM=TTC.CR.nonstaticmembers[key]
@@ -540,7 +576,25 @@ end)
 _Scyndi.ADDMBER("..GLOBALS..","Delegate","SUFFIXED",true,true,true,function(str,suff)
 	return _Scyndi.GLOBALS.Right(str,#suff)==suff
 end)
+_Scyndi.ADDMBER("..GLOBALS..","Delegate","ARRAYCONTAINS",true,true,true,function(haystack,needle)
+	local i=0
+	while haystack[i] do
+		if haystack[i]==needle then return true end
+	end
+	return false
+end)
+local function _TableClear(t,recurse)
+	local victims = {}
+	for k,v in pairs(t) do
+		if recurse and type(v)=="table" then _TableClear(v,true) else victims[#victims+1]=k end
+	end
+	for _,victim in pairs(victims) do
+		t[victim]=nil
+	end
+end
+		
 
+_Scyndi.ADDMBER("..GLOBALS..","Delegate","TABLECLEAR",true,true,true,_TableClear)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","UPPER",true,true,true,string.upper)
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LOWER",true,true,true,string.lower)
 --[[
@@ -954,6 +1008,12 @@ end
 
 _Scyndi.ALLIDENTIFIERS = setmetatable({},{__index=AllStuff_Index,__newindex=AllStuff_NewIndex})
 
+function _Scyndi.HASIDENTIFIER(key)
+	key = key:upper()
+	if classregister[key] then return "Class" end
+	if _Scyndi.GLOBALS[".HASMEMBER"](key) then return "Global" end
+	return nil
+end
 
 
 -- ***** DEBUG linkups ***** --

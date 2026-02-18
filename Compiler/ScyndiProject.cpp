@@ -5,7 +5,7 @@
 // 
 // 
 // 
-// 	(c) Jeroen P. Broks, 2022, 2023, 2024
+// 	(c) Jeroen P. Broks, 2022, 2023, 2024, 2026
 // 
 // 		This program is free software: you can redistribute it and/or modify
 // 		it under the terms of the GNU General Public License as published by
@@ -22,31 +22,31 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.11.14
+// Version: 26.02.18
 // End License
 // Lic:
 // Scyndi
 // Project Management
-// 
-// 
-// 
+//
+//
+//
 // (c) Jeroen P. Broks, 2022, 2023
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-// 
+//
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
-// 
+//
 // Version: 23.11.01
 // EndLic
 
@@ -141,7 +141,7 @@ namespace Scyndi {
 			auto CanSkip{ true };
 			auto GDat{ ParseGINIE("[NOTHING]\nNothing=Nothing")};
 			//std::cout << OutputFile << " E"<< FileExists(OutputFile)<< " M" << Modified(Res, ScyndiSource, debug, force) << "\n";
-			if (FileExists(OutputFile) && (!Modified(Res,ScyndiSource,debug,force))) {				
+			if (FileExists(OutputFile) && (!Modified(Res,ScyndiSource,debug,force))) {
 				auto HRes{ JCR6_Dir(OutputFile) };
 				GDat = ParseGINIE(HRes->GetString("Configuration.ini"));
 				//QCol->Doing("Unmodified", ScyndiSource); // debug
@@ -157,12 +157,12 @@ namespace Scyndi {
 							if (C->Result == CompileResult::Fail) return CReturn(CompileResult::Fail);
 						}
 					}
-				}				
+				}
 			} else { CanSkip = false; }
 			if (CanSkip) return CReturn(CompileResult::Skip, GDat);
 		} //else CanSkip = false;
-	
-		
+
+
 		QCol->Doing("Reading", ScyndiSource);
 		auto src{ Res->GetString(ScyndiSource) };
 		auto T{ Translate(src,ScyndiSource,Res,PrjData,debug,force) };
@@ -176,7 +176,7 @@ namespace Scyndi {
 			QCol->Doing("Bundling", OutputFile);
 			auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
 			auto JO{ CreateJCR6(OutputFile) };
-			auto ret{ SaveTranslation(T, JO, Storage) };
+			auto ret{ SaveTranslation(T, JO, Storage,!debug) };
 			JO->Close();
 			if (!ret) return CReturn(CompileResult::Fail);
 			QCol->Doing("Completed", ScyndiSource);

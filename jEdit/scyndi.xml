@@ -92,8 +92,9 @@
       <KEYWORD1>DESTRUCTOR</KEYWORD1>
       <KEYWORD1>switch</KEYWORD1>
       <KEYWORD1>case</KEYWORD1>
-      <KEYWORD1>const</KEYWORD1>
       <KEYWORD1>default</KEYWORD1>
+      <KEYWORD1>fallthrough</KEYWORD1>
+      <KEYWORD1>const</KEYWORD1>
       <KEYWORD1>link</KEYWORD1>
       <KEYWORD1>var</KEYWORD1>
       <KEYWORD1>readonly</KEYWORD1>

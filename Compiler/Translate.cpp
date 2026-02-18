@@ -5,7 +5,7 @@
 // 
 // 
 // 
-// 	(c) Jeroen P. Broks, 2022, 2023, 2024, 2025
+// 	(c) Jeroen P. Broks, 2022, 2023, 2024, 2025, 2026
 // 
 // 		This program is free software: you can redistribute it and/or modify
 // 		it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 25.01.18
+// Version: 26.02.18
 // End License
 
 #include <Slyvina.hpp>
@@ -41,6 +41,8 @@
 
 #undef TransDebug
 #undef TransVeryVerbose
+
+#undef ScopeDebug
 
 #ifdef TransVeryVerbose
 #define TransDebug
@@ -386,6 +388,9 @@ public:
 			auto NS{ GetScope()->Breed() };
 			NS->Kind = K;
 			Scopes.push_back(NS);
+			#ifdef ScopeDebug
+			QCol->Magenta(TrSPrintF("SCOPE t%d #%d START\n",(int)K,(int)Scopes.size()));
+			#endif // ScopeDebug
 		}
 		uint64 ScopeLevel() { return Scopes.size(); };
 		Scope GetScope(size_t lvl) {
@@ -637,7 +642,10 @@ public:
 					pos++;
 				} break;
 				case '#':
-					TransAssert(pos == 0, "Syntax error! # is reserved for compiler directives and may only be at the start of the line");
+					//TransAssert(pos == 0, "Syntax error! # is reserved for compiler directives and may only be at the start of the line");
+					for(int i=pos-1;i>=0;i--) {
+						TransAssert(Line[i]=='\t' || Line[i]==' ', "Syntax error! # is reserved for compiler directives and may only be at the start of the line");
+					}
 					Ret->Words.push_back(_Word::NewWord("#"));
 					FormingWord = false;
 					FormWord = "";
@@ -942,7 +950,8 @@ public:
 		return std::shared_ptr<std::string>(new std::string(Ret));
 	}
 
-	bool TransUse(String&Para,_TransProcess *Ret,Slyvina::JCR6::JT_Dir JD,bool debug,String srcfile, uint32&LineNumber,bool force,GINIE dat,std::vector<String>* UseDependencies,std::map<String,String>*Macros) {
+	bool TransUse(String& _Para,_TransProcess *Ret,Slyvina::JCR6::JT_Dir JD,bool debug,String srcfile, uint32&LineNumber,bool force,GINIE dat,std::vector<String>* UseDependencies,std::map<String,String>*Macros) {
+		auto Para{StReplace(_Para,"$mp$",ExtractDir(srcfile))};
 		auto bcFile{ Para }; if (debug) bcFile += ".debug"; bcFile += ".stb";
 		auto srFile{ Para };
 		auto skip{ false };
@@ -1019,7 +1028,7 @@ public:
 		Ret.Trans = std::make_shared<_Translation>();
 		//uint64 ScopeLevel{ 0 };
 
-		// The := statement
+		// The := statement and link keyword
 
 		for (size_t l = 1; l < sourcelines->size(); l++) {
 			auto line{ Trim( (*sourcelines)[l]) };
@@ -1028,6 +1037,16 @@ public:
 			size_t pos{ 0 };
 			found = false; // Make sure!
             Chat("Preprocessing := definitions - line "<<(l+1)<<"/"<<sourcelines->size());
+            if (Prefixed(Upper(line),"LINK ")) {
+				auto pure{Trim(line.substr(5))};
+				auto p{IndexOf(pure,'=')}; TransAssert(p>0,"Link syntax error  (no =)");
+				auto linked{Trim(pure.substr(0,p))},linkto{Trim(pure.substr(p+1))};
+				TransAssert(linked.size(),"Link Syntax error (no source)");
+				TransAssert(linkto.size(),"Link Syntax error (no target)");
+				String NewLine{"Get Var "+linked+"; return "+linkto+"; End; Set Var "+linked+"; "+linkto+" = Value; End"};
+				QCol->Doing("- LINK",line+" -> "+NewLine);
+				(*sourcelines)[l] = NewLine;
+            }
             if (line.size()>2) {
                 for (size_t p = 1; p < line.size() - 1; ++p) {
                     if (line[p] == '"') break; // Strings are not eligable anyway, so this should be pretty safe.
@@ -1257,9 +1276,15 @@ public:
 				}
 			} else if (Ret.GetScope()->Kind == ScopeKind::Declaration) {
 				if (ins->Words.size() && ins->Words[0]->UpWord == "END") {
+					#ifdef ScopeDebug
+					QCol->Magenta(TrSPrintF("SCOPE t%d #%d END (Declaration scope)",(int)Ret.Scopes[Ret.Scopes.size()-1]->Kind,(int)Ret.Scopes.size()));
+					#endif // ScopeDebug
 					Ret.Scopes.pop_back();
 					DecScope = true;
 				} else if (ins->Words.size() && ins->Words[0]->Kind != WordKind::Identifier) {
+					#ifdef ScopeDebug
+					QCol->Magenta(TrSPrintF("SCOPE t%d #%d END (Declaration scope ended by dirty method)",(int)Ret.Scopes[Ret.Scopes.size()-1]->Kind,(int)Ret.Scopes.size()));
+					#endif // ScopeDebug
 					Ret.Scopes.pop_back();
 					DecScope = false;
 					//std::cout << "Ending";
@@ -1334,6 +1359,19 @@ public:
 				} else if (Opdracht == "CONFIG") {
 					TransAssert(ins->Words.size() >= 4, "Incomplete #CONFIG");
 					TransConfig[Upper(Para)] = ins->Words[3];
+				} else if (Opdracht =="SAY") {
+					QCol->Grey(Para+"\n");
+				} else if (Opdracht == "ACCEPT") {
+					// #Accept
+					TransAssert(ins->Words.size() >= 3, "Incomplete #ACCEPT");
+					//std::cout << "Accept: "<<ins->Words.size()<<"\n";
+					(*Ret.RootScope->LocalVars)[ins->Words[2]->UpWord] = (
+						ins->Words.size() > 3
+							?
+								ins->Words[3]->TheWord :
+								(String)"Scyndi.AllIdentifiers[\""+ins->Words[2]->TheWord+"\"]"
+						);
+					QCol->Doing("Accepted",ins->Words[2]->UpWord,""); QCol->Yellow(" as "); QCol->LBlue((*Ret.RootScope->LocalVars)[ins->Words[2]->UpWord]+"\n");
 				} else if (Opdracht == "USE") {
 					TransAssert(ins->Words.size() == 3, "#USE syntax error");
 					TransAssert(ins->Words[2]->Kind == WordKind::String, "String expected to determine the dependency to load with #USE");
@@ -1434,6 +1472,9 @@ public:
 				ins->Kind = InsKind::MutedByIfDef;
 			} else if (ins->Scope==ScopeKind::DefTable) {
 				ins->Kind = ins->Words.size() == 0 ? InsKind::WhiteLine : (ins->Words[0]->UpWord == "END" ? InsKind::EndScope : InsKind::DefTableIndex);
+					#ifdef ScopeDebug
+					QCol->Magenta(TrSPrintF("SCOPE t%d #%d END (line: %d) DefTable",(int)Ret.Scopes[Ret.Scopes.size()-1]->Kind,(int)Ret.Scopes.size(),LineNumber));
+					#endif // ScopeDebug
 				if (ins->Kind==InsKind::EndScope) Ret.Scopes.pop_back();
 				//printf("DEBUG:DefTable command: %s %d -> %02d (%s)\n", ins->RawInstruction.c_str(), (int)ins->Words.size(), (int)ins->Kind, ins->Words.size()?ins->Words[0]->UpWord.c_str():"<Whiteline>" );
 			} else if (ins->Scope==ScopeKind::QuickMeta) {
@@ -1444,6 +1485,9 @@ public:
 				}
 				if (ins->Words[0]->UpWord == "END") {
 					ins->Kind = InsKind::EndScope;
+					#ifdef ScopeDebug
+					QCol->Magenta(TrSPrintF("SCOPE t%d #%d END (line: %d) QuickMeta",(int)Ret.Scopes[Ret.Scopes.size()-1]->Kind,(int)Ret.Scopes.size(),LineNumber));
+					#endif // ScopeDebug
 					Ret.Scopes.pop_back();
 				} else {
 					TransAssert(MetaMethods.count(ins->Words[0]->UpWord), ins->Words[0]->UpWord + " is not a known metamethod for QUICKMETA");
@@ -1475,10 +1519,17 @@ public:
 					auto SwS{ Ret.GetScope()->Parent };
 					ins->Kind = InsKind::Case;
 					ins->SwitchName = &SwS->switchID;
+					#ifdef ScopeDebug
+					QCol->Magenta(TrSPrintF("SCOPE t%d #%d END (Line %d) (CASE/DEFAULT)\n",(int)Ret.Scopes[Ret.Scopes.size()-1]->Kind,(int)Ret.Scopes.size(),LineNumber));
+					#endif // ScopeDebug
+
 					Ret.Scopes.pop_back();
 				} break;
 				}
 				ins->Kind = InsKind::EndScope;
+				#ifdef ScopeDebug
+				QCol->Magenta(TrSPrintF("SCOPE t%d #%d END (Line %d) \n",(int)Ret.Scopes[Ret.Scopes.size()-1]->Kind,(int)Ret.Scopes.size(),LineNumber));
+				#endif // ScopeDebug
 				Ret.Scopes.pop_back();
 			} else if (ins->Words[0]->UpWord == "SWITCH" || ins->Words[0]->UpWord == "SELECT") {
 				auto S{ Ret.GetScope() };
@@ -1747,6 +1798,9 @@ public:
 				Ret.PushScope(ScopeKind::Do);
 			} else if (ins->Words[0]->UpWord == "IF") {
 				ins->Kind = InsKind::IfStatement;
+				#ifdef ScopeDebug
+				QCol->Magenta(TrSPrintF("IF SCOPE WILL START AT LINE \x1b[93m#%d\n",LineNumber));
+				#endif // ScopeDebug
 				Ret.PushScope(ScopeKind::IfScope);
 			} else if (ins->Words[0]->UpWord == "ELSEIF" || ins->Words[0]->UpWord == "ELIF") {
 				TransAssert(Ret.GetScope()->Kind == ScopeKind::IfScope || Ret.GetScope()->Kind == ScopeKind::ElIf, "ELSEIF without IF");
@@ -1786,7 +1840,7 @@ public:
 			TransAssert(Ret.ScopeLevel() == 0, TrSPrintF("Unclosed scope (%d)", (int)Ret.ScopeK()));
 		}
 		auto Trans{ &Ret.Trans->LuaSource };
-		*Trans = "-- " + srcfile + "\n";
+		*Trans = "-- " + StripDir(srcfile) + "\n";
 		*Trans += "--[[ Script Generated by Scyndi on " + CurrentDate() + ", " + CurrentTime() + "]]\n\n";
 		if (debug) *Trans += "--[[ DEBUG TRANSLATION ]]--\n\n";
 		*Trans += TrSPrintF("local %s = Scyndi.STARTCLASS(\"%s\",true,true,nil)\n", ScriptName.c_str(), ScriptName.c_str());
@@ -1831,6 +1885,7 @@ public:
 		for (auto Ins : Ret.Instructions) {
 			auto LineNumber{ Ins->LineNumber };
 			auto Dec{ Ins->DecData };
+			TVV("Ins line: "<<Ins->LineNumber);
 			if (Dec) {
 				auto VarName{ Ins->Words[Ins->ForEachExpression]->UpWord };
 				auto PluaName{ Ins->Words[Ins->ForEachExpression]->TheWord };
@@ -1974,7 +2029,8 @@ public:
 							auto ref{ TrSPrintF("Scyndi.Class[\"%s\"][\"%s\"]",ScriptName.c_str(),VarName.c_str()) };
 							(*Ret.RootScope->LocalVars)[VarName] = ref;
 							//Scyndi.ADDMBER(ch,dtype,name,static,readonly,constant,value)
-							*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"%s\",\"%s\",true,%s,%s,%s)\n", ScriptName.c_str(), DType.c_str(), VarName.c_str(), Lower(boolstring(Dec->IsReadOnly)).c_str(), Lower(boolstring(Dec->IsConstant)).c_str(), Value.c_str());
+							//*Trans += TrSPrintF("Scyndi.ADDMBER(\"%s\",\"%s\",\"%s\",true,%s,%s,%s)\n", ScriptName.c_str(), DType.c_str(), VarName.c_str(), Lower(boolstring(Dec->IsReadOnly)).c_str(), Lower(boolstring(Dec->IsConstant)).c_str(), Value.c_str());
+							*Trans += "Scyndi.ADDMBER(\""+ScriptName+"\", \""+DType+"\", \""+VarName+"\", true, "+lboolstring(Dec->IsReadOnly)+", "+lboolstring(Dec->IsConstant)+", "+Value+")";
 						}
 					}
 				}
@@ -2012,7 +2068,7 @@ public:
 				break;
 			case InsKind::StartDo:
 				*Trans += "do\n";
-				if (debug) *Trans += ("Scyndi.Debug.Push(\"Do Scope\") ");
+				//if (debug) *Trans += ("Scyndi.Debug.Push(\"Do Scope\") ");
 				break;
 			case InsKind::StartFor:
 			case InsKind::StartForEach: {
@@ -2292,6 +2348,7 @@ public:
 				*Trans += "Scyndi.ADDPROPERTY(\""+fclass+"\", \""+VarName+"\", "+lboolstring(dec->IsStatic || dec->IsRoot || dec->IsGlobal)+", \"get\", function(self) \n";
 				if (debug) *Trans += TrSPrintF("Scyndi.Debug.Push(\"Property(GET) %s.%s\") ",fclass.c_str(),VarName.c_str());
 				if (Ins->DecData->BoundToClass.size() && (!Ins->DecData->IsStatic)) {
+					(*Ins->NextScope->LocalVars)["self"] = "self";
 					for (auto& FLD : Ret.Fields[Upper(Ins->DecData->BoundToClass)]) {
 						(*Ins->NextScope->LocalVars)[FLD] = TrSPrintF("self.%s", FLD.c_str());
 					}
@@ -2316,6 +2373,7 @@ public:
 				(*Ins->NextScope->LocalVars)["VALUE"] = Ins->NextScope->ScopeLoc+"[\"VALUE\"]";
 				if (Ins->DecData->BoundToClass.size() && (!Ins->DecData->IsStatic)) {
 					for (auto& FLD : Ret.Fields[Upper(Ins->DecData->BoundToClass)]) {
+						(*Ins->NextScope->LocalVars)["self"] = "self";
 						(*Ins->NextScope->LocalVars)[FLD] = TrSPrintF("self.%s", FLD.c_str());
 					}
 				}
@@ -2447,7 +2505,11 @@ public:
 					} else if (Ins->Words[Pos]->UpWord == "DELEGATE" || Ins->Words[Pos]->UpWord == "TABLE" || Ins->Words[Pos]->UpWord == "BOOL") {
 						auto DT{ Ins->Words[Pos]->UpWord };
 						Pos++;
-						auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						//auto A{ Arg{ Ins->Words[Pos]->UpWord,TrSPrintF("%s[\"%s\"]",ScN,Ins->Words[Pos]->UpWord),"",_Declaration::S2E[DT],false} };
+						String A2{""};
+						A2+="+ScN+";
+						A2+="[\""+Ins->Words[Pos]->UpWord+"\"]";
+						auto A{Arg {Ins->Words[Pos]->UpWord,A2,"",_Declaration::S2E[DT],false}};
 						Args.push_back(A);
 						Pos++;
 						TransAssert(Pos < Ending && (Ins->Words[Pos]->Kind == WordKind::Comma || Ins->Words[Pos]->TheWord == ")"), TrSPrintF("Syntax error in function defintion after (%s) argument #%d", DT.c_str(), Args.size()));
