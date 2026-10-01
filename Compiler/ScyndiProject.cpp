@@ -22,33 +22,8 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 26.02.18
+// Version: 26.10.01
 // End License
-// Lic:
-// Scyndi
-// Project Management
-//
-//
-//
-// (c) Jeroen P. Broks, 2022, 2023
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
-// Please note that some references to data like pictures or audio, do not automatically
-// fall under this licenses. Mostly this is noted in the respective files.
-//
-// Version: 23.11.01
-// EndLic
 
 #include <SlyvString.hpp>
 #include <SlyvStream.hpp>
@@ -63,6 +38,7 @@
 
 #include "ScyndiProject.hpp"
 #include "Translate.hpp"
+#include "Config.hpp"
 #include "SaveTranslation.hpp"
 
 using namespace Slyvina::Units;
@@ -126,8 +102,8 @@ namespace Scyndi {
 
 	Compilation Compile(GINIE PrjData, Slyvina::JCR6::JT_Dir Res, std::string ScyndiSource, bool debug, bool force) {
 
-		auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".STB" };
-		if (debug) OutputFile = StripExt(Res->Entry(ScyndiSource)->MainFile) + ".Debug.STB";
+		auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".stb" };
+		if (debug) OutputFile = StripExt(Res->Entry(ScyndiSource)->MainFile) + ".Debug.stb";
 		if (IsDone(Res->Entry(ScyndiSource)->MainFile)) {
 			auto HRes{ JCR6_Dir(OutputFile) };
 			auto GDat{ ParseGINIE(HRes->GetString("Configuration.ini")) };
@@ -171,8 +147,8 @@ namespace Scyndi {
 			return CReturn(CompileResult::Fail);
 		} else {
 			// QCol->LGreen(T->LuaSource + "\n"); // debug only!
-			auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".STB" }; // STB = Scyndi Translated Bundle
-			if (debug) { OutputFile = StripExt(Res->Entry(ScyndiSource)->MainFile) + ".Debug.STB"; }
+			auto OutputFile{ StripExt(Res->Entry(ScyndiSource)->MainFile) + ".stb" }; // STB = Scyndi Translated Bundle
+			if (debug) { OutputFile = StripExt(Res->Entry(ScyndiSource)->MainFile) + ".debug.stb"; }
 			QCol->Doing("Bundling", OutputFile);
 			auto Storage{ Ask(PrjData,"Package","Storage","Preferred package storage method:","zlib") };
 			auto JO{ CreateJCR6(OutputFile) };
@@ -233,6 +209,7 @@ namespace Scyndi {
 			if (E == "LUA") {
 				QCol->Error("Pure Lua code not (yet) supported");
 				QCol->Doing("File", SD->Name());
+				Failed++;
 			} else if (E == "SCYNDI") {
 				auto Result{ Compile(PrjData, Res, SD->Name(), debug, force) };
 				switch (Result->Result) {
@@ -246,6 +223,23 @@ namespace Scyndi {
 					QCol->Error(TrSPrintF("Unknown compiler result (Internal error! Please report) (%03d)", (int)Result->Result));
 					break;
 				}
+			} else if (E=="VSF" && Yes(PrjData,"Voshia","Allow","VSF could denote a Voshia source file ("+SD->Name()+"). Do you want to compile Voshia files in this project")) {
+				bool goedgekeurd{false};
+				std::string Schoeti{""};
+				do {
+					Schoeti= Ask(GlobalConfig(),"Scyndi","Schoeti","Tell me where I can find Schoeti: ");
+					goedgekeurd=FileExists(Schoeti);
+					if (!goedgekeurd) GlobalConfig()->Value("Scyndi","Schoeti","");
+				} while(!goedgekeurd);
+				std::string Commando{Schoeti};
+				if (debug) Commando+=" -debug ";
+				Commando+=" \""+SD->MainFile+"\" ";
+				Commando+=" -tgt stb";
+				auto r = system(Commando.c_str());
+				if (r) {
+					QCol->Error(TrSPrintF("Schoeti apparently detected errors! (%x)",r));
+					Failed++;
+				} else { Success++; }
 			}
 		}
 		QCol->Green("Project complete\n");

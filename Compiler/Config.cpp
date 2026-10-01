@@ -1,33 +1,60 @@
-// Lic:
+// License:
+// 
 // Scyndi
 // Config
 // 
 // 
 // 
-// (c) Jeroen P. Broks, 2022
+// 	(c) Jeroen P. Broks, 2022, 2026
 // 
+// 		This program is free software: you can redistribute it and/or modify
+// 		it under the terms of the GNU General Public License as published by
+// 		the Free Software Foundation, either version 3 of the License, or
+// 		(at your option) any later version.
+// 
+// 		This program is distributed in the hope that it will be useful,
+// 		but WITHOUT ANY WARRANTY; without even the implied warranty of
+// 		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// 		GNU General Public License for more details.
+// 		You should have received a copy of the GNU General Public License
+// 		along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// 	Please note that some references to data like pictures or audio, do not automatically
+// 	fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 26.10.01
+// End License
+// Lic:
+// Scyndi
+// Config
+//
+//
+//
+// (c) Jeroen P. Broks, 2022
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-// 
+//
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
-// 
+//
 // Version: 22.12.25
 // EndLic
 #include <iostream>
 #include "Config.hpp"
+#include <SlyvDirry.hpp>
 using namespace Slyvina::Units;
 namespace Scyndi {
-	
+
 	static ParsedArg _Args;
 
 	void RegArgs(Slyvina::Units::FlagConfig& cfg, int cnt, char** args) {
@@ -47,5 +74,14 @@ namespace Scyndi {
 	bool WantProject() { return !_Args.bool_flags["sl"]; }
 	bool WantForce() { return _Args.bool_flags["force"]; }
 	bool WantDebug() { return _Args.bool_flags["dbg"]; }
+
+	GINIE GlobalConfig() {
+		static GINIE ret{nullptr};
+		if (!ret) {
+			static std::string gfile{Dirry("$Home$/.Tricky__SpplicationSupport/ScyndiCreativeInterpreter/GlobalConfig.ini")};
+			ret = LoadGINIE(gfile,gfile,"Last modified by the Scyndi compiler!");
+		}
+		return ret;
+	}
 
 }

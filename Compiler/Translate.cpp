@@ -22,7 +22,7 @@
 // 	Please note that some references to data like pictures or audio, do not automatically
 // 	fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 26.02.18
+// Version: 26.10.01
 // End License
 
 #include <Slyvina.hpp>
@@ -573,7 +573,9 @@ public:
 				case 'f':
 				case 'F':
 					if (FormNumberHex) {
-						FormWord += Lower("" + ch);
+						//FormWord += Lower("" + ch);
+						FormWord+=ch;
+						Trans2Lower(FormWord);
 						pos++;
 					} else {
 						EndNum = true;
@@ -964,7 +966,8 @@ public:
 			skip = true;
 		} else if (JD->DirectoryExists(Para+".ScyndiBundle")) {
 			for (auto& JDI : JD->_Entries) {
-				if (ExtractExt(Upper(JDI.first)) == "SCYNDI" && ExtractDir(Upper(JDI.first)) == Upper(Para + ".ScyndiBundle")) {
+				//if (ExtractExt(Upper(JDI.first)) == "SCYNDI" && ExtractDir(Upper(JDI.first)) == Upper(Para + ".ScyndiBundle")) {
+				if (ExtractExt(Upper(JDI.first)) == "SCYNDI" && Prefixed(Upper(JDI.first),Upper(Para + ".ScyndiBundle"))) {
 					auto inc{ StripExt(JDI.second->Name()) };
 					QCol->Doing("= Entry", inc);
 					if (!TransUse(inc, Ret, JD, debug, srcfile, LineNumber, force, dat, UseDependencies,Macros)) return false;
@@ -1205,7 +1208,7 @@ public:
 					Chat("=> " << ins->Words[0]->UpWord);
 					if (ins->Words[pos]->UpWord == "GLOBAL") dec->IsGlobal = true;
 					if (ins->Words[pos]->UpWord == "STATIC") dec->IsStatic = true;
-					if (ins->Words[pos]->UpWord == "CONST") dec->IsConstant = true;
+					if (ins->Words[pos]->UpWord == "CONST") {dec->IsConstant = true; dec->IsStatic = true;}
 					if (ins->Words[pos]->UpWord == "READONLY") dec->IsReadOnly = true;
 					if (ins->Words[pos]->UpWord == "GET") dec->IsGet = true;
 					if (ins->Words[pos]->UpWord == "SET") dec->IsSet = true;
@@ -1372,6 +1375,13 @@ public:
 								(String)"Scyndi.AllIdentifiers[\""+ins->Words[2]->TheWord+"\"]"
 						);
 					QCol->Doing("Accepted",ins->Words[2]->UpWord,""); QCol->Yellow(" as "); QCol->LBlue((*Ret.RootScope->LocalVars)[ins->Words[2]->UpWord]+"\n");
+				} else if (Opdracht == "INCLUSION" || Opdracht == "PRJINCLUSION") {
+					TransAssert(ins->Words.size() >= 4, "Incomplete #INCLUSION");
+					auto
+						ENG{ins->Words[2]->UpWord},
+						File{ins->Words[3]->TheWord};
+					TransAssert(Ret.Trans->Data->Value("Inclusion",ENG)=="","Inclusion request for engine '"+ENG+"' already done");
+					Ret.Trans->Data->Value("Inclusion",ENG,File);
 				} else if (Opdracht == "USE") {
 					TransAssert(ins->Words.size() == 3, "#USE syntax error");
 					TransAssert(ins->Words[2]->Kind == WordKind::String, "String expected to determine the dependency to load with #USE");
@@ -1431,7 +1441,7 @@ public:
 					if (ins->Words[0]->UpWord == "SCRIPT") {
 						Ret.Trans->Kind = ScriptKind::Script;
 						std::string _id = "MAINSCRIPT";
-						if (ins->Words.size() > 2) {
+						if (ins->Words.size() >= 2) {
 							TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected");
 							_id = ins->Words[1]->UpWord;
 							TransAssert(Ret.Identifier(_id) == "", "Script header creates duplicate identifier");
@@ -1442,10 +1452,11 @@ public:
 						Ret.Trans->Kind = ScriptKind::Script;
 						std::string _sid = Upper(StripAll(srcfile));
 						std::string _id{ "" };
-						if (ins->Words.size() > 2) {
+						if (ins->Words.size() >= 2) {
 							TransAssert(ins->Words[1]->Kind == WordKind::Identifier, "Identifier expected");
 							_id = ins->Words[1]->UpWord;
 							TransAssert(Ret.Identifier(_id) == "", "Script header creates duplicate identifier");
+							ScriptName = _id;
 						} else {
 							for (size_t p = 0; p < _sid.size(); p++) {
 								if (
@@ -2573,7 +2584,7 @@ public:
 					std::cout << (int)Ret.RootScope->Kind << "\n"; // debug only
 					TransError(TrSPrintF("(SC%d) Local functions not yet implemented", (int)oscope->Kind));
 				}
-				if (debug) *Trans += TrSPrintF("Scyndi.Debug.Push(\"%s\")",VarName.c_str());
+				if (debug) *Trans += TrSPrintF("Scyndi.Debug.Push(\"%s\") ",VarName.c_str());
 				DbgLineCheck;
 				if (Args.size()) {
 					//std::cout << "Function " << VarName << " has " << Args.size() << " argument(s)\n"; // debug only
@@ -2761,12 +2772,13 @@ public:
 			case InsKind::Return: {
 				DbgLineCheck;
 				if (Ins->Scope != ScopeKind::Defer) *Trans += Ins->ScopeData->DeferLine();
-				if (debug) *Trans += " Scyndi.Debug.Pop(); ";
+				// if (debug) *Trans += " Scyndi.Debug.Pop(); ";
 				// TODO: If there are any defers, take care of them first!
 				auto Sc{ Ins->ScopeData };
 				auto fKind{ Sc->FunctionScopeType() };
 				if (fKind == VarType::Void) {
 					TransAssert(Ins->Words.size() == 1, "Void functions (which includes, Init, Defers, Constructors and Destructors) cannot return any values");
+					if (debug) *Trans += " Scyndi.Debug.Pop(); ";
 					*Trans += "return;\n";
 					Sc->DidReturn = true;
 					break;
@@ -2774,13 +2786,22 @@ public:
 				TransAssert(Ins->Words.size() > 1, "Return without data");
 				auto Ex{ Expression(Ret.Trans,Ins,1) };
 				if (!Ex) return nullptr;
-				*Trans += "return ";
+				static uint64 rcnt{0};
+				bool novar{true};
+				//*Trans += "return ";
+				*Trans+=TrSPrintF("local scyndi_return_value_%09x = ",++rcnt);
 				switch (fKind) {
 				case VarType::CustomClass:
+				case VarType::UserData:
+					*Trans+=Ex->size()?*Ex:"nil";
+					break;
 				case VarType::pLua:
 				case VarType::Var:
-				case VarType::UserData:
+					*Trans +="nil; ";
+					if (debug) *Trans += " Scyndi.Debug.Pop(); ";
+					*Trans += "return ";
 					*Trans += *Ex;
+					novar=false;
 					break;
 				case VarType::Byte:
 				case VarType::Integer:
@@ -2822,6 +2843,10 @@ public:
 					TransError(TrSPrintF("Unknown function return type (%d)", (int)fKind));
 				}
 				Sc->DidReturn = true;
+				if (novar) {
+					if (debug) *Trans += "; Scyndi.Debug.Pop()";
+					*Trans+= TrSPrintF("; return scyndi_return_value_%09x",rcnt);
+				}
 				*Trans += "\n";
 			} break;
 			case InsKind::Defer: {

@@ -1,7 +1,7 @@
 -- License:
 -- 	Script/ScyndiCore.lua
 -- 	Scyndi - Core Script
--- 	version: 26.02.18
+-- 	version: 26.04.25
 -- 
 -- 	Copyright (C) 2022, 2023, 2024, 2025, 2026 Jeroen P. Broks
 -- 
@@ -180,11 +180,23 @@ local function newindex_static_member(cl,key,value,allowprivate)
 	member.value = _Scyndi.WANTVALUE(member.dtype,value)
 end
 
-local function tabcpy(ori)
+local function tabcpy(ori,maxlevels,history)
 	local tar = {}
-	for k,v in pairs(ori) do
-		if type(v)=="table" then 
-			tar[k] = tabcpy(v)
+	history = history or {}
+	maxlevels = maxlevels or 150
+	print(string.format("tabcpy(%s,%3d)",ori,maxlevels))
+	for k,v in pairs(ori) do		
+		if type(v)=="table" and maxlevels>0 then
+			for __,hv in pairs(history) do
+				if hv==v then
+					print("\x07\x1b[91mERROR!\x1b[37m","Cyclic reference!")
+					tar[k]=v
+				else
+					history[#history+1] = v
+					print("- "..k)
+					tar[k] = tabcpy(v,maxlevels-1,history)
+				end
+			end
 		else
 			tar[k] = v
 		end
@@ -206,15 +218,17 @@ local function PEC(classname)
 		_class.extends = { base=base, extname=uex }
 		for _,k in pairs{"staticmembers","nonstaticmembers","methods","staticprop","methprop","abstracts","finals"} do
 			print(string.format("Extending - copy %s from %s to %s",k,_class.extendclass,classname)) -- debug only
-			--_class[k] = tabcpy(base[k])
-			local t=tabcpy(base[k])
+			--_class[k] = tabcpy(base[k])			
 			if (k=="staticprop" or k=="methprop") then
 				for _,kp in pairs{"pget","pset"} do
-					for km,vm in pairs(t[kp]) do
+					local tp=tabcpy(base[k][kp])			
+					--for km,vm in pairs(t[kp]) do
+					for km,vm in pairs(tp) do
 						_class[k][kp][km] = _class[k][kp][km] or vm
 					end
 				end
 			else
+				local t=tabcpy(base[k])
 				for km,vm in pairs(t) do
 					_class[k][km] = _class[k][km] or vm
 				end
@@ -711,7 +725,7 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","EXPAND",true,true,true,function (t,p)
 		if type(t)=="string" then
 			return t:sub(p,p),_Scyndi.GLOBALS.EXPAND(t,p+1)   
 		else
-			return t[p],Globals.EXPAND.Value(t,p+1) 
+			return t[p],_Scyndi.GLOBALS.EXPAND(t,p+1) 
 		end
 	end
 	if p==#t then 
@@ -782,6 +796,13 @@ _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","NEWARRAY",true,true,true,function(...)
 		ret[i-1]=v
 	end
 	return ret
+end)
+
+_Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LENFT",true,true,true,function(value)
+	assert(type(value)=="table","Only tables accepted for LenFT")
+	local r=0
+	for k,v in pairs(value) do r=r+1 end
+	return r
 end)
 
 _Scyndi.ADDMBER("..GLOBALS..","DELEGATE","LEN",true,true,true,function(value)
